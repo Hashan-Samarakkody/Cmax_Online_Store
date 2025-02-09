@@ -7,8 +7,7 @@ const Navbar = () => {
 
 	return (
 		<div className='relative flex items-center justify-between py-5 font-medium'>
-			
-			<Link to='/'><img className='w-36' src={assets.logo} alt="" /></Link>
+			<img className='w-36' src={assets.logo} alt="" />
 
 			{/* Desktop Navigation */}
 			<ul className='w-2/4 sm:flex gap-5 text-sm text-gray-700 hidden'>
@@ -74,21 +73,26 @@ const Navbar = () => {
 						<p>Back</p>
 					</div>
 
+					<hr className='w-full border-none h-[1px] bg-gray-300 mt-1' />
 					<NavLink onClick={() => setVisible(false)} className='py-2 pl-5 hover:bg-gray-50' to='/'>
 						HOME
 					</NavLink>
+					<hr className='w-full border-none h-[1px] bg-gray-300 mt-1' />
 
 					<NavLink onClick={() => setVisible(false)} className='py-2 pl-5 hover:bg-gray-50' to='/collection'>
 						COLLECTION
 					</NavLink>
+					<hr className='w-full border-none h-[1px] bg-gray-300 mt-1' />
 
 					<NavLink onClick={() => setVisible(false)} className='py-2 pl-5 hover:bg-gray-50' to='/about'>
 						ABOUT
 					</NavLink>
+					<hr className='w-full border-none h-[1px] bg-gray-300 mt-1' />
 
 					<NavLink onClick={() => setVisible(false)} className='py-2 pl-5 hover:bg-gray-50' to='/contact'>
 						CONTACT
 					</NavLink>
+					<hr className='w-full border-none h-[1px] bg-gray-300 mt-1' />
 
 				</div>
 			</div>
