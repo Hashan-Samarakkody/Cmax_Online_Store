@@ -76,26 +76,21 @@ const Navbar = () => {
 						<p>Back</p>
 					</div>
 
-					<hr className='w-full border-none h-[1px] bg-gray-300 mt-1' />
 					<NavLink onClick={() => setVisible(false)} className='py-2 pl-5 hover:bg-gray-50' to='/'>
 						HOME
 					</NavLink>
-					<hr className='w-full border-none h-[1px] bg-gray-300 mt-1' />
 
 					<NavLink onClick={() => setVisible(false)} className='py-2 pl-5 hover:bg-gray-50' to='/collection'>
 						COLLECTION
 					</NavLink>
-					<hr className='w-full border-none h-[1px] bg-gray-300 mt-1' />
 
 					<NavLink onClick={() => setVisible(false)} className='py-2 pl-5 hover:bg-gray-50' to='/about'>
 						ABOUT
 					</NavLink>
-					<hr className='w-full border-none h-[1px] bg-gray-300 mt-1' />
 
 					<NavLink onClick={() => setVisible(false)} className='py-2 pl-5 hover:bg-gray-50' to='/contact'>
 						CONTACT
 					</NavLink>
-					<hr className='w-full border-none h-[1px] bg-gray-300 mt-1' />
 
 				</div>
 			</div>

@@ -9,7 +9,7 @@ import Cart from './pages/Cart'
 import PlaceOrder from './pages/PlaceOrder'
 import Collection from './pages/Collection'
 import Orders from './pages/Orders'
-import Navbar from './components/navbar'
+import Navbar from './components/Navbar'
 import Footer from './components/Footer'
 import SearchBar from './components/SearchBar'
 
@@ -24,7 +24,7 @@ const App = () => {
         <Route path='/about' element={<About />} />
         <Route path='/contact' element={<Contact />} />
         <Route path='/login' element={<Login />} />
-        <Route path='/product/:product[id]' element={<Product />} />
+        <Route path='/product/:productId' element={<Product />} />
         <Route path='/cart' element={<Cart />} />
         <Route path='/palace-order' element={<PlaceOrder />} />
         <Route path='/collection' element={<Collection />} />
