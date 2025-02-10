@@ -1,14 +1,15 @@
 import React from 'react'
 import { assets } from '../assets/assets'
 import { NavLink, Link } from 'react-router-dom'
+import { ShopContext } from '../context/ShopContext'
 
 const Navbar = () => {
 	const [visible, setVisible] = React.useState(false);
+	const {setShowSearch} = React.useContext(ShopContext);
 
 	return (
 		<div className='relative flex items-center justify-between py-5 font-medium'>
-			
-			<Link to='/'><img className='w-36' src={assets.logo} alt="" /></Link>
+			<img className='w-36' src={assets.logo} alt="" />
 
 			{/* Desktop Navigation */}
 			<ul className='w-2/4 sm:flex gap-5 text-sm text-gray-700 hidden'>
@@ -32,7 +33,8 @@ const Navbar = () => {
 
 			{/* Right Icons */}
 			<div className='flex items-center gap-6'>
-				<img src={assets.search_icon} alt="" className='w-5 cursor-pointer' />
+				<img onClick={() => setShowSearch(true)} src={assets.search_icon} alt="" className='w-5 cursor-pointer' />
+
 				<div className='group relative'>
 					<img src={assets.profile_icon} alt="" className='w-5 cursor-pointer' />
 					<div className='group-hover:block hidden absolute dropdown-menu right-0 pt-4'>
@@ -74,21 +76,26 @@ const Navbar = () => {
 						<p>Back</p>
 					</div>
 
+					<hr className='w-full border-none h-[1px] bg-gray-300 mt-1' />
 					<NavLink onClick={() => setVisible(false)} className='py-2 pl-5 hover:bg-gray-50' to='/'>
 						HOME
 					</NavLink>
+					<hr className='w-full border-none h-[1px] bg-gray-300 mt-1' />
 
 					<NavLink onClick={() => setVisible(false)} className='py-2 pl-5 hover:bg-gray-50' to='/collection'>
 						COLLECTION
 					</NavLink>
+					<hr className='w-full border-none h-[1px] bg-gray-300 mt-1' />
 
 					<NavLink onClick={() => setVisible(false)} className='py-2 pl-5 hover:bg-gray-50' to='/about'>
 						ABOUT
 					</NavLink>
+					<hr className='w-full border-none h-[1px] bg-gray-300 mt-1' />
 
 					<NavLink onClick={() => setVisible(false)} className='py-2 pl-5 hover:bg-gray-50' to='/contact'>
 						CONTACT
 					</NavLink>
+					<hr className='w-full border-none h-[1px] bg-gray-300 mt-1' />
 
 				</div>
 			</div>
