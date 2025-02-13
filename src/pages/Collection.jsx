@@ -91,7 +91,7 @@ const Collection = () => {
           <p className='text-gray-700 cursor-pointer mb-3 text-sm font-semibold'>CATEGORIES</p>
           <div className='flex flex-col gap-2 text-sm font-light text-gray-700'>
             <p className='flex gap-2'>
-              <input className='w-3' type='checkbox' value={'Men'} checked={category.includes('Men')} onChange={toggleCategory} /> Men
+              <input className='w-3' type='checkbox' value={'Electronics'} checked={category.includes('Electronics')} onChange={toggleCategory} /> Electronics
             </p>
             <p className='flex gap-2'>
               <input className='w-3' type='checkbox' value={'Xiaomi Mi Bands'} checked={category.includes('Xiaomi Mi Bands')} onChange={toggleCategory} /> Xiaomi Mi Bands
@@ -107,7 +107,7 @@ const Collection = () => {
           <p className='text-gray-700 cursor-pointer mb-3 text-sm font-semibold'>SUBCATEGORIES</p>
           <div className='flex flex-col gap-2 text-sm font-light text-gray-700'>
             <p className='flex gap-2'>
-              <input className='w-3' type='checkbox' value={'Topwear'} onChange={toggleSubCategory} /> Topwear
+              <input className='w-3' type='checkbox' value={'Bands'} onChange={toggleSubCategory} /> Bands
             </p>
             <p className='flex gap-2'>
               <input className='w-3' type='checkbox' value={'Xiaomi Mi Bands'} onChange={toggleSubCategory} /> Xiaomi Mi Bands

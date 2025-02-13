@@ -98,12 +98,12 @@ export const assets = {
 export const products = [
     {
         _id: "aaaaa",
-        name: "Women Round Neck Cotton Top",
-        description: "A lightweight, usually knitted, pullover shirt, close-fitting and with a round neckline and short sleeves, worn as an undershirt or outer garment.",
+        name: "Xiaomi Mi - 3",
+        description: "A comfotable and stylish band that helps you keep track of your health and fitness.",
         price: 100,
         image: [p_img1],
-        category: "Women",
-        subCategory: "Topwear",
+        category: "Xiaomi Mi Bands",
+        subCategory: "Bands",
         sizes: ["S", "M", "L"],
         date: 1716634345448,
         bestseller: true
