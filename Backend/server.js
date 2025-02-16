@@ -3,6 +3,7 @@ import cors from 'cors';
 import 'dotenv/config';
 import connectDB from './config/mongodb.js';
 import connectCloudinary from './config/coludinary.js';
+import userRouter from './routes/userRoute.js';
 
 
 // App Config
@@ -17,8 +18,10 @@ app.use(cors());
 app.use(express.json());
 
 // API Endpoints
+app.use('/api/user',userRouter);
+
 app.get('/', (req, res) => {
-    res.send('Hello World')
+    res.send('Hell World')
 });
 
 app.listen(port, () => {
