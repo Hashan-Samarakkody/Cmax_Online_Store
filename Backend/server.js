@@ -4,6 +4,7 @@ import 'dotenv/config';
 import connectDB from './config/mongodb.js';
 import connectCloudinary from './config/coludinary.js';
 import userRouter from './routes/userRoute.js';
+import productRouter from './routes/productRoute.js';
 
 
 // App Config
@@ -18,7 +19,8 @@ app.use(cors());
 app.use(express.json());
 
 // API Endpoints
-app.use('/api/user',userRouter);
+app.use('/api/user', userRouter);
+app.use('/api/product', productRouter);
 
 app.get('/', (req, res) => {
     res.send('Hell World')
