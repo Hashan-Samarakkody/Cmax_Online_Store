@@ -16,7 +16,7 @@ const loginUser = async (req, res) => {
 
         // Check if user exists or not
         const user = await userModel.findOne({ email });
-        
+
         if (!user) {
             return res.json({ success: false, message: "User not found!" });
         }
@@ -30,7 +30,7 @@ const loginUser = async (req, res) => {
             const token = createToken(user._id);
             res.json({ success: true, token });
         }
-        
+
     } catch (error) {
         console.log(error);
         res.json({ success: false, message: error.message });
@@ -76,7 +76,7 @@ const registerUser = async (req, res) => {
 
         // Provide a token to the user
         const token = createToken(user._id);
-        res.json({ success: true, token});
+        res.json({ success: true, token });
 
     } catch (error) {
 
@@ -89,6 +89,25 @@ const registerUser = async (req, res) => {
 
 // Route for admin login
 const adminLogin = async (req, res) => {
+
+    try {
+
+        const { email, password } = req.body;
+
+        // Check if user exists or not
+        if (email === process.env.ADMIN_EMAIL &&
+            password === process.env.ADMIN_PASSWORD)
+        {
+            const token = jwt.sign(email + password, process.env.JWT_SECRET);
+            res.json({ success: true, token })
+        } else {
+            res.json({ success: false, message: "Invalid credentials!" })
+        }
+
+    } catch (error) {
+        console.log(error);
+        res.json({ success: false, message: error.message });
+    }
 }
 
 export { loginUser, registerUser, adminLogin };
