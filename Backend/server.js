@@ -14,7 +14,6 @@ connectDB();
 connectCloudinary();
 
 
-// Middlewares
 app.use(cors());
 app.use(express.json());
 
@@ -23,7 +22,7 @@ app.use('/api/user', userRouter);
 app.use('/api/product', productRouter);
 
 app.get('/', (req, res) => {
-    res.send('Hell World')
+    res.send('Server is running')
 });
 
 app.listen(port, () => {
