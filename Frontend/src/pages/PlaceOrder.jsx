@@ -3,11 +3,13 @@ import Title from '../components/Title'
 import CartTotal from '../components/CartTotal'
 import { assets } from '../assets/assets'
 import { ShopContext } from '../context/ShopContext'
+import axios from 'axios'
+import { toast } from 'react-toastify'
 
 const PlaceOrder = () => {
 
   const [method, setMethod] = useState('cod');
-  const { navigate, backendUrl, token, cartItems, setCartItems, getCartAnmount, deliveryCharge, products } = useContext(ShopContext);
+  const { navigate, backendUrl, token, cartItems, setCartItems, getCartAmount, deliveryCharge, products } = useContext(ShopContext);
 
   const [formData, setFormData] = useState({
     firstName: '',
@@ -35,27 +37,28 @@ const PlaceOrder = () => {
     try {
       let orderItems = []
       for (const items in cartItems) {
-        for (const item in cartItems[item]) {
-          if (cartItems[item][item] > 0) {
+        for (const item in cartItems[items]) {
+          if (cartItems[items][item] > 0) {
             const itemInfo = structuredClone(products.find(product => product._id === items))
-
             if (itemInfo) {
               itemInfo.size = item
-              itemInfo.quantity = cartItems[item][item]
+              itemInfo.quantity = cartItems[items][item]
               orderItems.push(itemInfo)
             }
           }
         }
       }
 
-      let orderData = {
+      
+      const orderData = {
         address: formData,
         items: orderItems,
-        amount: getCartAnmount() + deliveryCharge
+        amount: getCartAmount() + deliveryCharge
       }
+     
 
       switch (method) {
-
+        // API call for cash on delivery method
         case 'cod':
           const response = await axios.post(backendUrl + '/api/order/place', orderData, { headers: { token } });
           if (response.data.success) {
@@ -64,7 +67,6 @@ const PlaceOrder = () => {
           } else {
             toast.error(response.data.message)
           }
-
           break;
 
         default:
@@ -72,13 +74,13 @@ const PlaceOrder = () => {
       }
 
     } catch (error) {
-
+      console.log(error)
+      toast.error(error.message)
     }
   }
 
-
   return (
-    <form onSubmitHandler={onSubmitHandler} className='flex flex-col sm:flex-row justify-between gap-4 pt-5 sm:pt-14 min-h-[80vh] border-t'>
+    <form onSubmit={onSubmitHandler} className='flex flex-col sm:flex-row justify-between gap-4 pt-5 sm:pt-14 min-h-[80vh] border-t'>
       {/* Left Side */}
       <div className='flex flex-col gap-4 w-full sm:max-w-[480px]'>
         <div className='text-xl sm:text-2xl my-3'>
@@ -133,7 +135,7 @@ const PlaceOrder = () => {
           </div>
 
           <div className='w-full text-end mt-8'>
-            <button type='submit' onClick={() => navigate('/orders')} className='bg-black text-white px-16 py-3 text-sm rounded-sm'>PLACE ORDER</button>
+            <button type='submit' className='bg-black text-white px-16 py-3 text-sm rounded-sm'>PLACE ORDER</button>
           </div>
 
         </div>
