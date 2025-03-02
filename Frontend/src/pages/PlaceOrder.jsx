@@ -49,13 +49,13 @@ const PlaceOrder = () => {
         }
       }
 
-      
+
       const orderData = {
         address: formData,
         items: orderItems,
         amount: getCartAmount() + deliveryCharge
       }
-     
+
 
       switch (method) {
         // API call for cash on delivery method
@@ -66,6 +66,17 @@ const PlaceOrder = () => {
             navigate('/orders')
           } else {
             toast.error(response.data.message)
+          }
+          break;
+
+        // API call for razorpay payment method
+        case 'stripe':
+          const responseStripe = await axios.post(backendUrl + '/api/order/stripe', orderData, { headers: { token } });
+          if (responseStripe.data.success) {
+            const { session_url } = responseStripe.data
+            window.location.replace(session_url)
+          } else {
+            toast.error(responseStripe.data.message)
           }
           break;
 

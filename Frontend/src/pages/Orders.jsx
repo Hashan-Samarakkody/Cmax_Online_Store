@@ -2,6 +2,7 @@ import React, { useContext, useEffect, useState } from 'react'
 import { ShopContext } from '../context/ShopContext'
 import Title from '../components/Title';
 import axios from 'axios';
+import {toast} from 'react-toastify'
 
 const Orders = () => {
 
@@ -34,7 +35,8 @@ const Orders = () => {
       }
 
     } catch (error) {
-
+      console.log(error)
+      toast.error(error.message)
     }
 
   }
@@ -57,14 +59,14 @@ const Orders = () => {
               <div className='flex items-start gap-6 text-sm'>
                 <img className='w-16 sm:w-20 rounded-lg' src={item.images[0]} alt="" />
                 <div>
-                  <p className='sm:text-base font-medium'>{item.name}</p>
+                  <p className='sm:text-base font-bold'>{item.name}</p>
                   <div className='flex items-center gap-3 mt-1 text-base text-gray-700'>
-                    <p>{currency}{item.price}</p>
-                    <p>Quantity: {item.quantity}</p>
-                    <p>Size: {item.size}</p>
+                    <p className='font-semibold text-gray-500'>{currency}{item.price}</p>
+                    <p className='font-semibold text-gray-500'>Quantity: {item.quantity}</p>
+                    <p className='font-semibold text-gray-500'>Size: {item.size}</p>
                   </div>
-                  <p className='mt-1'>Date: <span className='text-gray-400'>{new Date(item.date).toDateString()}</span></p>
-                  <p className='mt-1'>Payment: <span className='text-gray-400'>{item.paymentMethod}</span></p>
+                  <p className='mt-1 font-sem font-medium'>Date: <span className='text-gray-400'>{new Date(item.date).toDateString()}</span></p>
+                  <p className='mt-1 font-sem font-medium'>Payment Method: <span className='text-gray-400'>{item.paymentMethod}</span></p>
                 </div>
               </div>
 
@@ -74,7 +76,7 @@ const Orders = () => {
                   <p className='text-sm md:text-base'>{item.status}</p>
                 </div>
 
-                <button onClick={loadOrderData} className='border px-4 py-2 text-sm font-medium rounded-sm'>Track Order</button>
+                <button onClick={loadOrderData} className='border px-4 py-2 text-sm font-medium hover:bg-black hover:text-white transition-all duration-200 rounded-sm'>Track Order</button>
 
               </div>
             </div>
