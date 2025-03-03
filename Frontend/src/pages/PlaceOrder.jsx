@@ -49,13 +49,13 @@ const PlaceOrder = () => {
         }
       }
 
-      
+
       const orderData = {
         address: formData,
         items: orderItems,
         amount: getCartAmount() + deliveryCharge
       }
-     
+
 
       switch (method) {
         // API call for cash on delivery method
@@ -66,6 +66,17 @@ const PlaceOrder = () => {
             navigate('/orders')
           } else {
             toast.error(response.data.message)
+          }
+          break;
+
+        // API call for razorpay payment method
+        case 'stripe':
+          const responseStripe = await axios.post(backendUrl + '/api/order/stripe', orderData, { headers: { token } });
+          if (responseStripe.data.success) {
+            const { session_url } = responseStripe.data
+            window.location.replace(session_url)
+          } else {
+            toast.error(responseStripe.data.message)
           }
           break;
 
@@ -121,11 +132,6 @@ const PlaceOrder = () => {
             <div onClick={() => setMethod('stripe')} className='flex items-center gap-3 p-2 px-3 cursor-pointer'>
               <p className={`min-w-3.5 h-3.5 border rounded-full ${method === 'stripe' ? 'bg-green-400' : ''}`}></p>
               <img className='h-5 mx-4' src={assets.stripe_logo} alt="" />
-            </div>
-
-            <div onClick={() => setMethod('rezorpay')} className='flex items-center gap-3 p-2 px-3 cursor-pointer'>
-              <p className={`min-w-3.5 h-3.5 border rounded-full ${method === 'rezorpay' ? 'bg-green-400' : ''}`}></p>
-              <img className='h-5 mx-4' src={assets.razorpay_logo} alt="" />
             </div>
 
             <div onClick={() => setMethod('cod')} className='flex items-center gap-3 p-2 px-3 cursor-pointer'>
