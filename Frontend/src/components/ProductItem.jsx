@@ -1,12 +1,13 @@
 import React, { useContext } from 'react';
 import { Link } from 'react-router-dom';
 import { ShopContext } from '../context/ShopContext';
+import { assets } from '../assets/assets';
 
 const ProductItem = ({ id, image, name, price }) => {
     const { currency } = useContext(ShopContext);
 
     // Check if image array exists and has elements
-    const productImage = image && image.length > 0 ? image[0] : 'default-image-url.jpg';  
+    const productImage = image && image.length > 0 ? image[0] : assets.default_img;  
 
     return (
         <Link className='text-gray-800 rounded-xl' to={`/product/${id}`}>

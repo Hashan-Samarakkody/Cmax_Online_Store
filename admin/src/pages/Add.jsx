@@ -2,10 +2,10 @@ import React from 'react'
 import { assets } from '../assets/assets'
 import { useState } from 'react'
 import axios from 'axios'
-import {backendUrl} from '../App'
+import { backendUrl } from '../App'
 import { toast } from 'react-toastify'
 
-const Add = ({token}) => {
+const Add = ({ token }) => {
 
   const [image1, setImage1] = useState(false)
   const [image2, setImage2] = useState(false)
@@ -20,7 +20,7 @@ const Add = ({token}) => {
   const [bestseller, setBestseller] = useState(false)
   const [sizes, setSizes] = useState([])
 
-  const onSubmitHandler = async (e) => { 
+  const onSubmitHandler = async (e) => {
     e.preventDefault()
 
     try {
@@ -39,7 +39,7 @@ const Add = ({token}) => {
       image3 && formData.append('image3', image3)
       image4 && formData.append('image4', image4)
 
-      const response = await axios.post(backendUrl + '/api/product/add', formData, {headers: {token}})
+      const response = await axios.post(backendUrl + '/api/product/add', formData, { headers: { token } })
 
       if (response.data.success) {
         toast.success('Product added successfully!')
@@ -94,7 +94,7 @@ const Add = ({token}) => {
 
       <div className='w-full'>
         <p className='mb-2'>Product Description</p>
-        <textarea  onChange={(e) => setDescription(e.target.value)} value={description} className='w-full max-w-[500px] px-3 py-2' type="text" placeholder='Write description here' required />
+        <textarea onChange={(e) => setDescription(e.target.value)} value={description} className='w-full max-w-[500px] px-3 py-2' type="text" placeholder='Write description here' required />
       </div>
 
       <div className='flex flex-col sm:flex-row gap-2 w-full sm:gap-8'>
@@ -108,8 +108,8 @@ const Add = ({token}) => {
         </div>
 
         <div>
-          <p className='mb-2'>Product subCategory</p>
-          <select  onChange={(e) => setSubCategory(e.target.value)} className='w-full px-3 py-2' name="" id="">
+          <p className='mb-2'>Product Subcategory</p>
+          <select onChange={(e) => setSubCategory(e.target.value)} className='w-full px-3 py-2' name="" id="">
             <option value="Topwear">Topwear</option>
             <option value="Bottomwear">Bottomwear</option>
             <option value="Kitchen">Kitchen</option>
