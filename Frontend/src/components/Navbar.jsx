@@ -16,7 +16,7 @@ const Navbar = () => {
 	}
 
 	return (
-		<div className='relative flex items-center justify-between py-5 font-medium'>
+		<div className='relative flex items-center justify-between py-2 px-0 font-medium'>
 			<img className='w-36' src={assets.logo} alt="" />
 
 			{/* Desktop Navigation */}
