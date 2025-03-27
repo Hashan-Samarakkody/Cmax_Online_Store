@@ -2,12 +2,14 @@ import express from 'express';
 import { placeOrder, placeOrderStripe, allOrders, userOrders, updateStatus, verifyStripe } from '../controllers/orderController.js';
 import authUser from '../middleware/auth.js';
 import adminAuth from '../middleware/adminAuth.js';
+import { generateOrderPDF } from '../utils/genratePDF.js';
 
 const orderRouter = express.Router();
 
 // Admin Features
 orderRouter.post('/list', adminAuth, allOrders)
 orderRouter.post('/status', adminAuth, updateStatus);
+orderRouter.get('/generatePDF', adminAuth, generateOrderPDF)
 
 // Payment Features
 orderRouter.post('/place', authUser, placeOrder)

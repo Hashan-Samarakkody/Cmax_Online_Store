@@ -1,15 +1,18 @@
 import mongoose from "mongoose";
 
 const productSchema = new mongoose.Schema({
+    productId: { type: String, required: true, unique: true, trim: true },
     name: { type: String, required: true },
     description: { type: String, required: true },
+    category: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', required: true },
+    subcategory: { type: mongoose.Schema.Types.ObjectId, ref: 'Subcategory', required: true },
     price: { type: Number, required: true },
-    images: { type: Array, required: true },
-    category: { type: String, required: true },
-    subCategory: { type: String, required: true },
-    bestseller: { type: Boolean, required: true },
-    sizes: { type: Array, required: true },
-    date: { type: Number, required: true }
+    bestseller: { type: Boolean, default: false },
+    sizes: { type: [String], default: [] },
+    colors: { type: [String], default: [] },
+    images: { type: [String], default: [] },
+    hasSizes: { type: Boolean, default: false },
+    hasColors: { type: Boolean, default: false }
 });
 
 const productModel = mongoose.models.product || mongoose.model("product", productSchema);
