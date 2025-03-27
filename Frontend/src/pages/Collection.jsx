@@ -1,146 +1,174 @@
-import React, { useContext, useEffect, useState } from 'react'
-import { ShopContext } from '../context/ShopContext'
+import React, { useContext, useEffect, useState } from 'react';
+import { ShopContext } from '../context/ShopContext';
 import { assets } from '../assets/assets';
 import Title from '../components/Title';
 import ProductItem from '../components/ProductItem';
+import axios from 'axios';
+import { backendUrl } from '../../../admin/src/App';
 
 const Collection = () => {
-  const { products,search,showSearch  } = useContext(ShopContext);
-  const [showFilter, setShowFilter] = useState(false);
-  const [filterProducts, setFilterProducts] = useState(products);
+  const { search, showSearch } = useContext(ShopContext);
+  const [allProducts, setAllProducts] = useState([]);
+  const [filterProducts, setFilterProducts] = useState([]);
+  const [originalProducts, setOriginalProducts] = useState([]); // Store original products here
+  const [categories, setCategories] = useState([]);
+  const [subCategories, setSubCategories] = useState([]);
   const [category, setCategory] = useState([]);
   const [subCategory, setSubCategory] = useState([]);
   const [sortType, setSortType] = useState('relavant');
+  const [showFilter, setShowFilter] = useState(false);
 
-  const toggleCategory = (e) => {
-    const selectedCategory = e.target.value;
+  useEffect(() => {
+    const fetchAllData = async () => {
+      try {
+        const productsResponse = await axios.get(`${backendUrl}/api/product`);
+        setAllProducts(productsResponse.data.products);
+        setOriginalProducts(productsResponse.data.products); // Set original products
+        setFilterProducts(productsResponse.data.products);
 
-    // If the same category is clicked again, reset to no selection
-    if (category.includes(selectedCategory)) {
-      setCategory([]);
-    } else {
-      setCategory([selectedCategory]); // Set the selected category
+        const categoriesResponse = await axios.get(`${backendUrl}/api/categories`);
+        setCategories(categoriesResponse.data);
+
+        const subcategoriesResponse = await axios.get(`${backendUrl}/api/categories/subcategories/all`);
+        setSubCategories(subcategoriesResponse.data);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      }
+    };
+
+    fetchAllData();
+  }, []);
+
+  const applyFilters = () => {
+    let filtered = originalProducts; // Use original products for filtering
+
+    if (showSearch && search.length > 0) {
+      filtered = filtered.filter(item =>
+        item.name.toLowerCase().includes(search.toLowerCase())
+      );
     }
-  }
 
-  const toggleSubCategory = (e) => {
-    if (subCategory.includes(e.target.value)) {
-      setSubCategory(prev => prev.filter(item => item !== e.target.value));
-    } else {
-      setSubCategory(prev => [...prev, e.target.value]);
+    if (category.length > 0) {
+      filtered = filtered.filter(item => category.includes(String(item.category._id)));
     }
-  }
 
-  const sortProducts = () => { 
-    let fpCopy = filterProducts.slice();
+    if (subCategory.length > 0) {
+      filtered = filtered.filter(item => subCategory.includes(String(item.subcategory._id)));
+    }
+
+    setFilterProducts(filtered);
+  };
+
+  useEffect(() => {
+    applyFilters();
+  }, [category, subCategory, search, showSearch, originalProducts]); // Use originalProducts
+
+  const sortProducts = () => {
+    let sortedProducts = [...filterProducts];
 
     switch (sortType) {
       case 'low-high':
-        setFilterProducts(fpCopy.sort((a, b) => a.price - b.price));
+        sortedProducts.sort((a, b) => a.price - b.price);
         break;
       case 'high-low':
-        setFilterProducts(fpCopy.sort((a, b) => b.price - a.price));
+        sortedProducts.sort((a, b) => b.price - a.price);
         break;
+      case 'relavant':
       default:
-        applyFilters();
+        sortedProducts = [...originalProducts]; // Set the list back to the original products when sorting by relevant
         break;
     }
-  }
 
-  const applyFilters = () => { 
-    let productCopy = products.slice();
-
-    // Filter by Search
-    if (showSearch && search.length > 0) {
-      productCopy = productCopy.filter(item => item.name.toLowerCase().includes(search.toLowerCase()));
-    }
-
-    // Filter by Category
-    if (category.length > 0) {
-      productCopy = productCopy.filter(item => category.includes(item.category));
-    }
-
-    // Filter by Subcategory
-    if (subCategory.length > 0) {
-      productCopy = productCopy.filter(item => subCategory.includes(item.subCategory));
-    }
-
-    setFilterProducts(productCopy);
-  }
-
-  useEffect(() => {
-    applyFilters(); 
-  }, [category, subCategory,search,showSearch,products]);
+    setFilterProducts(sortedProducts);
+  };
 
   useEffect(() => {
     sortProducts();
   }, [sortType]);
 
-  
+  const toggleCategory = (e) => {
+    const selectedCategory = String(e.target.value);
+    setCategory(prevCategory =>
+      prevCategory.includes(selectedCategory)
+        ? prevCategory.filter(item => item !== selectedCategory)
+        : [...prevCategory, selectedCategory]
+    );
+  };
+
+  const toggleSubCategory = (e) => {
+    const selectedSubCategory = String(e.target.value);
+    setSubCategory(prevSubCategory =>
+      prevSubCategory.includes(selectedSubCategory)
+        ? prevSubCategory.filter(item => item !== selectedSubCategory)
+        : [...prevSubCategory, selectedSubCategory]
+    );
+  };
 
   return (
     <div className='flex flex-col sm:flex-row gap-1 sm:gap-10 border-t'>
-      {/* Filter Section */}
       <div className='min-w-60'>
-        <p onClick={() => setShowFilter(!showFilter)} className='my-2 text-xl flex items-center cursor-pointer gap-2'>FILTERS
+        <p onClick={() => setShowFilter(!showFilter)} className='my-2 text-xl flex items-center cursor-pointer gap-2'>
+          FILTERS
           <img className={`h-3 sm:hidden ${showFilter ? 'rotate-90' : ''}`} src={assets.dropdown_icon} alt="" />
         </p>
 
-        {/* Category Filter */}
-        <div className={`border rounded-2fxl border-gray-300 pl-5 my-5 py-3 ${showFilter ? 'block' : 'hidden'} sm:block`}>
+        <div className={`border rounded-xl border-gray-300 pl-5 my-5 py-3 ${showFilter ? 'block' : 'hidden'} sm:block`}>
           <p className='text-gray-700 cursor-pointer mb-3 text-sm font-semibold'>CATEGORIES</p>
           <div className='flex flex-col gap-2 text-sm font-light text-gray-700'>
-            <p className='flex gap-2'>
-              <input className='w-3' type='checkbox' value={'Electronics'} checked={category.includes('Electronics')} onChange={toggleCategory} /> Electronics
-            </p>
-            <p className='flex gap-2'>
-              <input className='w-3' type='checkbox' value={'Xiaomi Mi Bands'} checked={category.includes('Xiaomi Mi Bands')} onChange={toggleCategory} /> Xiaomi Mi Bands
-            </p>
-            <p className='flex gap-2'>
-              <input className='w-3' type='checkbox' value={'Kitchen Utensils'} checked={category.includes('Kitchen Utensils')} onChange={toggleCategory} /> Kitchen Utensils
-            </p>
+            {categories.map((cat) => (
+              <p key={cat._id} className='flex gap-2'>
+                <input
+                  className='w-3'
+                  type='checkbox'
+                  value={cat._id}
+                  checked={category.includes(cat._id)}
+                  onChange={toggleCategory}
+                /> {cat.name}
+              </p>
+            ))}
           </div>
         </div>
 
-        {/* Subcategory Filter */}
-        <div className={`border rounded-2fxl border-gray-300 pl-5 py-3 mt-6 ${showFilter ? 'block' : 'hidden'} sm:block`}>
+        <div className={`border rounded-xl border-gray-300 pl-5 py-3 mt-6 ${showFilter ? 'block' : 'hidden'} sm:block`}>
           <p className='text-gray-700 cursor-pointer mb-3 text-sm font-semibold'>SUBCATEGORIES</p>
           <div className='flex flex-col gap-2 text-sm font-light text-gray-700'>
-            <p className='flex gap-2'>
-              <input className='w-3' type='checkbox' value={'Bands'} onChange={toggleSubCategory} /> Bands
-            </p>
-            <p className='flex gap-2'>
-              <input className='w-3' type='checkbox' value={'Xiaomi Mi Bands'} onChange={toggleSubCategory} /> Xiaomi Mi Bands
-            </p>
-            <p className='flex gap-2'>
-              <input className='w-3' type='checkbox' value={'Kitchen Utensils'} onChange={toggleSubCategory} /> Kitchen Utensils
-            </p>
+            {subCategories.map((sub) => (
+              <p key={sub._id} className='flex gap-2'>
+                <input
+                  className='w-3'
+                  type='checkbox'
+                  value={sub._id}
+                  checked={subCategory.includes(sub._id)}
+                  onChange={toggleSubCategory}
+                /> {sub.name}
+              </p>
+            ))}
           </div>
         </div>
       </div>
 
-      {/* Right Side */}
       <div className='flex-1'>
-        <div className='flex justify-between text-base sm:text-2xl mb-4'>
+        <div className='flex mt-2 justify-between text-base sm:text-xl mb-4'>
           <Title text1={'ALL'} text2={'COLLECTIONS'} />
-
-          {/* Product Sort */}
-          <select onChange={(e) => setSortType(e.target.value)} className='border-2 border-gray-300 text-sm px-2'>
-            <option value="relavant">Sort by: Relavant</option>
+          <select onChange={(e) => setSortType(e.target.value)} className='rounded-sm border border-gray-400 text-sm px-2'>
+            <option value="relavant">Sort by: Relevant</option>
             <option value="low-high">Sort by: Low to High</option>
             <option value="high-low">Sort by: High to Low</option>
           </select>
         </div>
 
-        {/* Get the Products */}
         <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 gap-y-6'>
-          {filterProducts.map((item, index) => (
-            <ProductItem key={index} id={item._id} image={item.images} name={item.name} price={item.price} />
-          ))}
+          {filterProducts.length > 0 ? (
+            filterProducts.map((item) => (
+              <ProductItem key={item._id} id={item._id} image={item.images} name={item.name} price={item.price} />
+            ))
+          ) : (
+            <p>No products found</p>
+          )}
         </div>
       </div>
     </div>
   );
-}
+};
 
 export default Collection;

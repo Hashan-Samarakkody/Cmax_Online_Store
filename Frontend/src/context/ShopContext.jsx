@@ -17,33 +17,34 @@ const ShopContextProvider = (props) => {
     const [token, setToken] = useState('');
     const navigate = useNavigate();
 
-    const addToCart = async (itemId, size) => {
-
-        if (!size) {
-            toast.error('Please select a size!');
-            return;
-        }
+    const addToCart = async (itemId, size, color) => {
+        // If product doesn't have sizes or colors, use 'undefined'
+        const cartKey = `${size || 'undefined'}_${color || 'undefined'}`;
 
         let cartData = structuredClone(cartItems);
 
         if (cartData[itemId]) {
-            if (cartData[itemId][size]) {
-                cartData[itemId][size] += 1;
+            if (cartData[itemId][cartKey]) {
+                cartData[itemId][cartKey] += 1;
             }
             else {
-                cartData[itemId][size] = 1;
+                cartData[itemId][cartKey] = 1;
             }
         }
         else {
             cartData[itemId] = {};
-            cartData[itemId][size] = 1;
+            cartData[itemId][cartKey] = 1;
         }
 
         setCartItems(cartData);
 
         if (token) {
             try {
-                await axios.post(backendUrl + '/api/cart/add', { itemId, size }, { headers: { token } });
+                await axios.post(backendUrl + '/api/cart/add', {
+                    itemId,
+                    size: size || null,
+                    color: color || null
+                }, { headers: { token } });
             } catch (error) {
                 console.log(error)
                 toast.error(error.message)
@@ -69,17 +70,23 @@ const ShopContextProvider = (props) => {
         return totalCount;
     }
 
-    const updateQuantity = async (itemId, size, quantity) => {
-
+    const updateQuantity = async (itemId, cartKey, quantity) => {
         let cartData = structuredClone(cartItems);
 
-        cartData[itemId][size] = quantity;
+        cartData[itemId][cartKey] = quantity;
 
         setCartItems(cartData)
 
         if (token) {
             try {
-                await axios.post(backendUrl + '/api/cart/update', { itemId, size, quantity }, { headers: { token } });
+                // Parse the cartKey to extract size and color
+                const [size, color] = cartKey.split('_');
+                await axios.post(backendUrl + '/api/cart/update', {
+                    itemId,
+                    size: size !== 'undefined' ? size : null,
+                    color: color !== 'undefined' ? color : null,
+                    quantity
+                }, { headers: { token } });
             } catch (error) {
                 console.log(error)
                 toast.error(error.message)
@@ -123,11 +130,11 @@ const ShopContextProvider = (props) => {
         }
     }
 
-    const getUserCart = async (token) => { 
+    const getUserCart = async (token) => {
         try {
             const response = await axios.post(backendUrl + '/api/cart/get', {}, { headers: { token } })
             if (response.data.success) {
-                setCartItems(response.data.cartData)                
+                setCartItems(response.data.cartData)
             }
         } catch (error) {
             console.log(error);
@@ -159,7 +166,10 @@ const ShopContextProvider = (props) => {
     }
 
     return (
-        <ShopContext.Provider value={value}>
+        <ShopContext.Provider value={{
+            ...value, // spread existing values
+            addToCart, // override with updated method
+        }}>
             {props.children}
         </ShopContext.Provider>
     )

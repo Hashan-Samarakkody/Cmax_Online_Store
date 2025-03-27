@@ -6,34 +6,36 @@ import CartTotal from '../components/CartTotal';
 
 const Cart = () => {
 
-  const { products, currency, cartItems, updateQuantity, navigate  } = useContext(ShopContext);
+  const { products, currency, cartItems, updateQuantity, navigate } = useContext(ShopContext);
 
   const [cartData, setCartData] = useState([]);
 
   useEffect(() => {
 
     if (products.length > 0) {
-      
+
       const tempData = [];
 
       for (const items in cartItems) {
         for (const item in cartItems[items]) {
-
           if (cartItems[items][item] > 0) {
+            // Try to extract color from item key if it contains a color
+            const [size, color] = item.split('_');
+
             tempData.push({
               _id: items,
-              size: item,
+              size: size !== 'undefined' ? size : null,
+              color: color !== 'undefined' ? color : null,
               quantity: cartItems[items][item]
             });
           }
-
         }
       }
 
       setCartData(tempData);
     }
 
-  }, [cartItems,products])
+  }, [cartItems, products])
 
 
   return (
@@ -45,32 +47,53 @@ const Cart = () => {
       <div>
         {
           cartData.map((item, index) => {
-              const productData = products.find((product) => product._id === item._id);
+            const productData = products.find((product) => product._id === item._id);
 
-              // Check if productData is valid
-              if (!productData) {
-                return null; // or render some fallback UI for missing product
-              }
+            // Check if productData is valid
+            if (!productData) {
+              return null; // or render some fallback UI for missing product
+            }
 
-              return (
-                <div key={index} className='py-4 border-t border-b text-gray-700 grid grid-cols-[4fr_0.5fr_0.5fr] sm:grid-cols-[4fr_2fr_0.5fr] items-center gap-4'>
-                  <div className='flex items-start gap-6'>
-                    <img className='w-16 sm:w-20 rounded-lg' src={productData.images[0]} alt="" />
-                    <div>
-                      <p className='text-xs sm:text-lg font-medium'>{productData.name}</p>
-                      <div className='flex items-center gap-5 mt-2'>
-                        <p>{currency}{productData.price}</p>
-                        <p className='px-2 sm:py-1 border bg-slate-50 rounded-lg'>{item.size}</p>
-                      </div>
+            // Prepare size and color display
+            const sizeInfo = item.size ? ` | Size: ${item.size}` : '';
+            const colorInfo = item.color ? ` | Color: ${item.color}` : '';
+
+            return (
+              <div key={index} className='py-4 border-t border-b text-gray-700 grid grid-cols-[4fr_0.5fr_0.5fr] sm:grid-cols-[4fr_2fr_0.5fr] items-center gap-4'>
+                <div className='flex items-start gap-6'>
+                  <img className='w-16 sm:w-20 rounded-lg' src={productData.images[0]} alt="" />
+                  <div>
+                    <p className='text-xs sm:text-lg font-medium'>{productData.name}</p>
+                    <div className='flex items-center gap-5 mt-2'>
+                      <p>{currency}{productData.price}</p>
+                      {(sizeInfo || colorInfo) && (
+                        <p className='px-2 sm:py-1 border bg-slate-50 rounded-lg'>
+                          {sizeInfo}{colorInfo}
+                        </p>
+                      )}
                     </div>
                   </div>
-
-                  <input onChange={(e) => e.target.value === '' || e.target.value === '0' ? null : updateQuantity(item._id, item.size, Number(e.target.value))} className='border max-w-10 sm:max-w-20 px-1 sm:px-2 py-1' type="number" min={1} defaultValue={item.quantity} />
-                  <img onClick={() => updateQuantity(item._id, item.size, 0)} className='w-4 mr-4 sm:w-5 cursor-pointer' src={assets.bin_icon} alt="" />
                 </div>
-              );
-            })
-          }
+
+                <input
+                  onChange={(e) => e.target.value === '' || e.target.value === '0'
+                    ? null
+                    : updateQuantity(item._id, `${item.size || 'undefined'}_${item.color || 'undefined'}`, Number(e.target.value))}
+                  className='border max-w-10 sm:max-w-20 px-1 sm:px-2 py-1'
+                  type="number"
+                  min={1}
+                  defaultValue={item.quantity}
+                />
+                <img
+                  onClick={() => updateQuantity(item._id, `${item.size || 'undefined'}_${item.color || 'undefined'}`, 0)}
+                  className='w-4 mr-4 sm:w-5 cursor-pointer'
+                  src={assets.bin_icon}
+                  alt=""
+                />
+              </div>
+            );
+          })
+        }
       </div>
 
       <div className='flex justify-end mt-20'>
