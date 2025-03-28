@@ -1,9 +1,9 @@
-import React, { useContext, useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
-import { ShopContext } from '../context/ShopContext'
-import { assets } from '../assets/assets'
-import RelatedProducts from '../components/RelatedProducts'
-import { toast } from 'react-toastify'
+import React, { useContext, useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
+import { ShopContext } from '../context/ShopContext';
+import { assets } from '../assets/assets';
+import RelatedProducts from '../components/RelatedProducts';
+import { toast } from 'react-toastify';
 
 const Product = () => {
   const { productId } = useParams();
@@ -20,8 +20,8 @@ const Product = () => {
         setImage(item.images[0]);
         return null;
       }
-    })
-  }
+    });
+  };
 
   useEffect(() => {
     fetchProductData();
@@ -36,7 +36,7 @@ const Product = () => {
         <div className='flex-1 flex flex-col-reverse gap-3 sm:flex-row'>
           <div className='flex sm:flex-col overflow-x-auto sm:overflow-y-scroll justify-between sm:justify-normal sm:w-[18.7%] w-full'>
             {
-              productData.images.map((item, index) => (  // changed 'image' to 'images'
+              productData.images.map((item, index) => (
                 <img onClick={() => setImage(item)} className='w-[24%] sm:w-full sm:mb-3 flex-shrink-0 cursor-pointer' src={item} alt="" key={index} />
               ))
             }
@@ -95,14 +95,15 @@ const Product = () => {
 
           <button onClick={() => {
             if (productData.hasSizes && !size) {
-              toast.err('Please select a size');
+              toast.error('Please select a size');
               return;
             }
             if (productData.hasColors && !color) {
-              toast.err('Please select a color');
+              toast.error('Please select a color');
               return;
             }
-            addToCart(productData._id, size, color)
+            addToCart(productData._id, size, color);
+            toast.success('Product added to cart!', { autoClose: 800 }); // Notification with auto-close
           }} className='bg-black text-white px-8 py-3 text-sm active:bg-gray-700 rounded-lg'>Add to Cart</button>
           <hr className='mt-8 sm:w-4/5' />
           <div className='text-sm text-gray-500 mt-5 flex flex-col gap-1'>
@@ -144,4 +145,4 @@ const Product = () => {
   ) : <div className='opacity-0'></div>
 }
 
-export default Product
+export default Product;

@@ -31,7 +31,7 @@ const List = ({ token }) => {
       const response = await axios.post(backendUrl + '/api/product/remove', { id }, { headers: { token } })
 
       if (response.data.success) {
-        toast.success(response.data.message)
+        toast.success(response.data.message, { autoClose: 1000 })
         await fetchList()
       } else {
         toast.error(response.data.message)
