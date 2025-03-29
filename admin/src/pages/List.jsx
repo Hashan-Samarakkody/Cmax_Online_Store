@@ -3,8 +3,11 @@ import { useState, useEffect } from 'react'
 import axios from 'axios'
 import { backendUrl, currency } from '../App'
 import { toast } from 'react-toastify'
+import { useNavigate } from 'react-router-dom'  // Import useNavigate
 
 const List = ({ token }) => {
+  const navigate = useNavigate();  // Initialize navigate
+
   const [list, setList] = useState([])
 
   const fetchList = async () => {
@@ -34,6 +37,11 @@ const List = ({ token }) => {
       console.log(error)
       toast.error(error.message)
     }
+  }
+
+  // Add this function to handle edit navigation
+  const editProduct = (productId) => {
+    navigate(`/edit/${productId}`);
   }
 
   useEffect(() => {
@@ -81,7 +89,7 @@ const List = ({ token }) => {
                     <td className="px-5 py-5 bg-white text-sm text-center">
                       <div className="flex justify-center space-x-2">
                         <button
-                          onClick={() => editProduct(item._id)}
+                          onClick={() => editProduct(item.productId)}  // Changed to use productId
                           className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition duration-300 ease-in-out transform hover:scale-105"
                         >
                           Edit
