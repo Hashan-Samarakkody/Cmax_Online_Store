@@ -218,6 +218,7 @@ const Login = () => {
             <input
               type="tel"
               placeholder="Phone Number"
+              required
               className={`w-full p-2 border-b ${errors.phoneNumber ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:border-gray-500`}
               value={phoneNumber}
               onChange={(e) => handleInputChange(e, setPhoneNumber, 'phoneNumber')}
