@@ -18,6 +18,7 @@ import cross_icon from './cross_icon.png'
 import default_img from './default_img.png'
 import login_img from './login_img.png'
 import signup_img from './signup_img.png'
+import footer_logo from './footer_logo.png'
 
 export const assets = {
     logo,
@@ -39,5 +40,6 @@ export const assets = {
     cross_icon,
     default_img,
     login_img,
-    signup_img
+    signup_img,
+    footer_logo,
 }

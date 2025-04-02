@@ -91,8 +91,13 @@ const CategoryManager = () => {
             toast.success("Category deleted successfully!", { autoClose: 1000 });
         } catch (err) {
             console.error("Error deleting category:", err);
-            if (err.response && err.response.status === 400) {
-                toast.error(err.response.data.error);
+            if (err.response && err.response.data.error) {
+                const errorMessage = err.response.data.error;
+                if (errorMessage.includes("contains products")) {
+                    toast.error("Cannot delete category as it contains products.");
+                } else {
+                    toast.error(errorMessage);
+                }
             } else {
                 toast.error("Failed to delete category.");
             }
@@ -106,8 +111,13 @@ const CategoryManager = () => {
             toast.success("Subcategory deleted successfully!", { autoClose: 1000 });
         } catch (err) {
             console.error("Error deleting subcategory:", err);
-            if (err.response && err.response.status === 400) {
-                toast.error(err.response.data.error);
+            if (err.response && err.response.data.error) {
+                const errorMessage = err.response.data.error;
+                if (errorMessage.includes("contains products")) {
+                    toast.error("Cannot delete subcategory as it contains products.");
+                } else {
+                    toast.error(errorMessage);
+                }
             } else {
                 toast.error("Failed to delete subcategory.");
             }
