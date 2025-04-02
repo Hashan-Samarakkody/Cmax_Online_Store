@@ -91,18 +91,24 @@ const CategoryManager = () => {
             toast.success("Category deleted successfully!", { autoClose: 1000 });
         } catch (err) {
             console.error("Error deleting category:", err);
-            if (err.response && err.response.data.error) {
-                const errorMessage = err.response.data.error;
+
+            // Check if the error response and message are available
+            if (err.response && err.response.data && err.response.data.message) {
+                const errorMessage = err.response.data.message;
+
+                // Check for specific message
                 if (errorMessage.includes("contains products")) {
                     toast.error("Cannot delete category as it contains products.");
                 } else {
                     toast.error(errorMessage);
                 }
             } else {
+                // Fallback error message if no response is available
                 toast.error("Failed to delete category.");
             }
         }
     };
+
 
     const deleteSubcategory = async (id) => {
         try {
@@ -111,18 +117,24 @@ const CategoryManager = () => {
             toast.success("Subcategory deleted successfully!", { autoClose: 1000 });
         } catch (err) {
             console.error("Error deleting subcategory:", err);
-            if (err.response && err.response.data.error) {
-                const errorMessage = err.response.data.error;
+
+            // Check if the error response is available
+            if (err.response && err.response.data && err.response.data.message) {
+                const errorMessage = err.response.data.message;
+
+                // Check for specific message
                 if (errorMessage.includes("contains products")) {
                     toast.error("Cannot delete subcategory as it contains products.");
                 } else {
                     toast.error(errorMessage);
                 }
             } else {
+                // Fallback error message
                 toast.error("Failed to delete subcategory.");
             }
         }
     };
+
 
     return (
         <div className="p-6">
