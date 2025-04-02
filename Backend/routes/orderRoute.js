@@ -2,7 +2,7 @@ import express from 'express';
 import { placeOrder, placeOrderStripe, allOrders, userOrders, updateStatus, verifyStripe } from '../controllers/orderController.js';
 import authUser from '../middleware/auth.js';
 import adminAuth from '../middleware/adminAuth.js';
-import { generateOrderPDF } from '../utils/genratePDF.js';
+import { generateOrderPDF } from '../utils/generatePDF.js';
 
 const orderRouter = express.Router();
 
