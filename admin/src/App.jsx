@@ -4,10 +4,11 @@ import Sidebar from './components/Sidebar'
 import { Route, Routes } from 'react-router-dom'
 import Add from './pages/Add'
 import List from './pages/List'
+import Edit from './pages/Edit'  // Import the new Edit component
 import Orders from './pages/Orders'
 import { useState } from 'react'
 import Login from './components/Login'
-import { ToastContainer} from 'react-toastify';
+import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css'
 import CategoryManager from './pages/CategoryManager'
 
@@ -16,11 +17,11 @@ export const currency = "Rs."
 
 const App = () => {
 
-  const [token, setToken] = useState(localStorage.getItem('token') ? localStorage.getItem('token') : "")                                               
+  const [token, setToken] = useState(localStorage.getItem('token') ? localStorage.getItem('token') : "")
 
-  useEffect(() => { 
+  useEffect(() => {
     localStorage.setItem('token', token)
-  },[token])
+  }, [token])
 
   return (
     <div className='bg-gray-50 min-h-screen'>
@@ -34,15 +35,16 @@ const App = () => {
             <Sidebar />
             <div className='w-[70%] mx-auto ml-[max(5vw,25px)] my-8 text-gray-600 text-base'>
               <Routes>
-                <Route path='/add' element={<Add token={token}/>} />
-                <Route path='/list' element={<List token={token}/>} />
-                <Route path='/category' element={<CategoryManager token={token}/>} />
-                <Route path='/orders' element={<Orders token={token}/>} />
+                <Route path='/add' element={<Add token={token} />} />
+                <Route path='/list' element={<List token={token} />} />
+                <Route path='/edit/:id' element={<Edit token={token} />} />  {/* Add this route */}
+                <Route path='/category' element={<CategoryManager token={token} />} />
+                <Route path='/orders' element={<Orders token={token} />} />
               </Routes>
             </div>
           </div>
         </>}
-      
+
     </div>
   )
 }

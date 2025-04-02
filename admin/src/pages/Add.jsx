@@ -3,6 +3,7 @@ import axios from 'axios';
 import { backendUrl } from '../App';
 import { toast } from 'react-toastify';
 import { assets } from '../assets/assets';
+import DOMPurify from 'dompurify';
 
 const Add = ({ token }) => {
   const [categories, setCategories] = useState([]);
@@ -49,32 +50,83 @@ const Add = ({ token }) => {
   const onSubmitHandler = async (e) => {
     e.preventDefault();
 
-    // Enhanced Validation
-    // Check for zero or negative price
-    const numericPrice = Number(price);
-    if (!price || isNaN(numericPrice) || numericPrice <= 0) {
+    // Sanitize inputs to prevent XSS
+    const sanitizedProductId = DOMPurify.sanitize(productId.trim());
+    const sanitizedName = DOMPurify.sanitize(name.trim());
+    const sanitizedDescription = DOMPurify.sanitize(description.trim());
+    const sanitizedPrice = DOMPurify.sanitize(price.trim());
+
+    // Validate Product ID
+    if (!sanitizedProductId || sanitizedProductId.length < 1) {
+      toast.error('Product ID must be a minimum of 1 character.');
+      return;
+    }
+
+    // Validate Product Name
+    if (!sanitizedName || sanitizedName.length < 3 || sanitizedName.length > 100) {
+      toast.error('Product name must be between 3 and 100 characters.');
+      return;
+    }
+
+    // Validate Description
+    if (!sanitizedDescription || sanitizedDescription.length < 10 || sanitizedDescription.length > 1000) {
+      toast.error('Description must be between 10 and 1000 characters.');
+      return;
+    }
+
+    // Validate Price
+    const numericPrice = Number(sanitizedPrice);
+    if (!sanitizedPrice || isNaN(numericPrice) || numericPrice <= 0) {
       toast.error('Please enter a valid price greater than zero.');
       return;
     }
 
-    // Comprehensive image validation
+    // Validate Category and Subcategory
+    if (!selectedCategory) {
+      toast.error('Please select a category.');
+      return;
+    }
+    if (!selectedSubCategory) {
+      toast.error('Please select a subcategory.');
+      return;
+    }
+
+    // Validate Images
     const images = [image1, image2, image3, image4].filter(Boolean);
     if (images.length === 0) {
       toast.error('Please upload at least one image.');
       return;
     }
 
-    // Previous validation checks
-    if (!productId || !name || !description || !selectedCategory || !selectedSubCategory) {
-      toast.error('Please fill out all required fields.');
+    // Validate Image Dimensions
+    for (const image of images) {
+      const img = new Image();
+      img.src = URL.createObjectURL(image);
+
+      const isValidSize = await new Promise((resolve) => {
+        img.onload = () => {
+          resolve(img.width === 700 && img.height === 700);
+        };
+      });
+
+      if (!isValidSize) {
+        toast.error('Each image must be exactly 700 × 700 pixels.');
+        return;
+      }
+    }
+
+    // Validate Colors (if enabled)
+    if (hasColors && colors.length === 0) {
+      toast.error('Please add at least one color.');
       return;
     }
 
+    // Proceed with form submission
     try {
       const formData = new FormData();
-      formData.append('productId', productId);
-      formData.append('name', name);
-      formData.append('description', description);
+      formData.append('productId', sanitizedProductId);
+      formData.append('name', sanitizedName);
+      formData.append('description', sanitizedDescription);
       formData.append('category', selectedCategory);
       formData.append('subcategory', selectedSubCategory);
       formData.append('price', numericPrice);
@@ -92,7 +144,7 @@ const Add = ({ token }) => {
         formData.append('colors', JSON.stringify(colors));
       }
 
-      // Add images only if selected
+      // Add images
       images.forEach((image, index) => {
         formData.append(`image${index + 1}`, image);
       });
@@ -100,8 +152,7 @@ const Add = ({ token }) => {
       const response = await axios.post(`${backendUrl}/api/product/add`, formData, { headers: { token } });
 
       if (response.data.success) {
-        toast.success('Product added successfully!');
-
+        toast.success('Product added successfully!', { autoClose: 1000 });
         // Reset form
         setProductId('');
         setName('');

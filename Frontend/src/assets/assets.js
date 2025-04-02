@@ -16,6 +16,8 @@ import contact_img from './contact_img.png'
 import stripe_logo from './stripe_logo.png'
 import cross_icon from './cross_icon.png'
 import default_img from './default_img.png'
+import login_img from './login_img.png'
+import signup_img from './signup_img.png'
 
 export const assets = {
     logo,
@@ -35,5 +37,7 @@ export const assets = {
     contact_img,
     stripe_logo,
     cross_icon,
-    default_img
+    default_img,
+    login_img,
+    signup_img
 }

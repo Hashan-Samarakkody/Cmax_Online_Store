@@ -44,7 +44,7 @@ const Orders = ({ token }) => {
       link.click();
       link.remove(); // Clean up the link
 
-      toast.success('PDF Generated Successfully');
+      toast.success('PDF Generated Successfully', { autoClose: 1000 });
     } catch (error) {
       console.error('PDF Generation Error:', error);
       toast.error('Failed to generate PDF');
