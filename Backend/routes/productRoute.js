@@ -12,7 +12,7 @@ productRouter.post('/add', adminAuth, upload.fields([
     { name: 'image4', maxCount: 1 }]), addProduct);
 productRouter.post('/remove', adminAuth, removeProduct);
 productRouter.post('/single', singleProduct);
-productRouter.get('/single/get/:productId', getSingleProduct); // This route should exist
+productRouter.get('/single/get/:productId', getSingleProduct);
 productRouter.get('/list', listProduct);
 productRouter.get('/', getAllProducts);
 productRouter.put('/update', adminAuth, upload.fields([
