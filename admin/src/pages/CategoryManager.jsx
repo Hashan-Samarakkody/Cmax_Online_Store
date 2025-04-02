@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
-import { backendUrl } from '../App'
+import DOMPurify from "dompurify";
+import { backendUrl } from '../App';
 
 const CategoryManager = () => {
     const [categories, setCategories] = useState([]);
@@ -16,49 +17,69 @@ const CategoryManager = () => {
     const fetchCategories = async () => {
         try {
             const { data } = await axios.get(backendUrl + "/api/categories");
-            console.log("Fetched categories:", data); // Debugging
             if (Array.isArray(data)) {
-                setCategories(data); // Update state with fetched data
+                setCategories(data);
             } else {
-                setCategories([]); // Fallback if the response is not an array
+                setCategories([]);
             }
         } catch (err) {
             console.error("Error fetching categories:", err);
             toast.error("Failed to fetch categories.");
-            setCategories([]); // Ensure categories is always an array
+            setCategories([]);
         }
     };
 
     const addCategory = async () => {
-        if (!categoryName.trim()) {
-            toast.error("Category name cannot be empty.");
+        const sanitizedCategoryName = DOMPurify.sanitize(categoryName.trim());
+
+        // Validate category name
+        if (!sanitizedCategoryName || sanitizedCategoryName.length < 3 || sanitizedCategoryName.length > 50) {
+            toast.error("Category name must be between 3 and 50 characters.");
             return;
         }
+        if (/^\d+$/.test(sanitizedCategoryName)) {
+            toast.error("Category name cannot be only numbers.");
+            return;
+        }
+
         try {
-            await axios.post(backendUrl + "/api/categories", { name: categoryName });
-            console.log(categoryName)
+            await axios.post(backendUrl + "/api/categories", { name: sanitizedCategoryName });
             setCategoryName("");
             fetchCategories();
+            toast.success("Category added successfully!", { autoClose: 1000 });
         } catch (err) {
-            console.log(err)
+            console.error("Error adding category:", err);
             toast.error("Failed to add category.");
         }
     };
 
     const addSubcategory = async () => {
-        if (!subcategoryName.trim()) {
-            toast.error("Subcategory name cannot be empty.");
+        const sanitizedSubcategoryName = DOMPurify.sanitize(subcategoryName.trim());
+
+        // Validate subcategory name
+        if (!sanitizedSubcategoryName || sanitizedSubcategoryName.length < 3 || sanitizedSubcategoryName.length > 50) {
+            toast.error("Subcategory name must be between 3 and 50 characters.");
+            return;
+        }
+        if (/^\d+$/.test(sanitizedSubcategoryName)) {
+            toast.error("Subcategory name cannot be only numbers.");
             return;
         }
         if (!selectedCategory) {
             toast.error("Please select a category.");
             return;
         }
+
         try {
-            await axios.post(backendUrl + "/api/categories/subcategories", { name: subcategoryName, categoryId: selectedCategory });
+            await axios.post(backendUrl + "/api/categories/subcategories", {
+                name: sanitizedSubcategoryName,
+                categoryId: selectedCategory,
+            });
             setSubcategoryName("");
             fetchCategories();
+            toast.success("Subcategory added successfully!", { autoClose: 1000 });
         } catch (err) {
+            console.error("Error adding subcategory:", err);
             toast.error("Failed to add subcategory.");
         }
     };
@@ -67,9 +88,11 @@ const CategoryManager = () => {
         try {
             await axios.delete(backendUrl + `/api/categories/${id}`);
             fetchCategories();
+            toast.success("Category deleted successfully!", { autoClose: 1000 });
         } catch (err) {
+            console.error("Error deleting category:", err);
             if (err.response && err.response.status === 400) {
-                toast.error(err.response.data.error); // Show backend validation error
+                toast.error(err.response.data.error);
             } else {
                 toast.error("Failed to delete category.");
             }
@@ -80,14 +103,17 @@ const CategoryManager = () => {
         try {
             await axios.delete(backendUrl + `/api/categories/subcategories/${id}`);
             fetchCategories();
+            toast.success("Subcategory deleted successfully!", { autoClose: 1000 });
         } catch (err) {
+            console.error("Error deleting subcategory:", err);
             if (err.response && err.response.status === 400) {
-                toast.error(err.response.data.error); // Show backend validation error
+                toast.error(err.response.data.error);
             } else {
                 toast.error("Failed to delete subcategory.");
             }
         }
     };
+
     return (
         <div className="p-6">
             <h2 className="text-3xl font-bold mb-4">Manage Categories & Subcategories</h2>
@@ -131,7 +157,9 @@ const CategoryManager = () => {
                 <button
                     onClick={addSubcategory}
                     disabled={!selectedCategory}
-                    className={`px-4 py-2 rounded ${selectedCategory ? "bg-green-500 hover:bg-green-600 text-white" : "bg-gray-300 text-gray-500"
+                    className={`px-4 py-2 rounded ${selectedCategory
+                            ? "bg-green-500 hover:bg-green-600 text-white"
+                            : "bg-gray-300 text-gray-500"
                         }`}
                 >
                     Add Subcategory
@@ -150,9 +178,7 @@ const CategoryManager = () => {
                                 {cat.name} ({cat.productCount || 0} items)
                                 <button
                                     onClick={() => deleteCategory(cat._id)}
-                                    // take the buttun to the right coner and add transition effect from with background color to red text color with white background
-                                    className="border float-right bg-white text-red-600 px-2  rounded hover:bg-red-600 hover:text-white transition-all"
-
+                                    className="border float-right bg-white text-red-600 px-2 rounded hover:bg-red-600 hover:text-white transition-all"
                                 >
                                     Delete
                                 </button>
@@ -165,7 +191,7 @@ const CategoryManager = () => {
                                         </span>
                                         <button
                                             onClick={() => deleteSubcategory(sub._id)}
-                                            className="border mr-100 bg-white text-red-500 px-2 rounded hover:bg-red-500 hover:text-white transition-all"
+                                            className="border bg-white text-red-500  mx-18 px-2 rounded hover:bg-red-500 hover:text-white transition-all"
                                         >
                                             Delete
                                         </button>

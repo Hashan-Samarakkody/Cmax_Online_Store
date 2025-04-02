@@ -123,10 +123,113 @@ const singleProduct = async (req, res) => {
     }
 };
 
+const getSingleProduct = async (req, res) => {
+    try {
+        const { productId } = req.params; // if using URL params
+        const product = await productModel.findOne({ productId }).populate('category', 'name').populate('subcategory', 'name');
+
+        if (!product) {
+            return res.status(404).json({ success: false, message: 'Product not found.' });
+        }
+
+        res.json({ success: true, product });
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+
+const updateProduct = async (req, res) => {
+    try {
+        const {
+            productId,
+            name,
+            description,
+            price,
+            category,
+            subcategory,
+            sizes,
+            colors,
+            bestseller,
+            hasSizes,
+            hasColors
+        } = req.body;
+
+        // Find the existing product
+        const existingProduct = await productModel.findOne({ productId });
+        if (!existingProduct) {
+            return res.status(404).json({
+                success: false,
+                message: 'Product not found.'
+            });
+        }
+
+        // Validate subcategory
+        const subcategoryExists = await Subcategory.findById(subcategory);
+        if (!subcategoryExists) {
+            return res.status(400).json({ success: false, message: 'Invalid subcategory ID' });
+        }
+
+        // Handle image uploads
+        const image1 = req.files.image1 && req.files.image1[0];
+        const image2 = req.files.image2 && req.files.image2[0];
+        const image3 = req.files.image3 && req.files.image3[0];
+        const image4 = req.files.image4 && req.files.image4[0];
+
+        const newUploadedImages = [image1, image2, image3, image4].filter((item) => item !== undefined);
+
+        // Upload new images to cloudinary if any
+        let newImagesUrl = [];
+        if (newUploadedImages.length > 0) {
+            newImagesUrl = await Promise.all(
+                newUploadedImages.map(async (item) => {
+                    let result = await cloudinary.uploader.upload(item.path, { resource_type: 'image' });
+                    return result.secure_url;
+                })
+            );
+        }
+
+        // Merge existing and new images, keeping existing if no new images uploaded
+        const updatedImages = newImagesUrl.length > 0
+            ? newImagesUrl
+            : existingProduct.images;
+
+        // Prepare update data
+        const updateData = {
+            name,
+            description,
+            category,
+            price: Number(price),
+            subcategory,
+            bestseller: bestseller === 'true' ? true : false,
+            sizes: hasSizes && sizes ? JSON.parse(sizes) : [],
+            colors: hasColors && colors ? JSON.parse(colors) : [],
+            images: updatedImages,
+            hasSizes: hasSizes === 'true',
+            hasColors: hasColors === 'true',
+        };
+
+        // Update the product
+        await productModel.findOneAndUpdate(
+            { productId },
+            updateData,
+            { new: true }
+        );
+
+        res.json({ success: true, message: 'Product updated successfully!' });
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
 export {
     addProduct,
     listProduct,
     removeProduct,
     singleProduct,
-    getAllProducts
+    getAllProducts,
+    updateProduct,
+    getSingleProduct
 };
