@@ -1,6 +1,7 @@
 import { v2 as cloudinary } from 'cloudinary';
 import productModel from '../models/productModel.js';
 import Subcategory from '../models/subcategoryModel.js';
+import { broadcast } from '../server.js';
 
 // Add product function
 const addProduct = async (req, res) => {
@@ -54,18 +55,24 @@ const addProduct = async (req, res) => {
             category,
             price: Number(price),
             subcategory,
-            bestseller: bestseller === 'true' ? true : false,
-            sizes: hasSizes && sizes ? JSON.parse(sizes) : [],
-            colors: hasColors && colors ? JSON.parse(colors) : [],
+            bestseller: bestseller === 'true'
+                ? true : false,
+            sizes: hasSizes && sizes ?
+                JSON.parse(sizes) : [],
+            colors: hasColors && colors ?
+                JSON.parse(colors) : [],
             images: imagesUrl,
             hasSizes: hasSizes === 'true',
             hasColors: hasColors === 'true',
         };
-
         const product = new productModel(productData);
         await product.save();
 
         res.json({ success: true, message: 'Product added successfully!' });
+
+        // Broadcast new product
+        broadcast({ type: 'newProduct', product: product });  // Send the new product via WebSocket
+
     } catch (error) {
         console.log(error);
         res.status(500).json({ success: false, message: error.message });

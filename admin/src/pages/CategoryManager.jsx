@@ -3,12 +3,31 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import DOMPurify from "dompurify";
 import { backendUrl } from '../App';
+import WebSocketService from '../WebSocketService';  // Import WebSocketService
 
 const CategoryManager = () => {
     const [categories, setCategories] = useState([]);
     const [categoryName, setCategoryName] = useState("");
     const [subcategoryName, setSubcategoryName] = useState("");
     const [selectedCategory, setSelectedCategory] = useState("");
+
+    useEffect(() => {
+        fetchCategories();
+
+        // Connect to WebSocket and listen for category updates
+        const handleNewCategory = (newCategory) => {
+            setCategories((prevCategories) => [...prevCategories, newCategory.category]);
+        };
+
+        WebSocketService.connect(() => {
+            WebSocketService.on('newCategory', handleNewCategory);
+        });
+
+        return () => {
+            WebSocketService.disconnect();
+            WebSocketService.off('newCategory', handleNewCategory);
+        };
+    }, []);
 
     useEffect(() => {
         fetchCategories();
@@ -31,7 +50,6 @@ const CategoryManager = () => {
 
     const addCategory = async () => {
         const sanitizedCategoryName = DOMPurify.sanitize(categoryName.trim());
-
         // Validate category name
         if (!sanitizedCategoryName || sanitizedCategoryName.length < 3 || sanitizedCategoryName.length > 50) {
             toast.error("Category name must be between 3 and 50 characters.");
@@ -43,10 +61,13 @@ const CategoryManager = () => {
         }
 
         try {
-            await axios.post(backendUrl + "/api/categories", { name: sanitizedCategoryName });
+            const response = await axios.post(backendUrl + "/api/categories", { name: sanitizedCategoryName });
             setCategoryName("");
             fetchCategories();
             toast.success("Category added successfully!", { autoClose: 1000 });
+            if (response.data && response.data.category) {
+                WebSocketService.broadcast({ type: 'newCategory', category: response.data.category });
+            }
         } catch (err) {
             console.error("Error adding category:", err);
             toast.error("Failed to add category.");
@@ -55,7 +76,6 @@ const CategoryManager = () => {
 
     const addSubcategory = async () => {
         const sanitizedSubcategoryName = DOMPurify.sanitize(subcategoryName.trim());
-
         // Validate subcategory name
         if (!sanitizedSubcategoryName || sanitizedSubcategoryName.length < 3 || sanitizedSubcategoryName.length > 50) {
             toast.error("Subcategory name must be between 3 and 50 characters.");
@@ -91,11 +111,9 @@ const CategoryManager = () => {
             toast.success("Category deleted successfully!", { autoClose: 1000 });
         } catch (err) {
             console.error("Error deleting category:", err);
-
             // Check if the error response and message are available
             if (err.response && err.response.data && err.response.data.message) {
                 const errorMessage = err.response.data.message;
-
                 // Check for specific message
                 if (errorMessage.includes("contains products")) {
                     toast.error("Cannot delete category as it contains products.");
@@ -108,8 +126,6 @@ const CategoryManager = () => {
             }
         }
     };
-
-
     const deleteSubcategory = async (id) => {
         try {
             await axios.delete(backendUrl + `/api/categories/subcategories/${id}`);
@@ -117,11 +133,9 @@ const CategoryManager = () => {
             toast.success("Subcategory deleted successfully!", { autoClose: 1000 });
         } catch (err) {
             console.error("Error deleting subcategory:", err);
-
             // Check if the error response is available
             if (err.response && err.response.data && err.response.data.message) {
                 const errorMessage = err.response.data.message;
-
                 // Check for specific message
                 if (errorMessage.includes("contains products")) {
                     toast.error("Cannot delete subcategory as it contains products.");
@@ -134,8 +148,6 @@ const CategoryManager = () => {
             }
         }
     };
-
-
     return (
         <div className="p-6">
             <h2 className="text-3xl font-bold mb-4">Manage Categories & Subcategories</h2>
@@ -180,8 +192,8 @@ const CategoryManager = () => {
                     onClick={addSubcategory}
                     disabled={!selectedCategory}
                     className={`px-4 py-2 rounded ${selectedCategory
-                            ? "bg-green-500 hover:bg-green-600 text-white"
-                            : "bg-gray-300 text-gray-500"
+                        ? "bg-green-500 hover:bg-green-600 text-white"
+                        : "bg-gray-300 text-gray-500"
                         }`}
                 >
                     Add Subcategory
@@ -209,7 +221,8 @@ const CategoryManager = () => {
                                 {cat.subcategories.map((sub) => (
                                     <li key={sub._id} className="flex justify-between items-center mt-2">
                                         <span>
-                                            {sub.name} ({sub.productCount || 0} items)
+                                            {sub.name} ({sub.productCount ||
+                                                0} items)
                                         </span>
                                         <button
                                             onClick={() => deleteSubcategory(sub._id)}

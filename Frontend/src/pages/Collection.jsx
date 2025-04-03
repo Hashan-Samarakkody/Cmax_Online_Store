@@ -5,12 +5,13 @@ import Title from '../components/Title';
 import ProductItem from '../components/ProductItem';
 import axios from 'axios';
 import { backendUrl } from '../../../admin/src/App';
+import WebSocketService from '../WebSocketService'; // Import WebSocketService
 
 const Collection = () => {
   const { search, showSearch } = useContext(ShopContext);
   const [allProducts, setAllProducts] = useState([]);
   const [filterProducts, setFilterProducts] = useState([]);
-  const [originalProducts, setOriginalProducts] = useState([]); // Store original products here
+  const [originalProducts, setOriginalProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [subCategories, setSubCategories] = useState([]);
   const [category, setCategory] = useState([]);
@@ -23,7 +24,7 @@ const Collection = () => {
       try {
         const productsResponse = await axios.get(`${backendUrl}/api/product`);
         setAllProducts(productsResponse.data.products);
-        setOriginalProducts(productsResponse.data.products); // Set original products
+        setOriginalProducts(productsResponse.data.products);
         setFilterProducts(productsResponse.data.products);
 
         const categoriesResponse = await axios.get(`${backendUrl}/api/categories`);
@@ -37,10 +38,28 @@ const Collection = () => {
     };
 
     fetchAllData();
+
+    // Define the handler for new products
+    const handleNewProduct = (newProduct) => {
+      setAllProducts((prevProducts) => [...prevProducts, newProduct.product]);
+      setOriginalProducts((prevProducts) => [...prevProducts, newProduct.product]);
+      setFilterProducts((prevProducts) => [...prevProducts, newProduct.product]);
+    };
+
+    // Connect to WebSocket and listen for new products
+    WebSocketService.connect(() => {
+      WebSocketService.on('newProduct', handleNewProduct);
+    });
+
+    // Cleanup function to disconnect WebSocket and remove the listener
+    return () => {
+      WebSocketService.disconnect();
+      WebSocketService.off('newProduct', handleNewProduct);
+    };
   }, []);
 
   const applyFilters = () => {
-    let filtered = originalProducts; // Use original products for filtering
+    let filtered = originalProducts;
 
     if (showSearch && search.length > 0) {
       filtered = filtered.filter(item =>
@@ -61,7 +80,7 @@ const Collection = () => {
 
   useEffect(() => {
     applyFilters();
-  }, [category, subCategory, search, showSearch, originalProducts]); // Use originalProducts
+  }, [category, subCategory, search, showSearch, originalProducts]);
 
   const sortProducts = () => {
     let sortedProducts = [...filterProducts];
@@ -75,7 +94,7 @@ const Collection = () => {
         break;
       case 'relavant':
       default:
-        sortedProducts = [...originalProducts]; // Set the list back to the original products when sorting by relevant
+        sortedProducts = [...originalProducts];
         break;
     }
 
