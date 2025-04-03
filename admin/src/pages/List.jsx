@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 import axios from 'axios'
 import { backendUrl, currency } from '../App'
 import { toast } from 'react-toastify'
-import { useNavigate } from 'react-router-dom'  // Import useNavigate
+import { useNavigate } from 'react-router-dom' 
 
 const List = ({ token }) => {
   const navigate = useNavigate();  // Initialize navigate

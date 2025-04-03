@@ -10,7 +10,7 @@ const Collection = () => {
   const { search, showSearch } = useContext(ShopContext);
   const [allProducts, setAllProducts] = useState([]);
   const [filterProducts, setFilterProducts] = useState([]);
-  const [originalProducts, setOriginalProducts] = useState([]); // Store original products here
+  const [originalProducts, setOriginalProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [subCategories, setSubCategories] = useState([]);
   const [category, setCategory] = useState([]);
