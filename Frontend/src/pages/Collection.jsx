@@ -46,15 +46,39 @@ const Collection = () => {
       setFilterProducts((prevProducts) => [...prevProducts, newProduct.product]);
     };
 
+    // Define the handler for deleted products
+    const handleDeleteProduct = (data) => {
+      const productId = data.productId;
+      const filterById = (product) => product._id !== productId;
+      setAllProducts(prev => prev.filter(filterById));
+      setOriginalProducts(prev => prev.filter(filterById));
+      setFilterProducts(prev => prev.filter(filterById));
+    };
+
+    // Define the handler for updated products
+    const handleUpdateProduct = (data) => {
+      const updatedProduct = data.product;
+      const updateFunc = (products) => products.map(product =>
+        product._id === updatedProduct._id ? updatedProduct : product
+      );
+      setAllProducts(updateFunc);
+      setOriginalProducts(updateFunc);
+      setFilterProducts(updateFunc);
+    };
+
     // Connect to WebSocket and listen for new products
     WebSocketService.connect(() => {
       WebSocketService.on('newProduct', handleNewProduct);
+      WebSocketService.on('updateProduct', handleUpdateProduct);
+      WebSocketService.on('deleteProduct', handleDeleteProduct);
     });
 
     // Cleanup function to disconnect WebSocket and remove the listener
     return () => {
-      WebSocketService.disconnect();
       WebSocketService.off('newProduct', handleNewProduct);
+      WebSocketService.off('updateProduct', handleUpdateProduct);
+      WebSocketService.off('deleteProduct', handleDeleteProduct);
+      WebSocketService.disconnect();
     };
   }, []);
 

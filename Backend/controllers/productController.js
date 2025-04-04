@@ -110,14 +110,16 @@ const listProduct = async (req, res) => {
 // Remove product function
 const removeProduct = async (req, res) => {
     try {
-        await productModel.findByIdAndDelete(req.body.id);
+        const deletedProduct = await productModel.findByIdAndDelete(req.body.id);
         res.json({ success: true, message: 'Product deleted successfully!' });
+
+        // Broadcast product deletion
+        broadcast({ type: 'deleteProduct', productId: req.body.id });
     } catch (error) {
         console.log(error);
         res.status(500).json({ success: false, message: error.message });
     }
 };
-
 // Get single product details function
 const singleProduct = async (req, res) => {
     try {
@@ -132,16 +134,26 @@ const singleProduct = async (req, res) => {
 
 const getSingleProduct = async (req, res) => {
     try {
-        const { productId } = req.params; // if using URL params
-        const product = await productModel.findOne({ productId }).populate('category', 'name').populate('subcategory', 'name');
+        const { productId } = req.params;
+
+        // Use a more comprehensive query with proper population
+        const product = await productModel.findById(productId)
+            .populate('category', 'name')
+            .populate('subcategory', 'name')
+            .lean(); // Using lean() for better performance
 
         if (!product) {
+            console.log(`Product not found: ${productId}`);
             return res.status(404).json({ success: false, message: 'Product not found.' });
         }
 
+        console.log(`Product ${product.name} (${productId}) fetched successfully`);
         res.json({ success: true, product });
+
+        // Broadcast the latest product data to all connected clients
+        broadcast({ type: 'updateProduct', product: product });
     } catch (error) {
-        console.log(error);
+        console.error(`Error fetching product ${req.params.productId}:`, error);
         res.status(500).json({ success: false, message: error.message });
     }
 };
@@ -217,20 +229,22 @@ const updateProduct = async (req, res) => {
             hasColors: hasColors === 'true',
         };
 
-        // Update the product
-        await productModel.findOneAndUpdate(
+        // Update the product and get the updated document
+        const updatedProduct = await productModel.findOneAndUpdate(
             { productId },
             updateData,
             { new: true }
-        );
+        ).populate('category', 'name').populate('subcategory', 'name');
 
         res.json({ success: true, message: 'Product updated successfully!' });
+
+        // Broadcast product update to all connected clients
+        broadcast({ type: 'updateProduct', product: updatedProduct });
     } catch (error) {
         console.log(error);
         res.status(500).json({ success: false, message: error.message });
     }
 };
-
 export {
     addProduct,
     listProduct,
