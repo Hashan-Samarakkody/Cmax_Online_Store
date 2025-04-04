@@ -204,7 +204,7 @@ const Add = ({ token }) => {
         <input
           onChange={(e) => setProductId(e.target.value)}
           value={productId}
-          className="w-full max-w-[500px] px-3 py-2"
+          className="w-full max-w-[590px] px-3 py-2"
           type="text"
           placeholder="Enter unique Product ID"
           required
@@ -217,7 +217,7 @@ const Add = ({ token }) => {
         <input
           onChange={(e) => setName(e.target.value)}
           value={name}
-          className="w-full max-w-[500px] px-3 py-2"
+          className="w-full max-w-[590px] px-3 py-2"
           type="text"
           placeholder="Type here"
           required
@@ -225,18 +225,31 @@ const Add = ({ token }) => {
       </div>
 
       {/* Product Description */}
-      <div className="w-full">
-        <p className="font-semibold mb-2">Product Description</p>
-        <textarea
-          onChange={(e) => setDescription(e.target.value)}
-          value={description}
-          className="w-full max-w-[500px] px-3 py-2"
-          placeholder="Write description here"
-          required
-        />
-      </div>
+        <div className="w-full">
+          <p className="font-semibold mb-2">Product Description</p>
+          <textarea
+            onChange={(e) => {
+              setDescription(e.target.value);
+              e.target.style.height = "auto"; // Reset height to auto to calculate new height
+              e.target.style.height = `${e.target.scrollHeight}px`; // Adjust height based on scrollHeight
 
-      {/* Category and Subcategory */}
+              // Adjust width if there are more than 10 lines
+              const lineCount = e.target.value.split("\0").length;
+              if (lineCount > 10) {
+          e.target.style.width = "150%"; // Increase width to 1.5 times
+              } else {
+          e.target.style.width = "100%"; // Reset width to default
+              }
+            }}
+            value={description}
+            className="w-full max-w-[590px] px-3 py-2 overflow-hidden"
+            placeholder="Write description here"
+            required
+            style={{ resize: "none" }} // Prevent manual resizing
+          />
+        </div>
+
+        {/* Category and Subcategory */}
       <div className="flex flex-col sm:flex-row gap-2 w-full sm:gap-8">
         <div>
           <p className="font-semibold mb-2">Product Category</p>
@@ -338,7 +351,7 @@ const Add = ({ token }) => {
 
       {/* Color Input (only if hasColors is true) */}
       {hasColors && (
-        <div className="w-full max-w-[500px]">
+        <div className="w-full max-w-[590px]">
           <p className="mb-2">Product Colors</p>
           <div className="flex gap-2 mb-4">
             <input

@@ -1,6 +1,7 @@
 import orderModel from '../models/orderModel.js'
 import userModel from '../models/userModel.js'
 import Stripe from 'stripe'
+import { broadcast } from '../server.js'
 
 // Global variables
 const currency = "LKR"
@@ -32,11 +33,15 @@ const placeOrder = async (req, res) => {
 
         res.json({ success: true, message: 'Order Placed Successfully' })
 
+        // Broadcast new order
+        broadcast({ type: 'newOrder', order: newOrder });  // Send the new order via WebSocket
+
     } catch (error) {
         console.log(error);
         res.json({ success: false, message: error.message })
     }
 }
+
 
 // Place orders using Stripe method
 const placeOrderStripe = async (req, res) => {
