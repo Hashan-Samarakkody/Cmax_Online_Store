@@ -1,52 +1,67 @@
-import React from 'react'
-import { useState, useEffect } from 'react'
-import axios from 'axios'
-import { backendUrl, currency } from '../App'
-import { toast } from 'react-toastify'
-import { useNavigate } from 'react-router-dom' 
 
-const List = ({ token }) => {
-  const navigate = useNavigate();  // Initialize navigate
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { backendUrl, currency } from '../App';
+import { toast } from 'react-toastify';
+import { useNavigate } from 'react-router-dom';
+import WebSocketService from '../WebSocketService'; // Import WebSocketService
 
-  const [list, setList] = useState([])
+const ProductList = ({ token }) => {
+  const navigate = useNavigate();
+  const [list, setList] = useState([]);
 
   const fetchList = async () => {
     try {
-      const response = await axios.get(backendUrl + '/api/product/list')
+      const response = await axios.get(backendUrl + '/api/product/list');
       if (response.data.success) {
-        setList(response.data.products)
+        setList(response.data.products);
       } else {
-        toast.error(response.data.message)
+        toast.error(response.data.message);
       }
     } catch (error) {
-      console.log(error)
-      toast.error(error.message)
+      console.log(error);
+      toast.error(error.message);
     }
-  }
+  };
 
   const removeProduct = async (id) => {
     try {
-      const response = await axios.post(backendUrl + '/api/product/remove', { id }, { headers: { token } })
+      const response = await axios.post(backendUrl + '/api/product/remove', { id }, { headers: { token } });
       if (response.data.success) {
-        toast.success(response.data.message, { autoClose: 1000 })
-        await fetchList()
+        toast.success(response.data.message, { autoClose: 1000 });
+        await fetchList();
       } else {
-        toast.error(response.data.message)
+        toast.error(response.data.message);
       }
     } catch (error) {
-      console.log(error)
-      toast.error(error.message)
+      console.log(error);
+      toast.error(error.message);
     }
-  }
+  };
 
-  // Add this function to handle edit navigation
   const editProduct = (productId) => {
     navigate(`/edit/${productId}`);
-  }
+  };
 
   useEffect(() => {
-    fetchList()
-  }, [])
+    fetchList();
+
+    // Define the handler for new products
+    const handleNewProduct = (newProduct) => {
+      setList((prevList) => [...prevList, newProduct.product]);
+    };
+
+    // Connect to WebSocket and listen for new products
+    WebSocketService.connect(() => {
+      WebSocketService.on('newProduct', handleNewProduct);
+    });
+
+    // Cleanup function to disconnect WebSocket and remove the listener
+    return () => {
+      WebSocketService.disconnect();
+      WebSocketService.off('newProduct', handleNewProduct);
+    };
+  }, []);
 
   return (
     <div className="container mx-auto px-4 sm:px-8">
@@ -81,7 +96,8 @@ const List = ({ token }) => {
                       <p className="text-gray-900 whitespace-no-wrap">{item.name}</p>
                     </td>
                     <td className="px-5 py-5 bg-white text-sm">
-                      <p className="text-gray-900 whitespace-no-wrap">{item.category?.name || "Unavailable"}</p>
+                      <p className="text-gray-900 whitespace-no-wrap">{item.category?.name ||
+                        "Unavailable"}</p>
                     </td>
                     <td className="px-5 py-5 bg-white text-sm">
                       <p className="text-gray-900 whitespace-no-wrap">{currency}{item.price}</p>
@@ -110,7 +126,7 @@ const List = ({ token }) => {
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default List
+export default ProductList;

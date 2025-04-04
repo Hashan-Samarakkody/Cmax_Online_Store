@@ -1,33 +1,125 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { ShopContext } from '../context/ShopContext';
 import { assets } from '../assets/assets';
+import axios from 'axios';
 import RelatedProducts from '../components/RelatedProducts';
 import { toast } from 'react-toastify';
+import { backendUrl } from '../../../admin/src/App';
+import WebSocketService from '../WebSocketService'; // Make sure the path is correct
 
 const Product = () => {
   const { productId } = useParams();
+  const navigate = useNavigate();
   const { products, currency, addToCart } = useContext(ShopContext);
-  const [productData, setProductData] = useState(false);
+  const [productData, setProductData] = useState(null);
   const [image, setImage] = useState('');
   const [size, setSize] = useState('');
   const [color, setColor] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
 
+  // Find the product in the products array
   const fetchProductData = async () => {
-    products.map((item) => {
-      if (item._id === productId) {
-        setProductData(item);
-        setImage(item.images[0]);
-        return null;
-      }
-    });
-  };
+  setIsLoading(true);
+  try {
+    // First try to fetch from API for most up-to-date data
+    const response = await axios.get(`${backendUrl}/api/product/single/get/${productId}`);
+    
+    if (response.data.success) {
+      setProductData(response.data.product);
+      setImage(response.data.product.images?.[0] || '');
+      setIsLoading(false);
+      return;
+    }
+  } catch (error) {
+    console.error("Error fetching product directly:", error);
+    // Fall back to context data if API call fails
+  }
+  
+  // Fallback to context data
+  if (products && productId) {
+    const foundProduct = products.find(item => item._id === productId);
+    if (foundProduct) {
+      setProductData(foundProduct);
+      setImage(foundProduct.images?.[0] || '');
+    }
+  }
+  setIsLoading(false);
+};
 
   useEffect(() => {
     fetchProductData();
-  }, [productId, products]);
 
-  return productData ? (
+    // Product update handler
+    const handleUpdateProduct = (data) => {
+      if (data && data.product && data.product._id === productId) {
+        setProductData(data.product);
+
+        // Update image if needed
+        if (!image || (data.product.images && !data.product.images.includes(image))) {
+          setImage(data.product.images && data.product.images.length > 0 ? data.product.images[0] : '');
+        }
+
+        // Check if selected size/color still exists
+        if (data.product.hasSizes && size && !data.product.sizes.includes(size)) {
+          setSize('');
+        }
+
+        if (data.product.hasColors && color && !data.product.colors.includes(color)) {
+          setColor('');
+        }
+      }
+    };
+
+    // Product deletion handler
+    const handleDeleteProduct = (data) => {
+      if (data && data.productId === productId) {
+        toast.info('This product is no longer available');
+        navigate('/collection');
+      }
+    };
+
+    try {
+      // Setup safe WebSocket connection
+      const setupWebSocket = () => {
+        WebSocketService.on('updateProduct', handleUpdateProduct);
+        WebSocketService.on('deleteProduct', handleDeleteProduct);
+      };
+
+      // Connect if needed and set up listeners
+      if (WebSocketService.isConnected()) {
+        setupWebSocket();
+      } else {
+        WebSocketService.connect(setupWebSocket);
+      }
+    } catch (err) {
+      console.error("Error setting up WebSocket:", err);
+    }
+
+    // Cleanup function
+    return () => {
+      try {
+        WebSocketService.off('updateProduct', handleUpdateProduct);
+        WebSocketService.off('deleteProduct', handleDeleteProduct);
+      } catch (err) {
+        console.error("Error cleaning up WebSocket listeners:", err);
+      }
+    };
+  }, [productId, products, image, size, color, navigate]);
+
+  // If loading or no product data, show fancy loading indicator
+  if (isLoading || !productData) {
+    return (
+      <div className='flex items-center justify-center min-h-[60vh]'>
+        <div className='flex flex-col items-center'>
+          <div className='w-16 h-16 border-4 border-gray-300 border-t-black rounded-full animate-spin'></div>
+          <p className='text-lg mt-4'>Loading product...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
     <div className='border-t-2 pt-10 transition-opacity ease-in duration-500 opacity-100'>
       {/* Product Data */}
       <div className='flex gap-12 sm:gap-12 flex-col sm:flex-row'>
@@ -56,27 +148,31 @@ const Product = () => {
             <img src={assets.star_icon} alt="" className="w-3 5" />
             <img src={assets.star_icon} alt="" className="w-3 5" />
             <img src={assets.star_dull_icon} alt="" className="w-3 5" />
-
-            <p className='pl-2 '>(122)</p>
+            <p className='pl-2'>(122)</p>
           </div>
+
           <p className='text-xl mt-5 font-medium'>{currency}{productData.price}</p>
           <p className='mt-5 text-gray-600 md:w-4/5 text-justify'>{productData.description}</p>
+
+          {/* Size selection */}
           {productData.hasSizes && (
             <div className='flex flex-col gap-4 my-8'>
-              <p>
-                Select Size
-              </p>
+              <p>Select Size</p>
               <div className='flex gap-2'>
-                {
-                  productData.sizes.map((item, index) => (
-                    <button onClick={() => setSize(item)} key={index} className={`border border-gray-400 py-2 px-4 rounded-lg ${item === size ? 'bg-gray-400 text-white' : ''}`}>
-                      {item}</button>
-                  ))
-                }
+                {productData.sizes.map((item, index) => (
+                  <button
+                    onClick={() => setSize(item)}
+                    key={index}
+                    className={`border border-gray-400 py-2 px-4 rounded-lg ${item === size ? 'bg-gray-400 text-white' : ''}`}
+                  >
+                    {item}
+                  </button>
+                ))}
               </div>
             </div>
           )}
 
+          {/* Color selection */}
           {productData.hasColors && (
             <div className='flex flex-col gap-4 my-8'>
               <p>Select Color</p>
@@ -85,7 +181,7 @@ const Product = () => {
                   <div
                     key={index}
                     onClick={() => setColor(colorItem)}
-                    className={` w-7 h-7 rounded-full cursor-pointer ${color === colorItem ? 'w-8.5 h-8.5 border border-black-50' : ''}`}
+                    className={`w-7 h-7 rounded-full cursor-pointer ${color === colorItem ? 'w-8.5 h-8.5 border border-black-50' : ''}`}
                     style={{ backgroundColor: colorItem }}
                   />
                 ))}
@@ -93,18 +189,24 @@ const Product = () => {
             </div>
           )}
 
-          <button onClick={() => {
-            if (productData.hasSizes && !size) {
-              toast.error('Please select a size');
-              return;
-            }
-            if (productData.hasColors && !color) {
-              toast.error('Please select a color');
-              return;
-            }
-            addToCart(productData._id, size, color);
-            toast.success('Product added to cart!', { autoClose: 800 }); // Notification with auto-close
-          }} className='bg-black text-white px-8 py-3 text-sm active:bg-gray-700 rounded-lg'>Add to Cart</button>
+          <button
+            onClick={() => {
+              if (productData.hasSizes && !size) {
+                toast.error('Please select a size');
+                return;
+              }
+              if (productData.hasColors && !color) {
+                toast.error('Please select a color');
+                return;
+              }
+              addToCart(productData._id, size, color);
+              toast.success('Product added to cart!', { autoClose: 800 });
+            }}
+            className='bg-black text-white px-8 py-3 text-sm active:bg-gray-700 rounded-lg'
+          >
+            Add to Cart
+          </button>
+
           <hr className='mt-8 sm:w-4/5' />
           <div className='text-sm text-gray-500 mt-5 flex flex-col gap-1'>
             <p>100% Original Product.</p>
@@ -137,12 +239,10 @@ const Product = () => {
         </div>
       </div>
 
-      {/* Similar Products */}
+      {/* Related Products */}
       <RelatedProducts category={productData.category} subCategory={productData.subCategory} />
-
-
     </div>
-  ) : <div className='opacity-0'></div>
-}
+  );
+};
 
 export default Product;
