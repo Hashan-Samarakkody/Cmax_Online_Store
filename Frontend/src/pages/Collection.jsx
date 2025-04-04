@@ -5,7 +5,7 @@ import Title from '../components/Title';
 import ProductItem from '../components/ProductItem';
 import axios from 'axios';
 import { backendUrl } from '../../../admin/src/App';
-import WebSocketService from '../WebSocketService';
+import WebSocketService from '../WebSocketService'; // Make sure the path is correct
 
 const Collection = () => {
   const { search, showSearch } = useContext(ShopContext);
