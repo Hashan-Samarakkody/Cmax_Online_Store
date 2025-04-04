@@ -22,7 +22,7 @@ const Product = () => {
   setIsLoading(true);
   try {
     // First try to fetch from API for most up-to-date data
-    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000';
     const response = await axios.get(`${backendUrl}/api/product/single/get/${productId}`);
     
     if (response.data.success) {
