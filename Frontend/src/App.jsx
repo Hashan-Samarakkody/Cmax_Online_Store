@@ -19,7 +19,7 @@ import Verify from './pages/Verify'
 
 const App = () => {
   return (
-    <div className='px-4 smnpx-[5vw] md:px-[7vw] lg:px[9vw]'>
+    <div className='px-2 py-0 smnpx-[5vw] md:px-[7vw] lg:px[9vw]'>
       <ToastContainer />
       <Navbar />
       <SearchBar />
