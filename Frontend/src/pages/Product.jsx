@@ -5,6 +5,7 @@ import { assets } from '../assets/assets';
 import axios from 'axios';
 import RelatedProducts from '../components/RelatedProducts';
 import { toast } from 'react-toastify';
+import { backendUrl } from '../../../admin/src/App';
 import WebSocketService from '../WebSocketService'; // Make sure the path is correct
 
 const Product = () => {
@@ -22,7 +23,6 @@ const Product = () => {
   setIsLoading(true);
   try {
     // First try to fetch from API for most up-to-date data
-    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000';
     const response = await axios.get(`${backendUrl}/api/product/single/get/${productId}`);
     
     if (response.data.success) {
