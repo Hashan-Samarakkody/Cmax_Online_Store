@@ -20,6 +20,7 @@ import login_img from './login_img.png'
 import signup_img from './signup_img.png'
 import footer_logo from './footer_logo.png'
 import product_icon from './product.svg'
+import empty_cart from './empty_cart.png'
 
 export const assets = {
     logo,
@@ -43,5 +44,6 @@ export const assets = {
     login_img,
     signup_img,
     footer_logo,
-    product_icon
+    product_icon,
+    empty_cart
 }

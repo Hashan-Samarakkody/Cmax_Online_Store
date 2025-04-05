@@ -234,7 +234,7 @@ const Collection = () => {
                     <img
                       src={assets.product_icon}
                       alt="No products"
-                      className="w-24 h-24 object-contain mb-4"
+                      className="w-24 h-24 object-contain mb-4 animate-bounce"
                     />
                     <p className="text-gray-600 font-medium text-lg">No products to display</p>
                   </div>
