@@ -20,32 +20,30 @@ const Product = () => {
 
   // Find the product in the products array
   const fetchProductData = async () => {
-  setIsLoading(true);
-  try {
-    // First try to fetch from API for most up-to-date data
-    const response = await axios.get(`${backendUrl}/api/product/single/get/${productId}`);
-    
-    if (response.data.success) {
-      setProductData(response.data.product);
-      setImage(response.data.product.images?.[0] || '');
-      setIsLoading(false);
-      return;
+    setIsLoading(true);
+    try {
+      const response = await axios.post(`${backendUrl}/api/product/single`, { productId });
+
+      if (response.data.success && response.data.product) {
+        setProductData(response.data.product);
+        setImage(response.data.product.images?.[0] || '');
+        setIsLoading(false);
+        return;
+      }
+    } catch (error) {
+      console.error("Error fetching product directly:", error);
     }
-  } catch (error) {
-    console.error("Error fetching product directly:", error);
-    // Fall back to context data if API call fails
-  }
-  
-  // Fallback to context data
-  if (products && productId) {
-    const foundProduct = products.find(item => item._id === productId);
-    if (foundProduct) {
-      setProductData(foundProduct);
-      setImage(foundProduct.images?.[0] || '');
+
+    // Fallback to context data
+    if (products && productId) {
+      const foundProduct = products.find(item => item._id === productId);
+      if (foundProduct) {
+        setProductData(foundProduct);
+        setImage(foundProduct.images?.[0] || '');
+      }
     }
-  }
-  setIsLoading(false);
-};
+    setIsLoading(false);
+  };
 
   useEffect(() => {
     fetchProductData();
@@ -110,12 +108,23 @@ const Product = () => {
   // If loading or no product data, show fancy loading indicator
   if (isLoading || !productData) {
     return (
-      <div className='flex items-center justify-center min-h-[60vh]'>
-        <div className='flex flex-col items-center'>
-          <div className='w-16 h-16 border-4 border-gray-300 border-t-black rounded-full animate-spin'></div>
-          <p className='text-lg mt-4'>Loading product...</p>
-        </div>
-      </div>
+      <div className="flex flex-col items-center justify-center min-h-[60vh]">
+                <div className="relative w-24 h-24">
+                  {/* Pulsing circle animation */}
+                  <div className="absolute top-0 left-0 w-full h-full border-4 border-gray-200 rounded-full"></div>
+                  <div className="absolute top-0 left-0 w-full h-full border-t-4 border-green-400 rounded-full animate-spin"></div>
+      
+                  {/* Shop icon or logo in center */}
+                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                    <img
+                      src={assets.parcel_icon}
+                      alt="Loading"
+                      className="w-12 h-12 object-contain animate-pulse"
+                    />
+                  </div>
+                </div>
+                <p className="mt-4 text-gray-600 font-medium">Loading Product...</p>
+              </div>
     );
   }
 
@@ -189,6 +198,7 @@ const Product = () => {
             </div>
           )}
 
+          <br/>
           <button
             onClick={() => {
               if (productData.hasSizes && !size) {
