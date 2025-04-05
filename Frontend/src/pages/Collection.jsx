@@ -158,7 +158,7 @@ const Collection = () => {
           <div className="relative w-24 h-24">
             {/* Pulsing circle animation */}
             <div className="absolute top-0 left-0 w-full h-full border-4 border-gray-200 rounded-full"></div>
-            <div className="absolute top-0 left-0 w-full h-full border-t-4 border-blue-500 rounded-full animate-spin"></div>
+            <div className="absolute top-0 left-0 w-full h-full border-t-4 border-green-400 rounded-full animate-spin"></div>
 
             {/* Shop icon or logo in center */}
             <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">

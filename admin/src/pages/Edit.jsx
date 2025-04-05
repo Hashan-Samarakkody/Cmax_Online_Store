@@ -216,7 +216,25 @@ const Edit = ({ token }) => {
 
     // Loading state
     if (loading) {
-        return <div className="text-center mt-10">Loading...</div>;
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[60vh]">
+                <div className="relative w-24 h-24">
+                    {/* Pulsing circle animation */}
+                    <div className="absolute top-0 left-0 w-full h-full border-4 border-gray-200 rounded-full"></div>
+                    <div className="absolute top-0 left-0 w-full h-full border-t-4 border-green-400 rounded-full animate-spin"></div>
+
+                    {/* Shop icon or logo in center */}
+                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                        <img
+                            src={assets.logo}
+                            alt="Loading"
+                            className="w-12 h-12 object-contain animate-pulse"
+                        />
+                    </div>
+                </div>
+                <p className="mt-4 text-gray-600 font-medium">Loading...</p>
+            </div>
+        );
     }
 
     return (
@@ -238,11 +256,30 @@ const Edit = ({ token }) => {
             <div className="w-full">
                 <p className="font-semibold mb-2">Product Description</p>
                 <textarea
-                    onChange={(e) => setDescription(e.target.value)}
+                    onChange={(e) => {
+                        setDescription(e.target.value);
+                        e.target.style.height = "auto";
+                        e.target.style.height = `${e.target.scrollHeight}px`;
+
+                        // Adjust width if there are more than 10 lines
+                        const lineCount = e.target.value.split("\n").length;
+                        if (lineCount > 10) {
+                            e.target.style.width = "150%";
+                        } else {
+                            e.target.style.width = "100%";
+                        }
+                    }}
                     value={description}
-                    className="w-full max-w-[500px] px-3 py-2"
+                    className="w-full max-w-[590px] px-3 py-2 overflow-hidden"
                     placeholder="Write description here"
                     required
+                    style={{ resize: "none" }}
+                    ref={(textarea) => {
+                        if (textarea) {
+                            textarea.style.height = "auto";
+                            textarea.style.height = `${textarea.scrollHeight}px`;
+                        }
+                    }}
                 />
             </div>
 
