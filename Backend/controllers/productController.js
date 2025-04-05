@@ -81,7 +81,7 @@ const addProduct = async (req, res) => {
 
 // Get all products function
 const getAllProducts = async (req, res) => {
-    try {
+    try {    
         const products = await productModel.find({})
             .populate('category', 'name')
             .populate('subcategory', 'name');
@@ -127,8 +127,8 @@ const displaySingleProduct = async (req, res) => {
         const product = await productModel.findById(productId);
         res.json({ success: true, product });
 
-        // Broadcast the latest product data to all connected clients
-        broadcast({ type: 'updateProduct', product: product });
+        // Broadcast new product
+        broadcast({ type: 'newProduct', product: product });
     } catch (error) {
         console.log(error);
         res.status(500).json({ success: false, message: error.message });
@@ -231,6 +231,11 @@ const updateProduct = async (req, res) => {
         );
 
         res.json({ success: true, message: 'Product updated successfully!' });
+
+        // Broadcast product update
+        const updatedProduct = await productModel.findOne({ productId });
+        broadcast({ type: 'updateProduct', product: updatedProduct }); // Send the updated product via WebSocket
+    
     } catch (error) {
         console.log(error);
         res.status(500).json({ success: false, message: error.message });
