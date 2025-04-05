@@ -19,7 +19,7 @@ import default_img from './default_img.png'
 import login_img from './login_img.png'
 import signup_img from './signup_img.png'
 import footer_logo from './footer_logo.png'
-import parcel_icon from './product.svg'
+import product_icon from './product.svg'
 
 export const assets = {
     logo,
@@ -43,5 +43,5 @@ export const assets = {
     login_img,
     signup_img,
     footer_logo,
-    parcel_icon
+    product_icon
 }
