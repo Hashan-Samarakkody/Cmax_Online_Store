@@ -16,6 +16,7 @@ const Orders = ({ token }) => {
     try {
       const response = await axios.post(backendUrl + '/api/order/list', {}, { headers: { token } });
       if (response.data.success) {
+        // Reverse the order of orders so the newest comes at the top
         setOrders(response.data.orders.reverse());
       } else {
         toast.error(response.data.message);
@@ -67,7 +68,8 @@ const Orders = ({ token }) => {
 
     // Define the handler for new orders
     const handleNewOrder = (newOrder) => {
-      setOrders((prevOrders) => [...prevOrders, newOrder.order]);
+      // Prepend the new order to the top of the list
+      setOrders((prevOrders) => [newOrder.order, ...prevOrders]);
     };
 
     // Connect to WebSocket and listen for new orders
@@ -158,15 +160,14 @@ const Orders = ({ token }) => {
                   <p className='mt-3 mb-2 font-medium text-black'>{order.address.firstName + " " + order.address.lastName}</p>
                   <div>
                     <p className='text-black'>{order.address.street + ","}</p>
-                    <p className='text-black'>{order.address.city + ", " + order.address.state + ", " + order.address.country + ", " + order.address.postalCode}</p>
+                    <p className='text-black'>{order.address.city + ", " + order.address.state + ", " + order.address.postalCode}</p>
                   </div>
                   <p className='text-black'>{order.address.phoneNumber}</p>
                 </div>
                 <div>
                   <p className='text-sm sm:text-[15px] text-black'>Items: {order.items.length}</p>
                   <p className='mt-3 text-black'>Payment Method: {order.paymentMethod}</p>
-                  <p className='text-black'>Payment: {order.payment ?
-                    "Done" : "Pending"}</p>
+                  <p className='text-black'>Payment: {order.payment ? "Done" : "Pending"}</p>
                   <p className='text-black'>Date: {new Date(order.date).toLocaleString()}</p>
                 </div>
                 <p className='text-sm sm:text-[15px] text-black'>{currency}{order.amount}.00</p>

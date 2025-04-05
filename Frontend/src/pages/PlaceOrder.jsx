@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useRef, useEffect } from 'react';
 import Title from '../components/Title';
 import CartTotal from '../components/CartTotal';
 import { assets } from '../assets/assets';
@@ -17,11 +17,51 @@ const PlaceOrder = () => {
     email: '',
     street: '',
     city: '',
-    state: '',
+    state: '', // District is mapped to state
     postalCode: '',
-    country: '',
     phoneNumber: ''
   });
+
+  const [districtInput, setDistrictInput] = useState('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [filteredDistricts, setFilteredDistricts] = useState([]);
+  const autocompleteRef = useRef(null);
+
+  const districts = [
+    "Jaffna", "Kilinochchi", "Mannar", "Mullaitivu", "Vavuniya",
+    "Puttalam", "Kurunegala", "Gampaha", "Colombo", "Kalutara",
+    "Anuradhapura", "Polonnaruwa", "Matale", "Kandy", "Nuwara Eliya",
+    "Kegalle", "Ratnapura", "Trincomalee", "Batticaloa", "Ampara",
+    "Badulla", "Monaragala", "Hambantota", "Matara", "Galle"
+  ];
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (autocompleteRef.current && !autocompleteRef.current.contains(event.target)) {
+        setShowSuggestions(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    if (districtInput) {
+      const filtered = districts.filter(
+        district => district.toLowerCase().includes(districtInput.toLowerCase())
+      );
+      setFilteredDistricts(filtered);
+    } else {
+      setFilteredDistricts(districts);
+    }
+  }, [districtInput]);
+
+  useEffect(() => {
+    if (formData.state) {
+      setDistrictInput(formData.state);
+    }
+  }, []);
 
   const onChangeHandler = (event) => {
     const name = event.target.name;
@@ -30,13 +70,32 @@ const PlaceOrder = () => {
     setFormData((data) => ({ ...data, [name]: value }));
   };
 
+  const handleDistrictInputChange = (e) => {
+    const value = e.target.value;
+    const sanitizedValue = DOMPurify.sanitize(value.trim());
+
+    setDistrictInput(sanitizedValue);
+    setFormData((data) => ({ ...data, state: sanitizedValue }));
+
+    if (!showSuggestions) {
+      setShowSuggestions(true);
+    }
+  };
+
+  const handleSelectDistrict = (district) => {
+    const sanitizedDistrict = DOMPurify.sanitize(district);
+
+    setDistrictInput(sanitizedDistrict);
+    setFormData((data) => ({ ...data, state: sanitizedDistrict }));
+    setShowSuggestions(false);
+  };
+
   const validateInputs = () => {
     const sanitizedData = {};
     for (const key in formData) {
       sanitizedData[key] = DOMPurify.sanitize(formData[key].trim());
     }
 
-    // Validate first and last name
     if (!sanitizedData.firstName || sanitizedData.firstName.length < 2 || /^\d+$/.test(sanitizedData.firstName)) {
       toast.error('First name must be at least 2 characters and cannot be only numbers.');
       return false;
@@ -46,21 +105,18 @@ const PlaceOrder = () => {
       return false;
     }
 
-    // Validate email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!sanitizedData.email || !emailRegex.test(sanitizedData.email)) {
       toast.error('Please enter a valid email address.');
       return false;
     }
 
-    // Validate phone number
     const phoneRegex = /^\+?\d{10,12}$/;
     if (!sanitizedData.phoneNumber || !phoneRegex.test(sanitizedData.phoneNumber)) {
       toast.error('Please enter a valid phone number (10-12 digits).');
       return false;
     }
 
-    // Validate address fields
     if (!sanitizedData.street || sanitizedData.street.length < 5) {
       toast.error('Street must be at least 5 characters long.');
       return false;
@@ -69,16 +125,22 @@ const PlaceOrder = () => {
       toast.error('City must be at least 2 characters long.');
       return false;
     }
-    if (!sanitizedData.state || sanitizedData.state.length < 2) {
-      toast.error('State must be at least 2 characters long.');
+
+    const validDistricts = [
+      "Jaffna", "Kilinochchi", "Mannar", "Mullaitivu", "Vavuniya",
+      "Puttalam", "Kurunegala", "Gampaha", "Colombo", "Kalutara",
+      "Anuradhapura", "Polonnaruwa", "Matale", "Kandy", "Nuwara Eliya",
+      "Kegalle", "Ratnapura", "Trincomalee", "Batticaloa", "Ampara",
+      "Badulla", "Monaragala", "Hambantota", "Matara", "Galle"
+    ];
+
+    if (!sanitizedData.state || sanitizedData.state.length < 2 || !validDistricts.includes(sanitizedData.state)) {
+      toast.error('Please select a valid district.');
       return false;
     }
+
     if (!sanitizedData.postalCode || sanitizedData.postalCode.length < 4 || isNaN(sanitizedData.postalCode)) {
       toast.error('Postal code must be a valid number with at least 4 digits.');
-      return false;
-    }
-    if (!sanitizedData.country || sanitizedData.country.length < 2) {
-      toast.error('Country must be at least 2 characters long.');
       return false;
     }
 
@@ -113,7 +175,6 @@ const PlaceOrder = () => {
       };
 
       switch (method) {
-        // API call for cash on delivery method
         case 'cod':
           const response = await axios.post(backendUrl + '/api/order/place', orderData, { headers: { token } });
           if (response.data.success) {
@@ -124,7 +185,6 @@ const PlaceOrder = () => {
           }
           break;
 
-        // API call for Stripe payment method
         case 'stripe':
           const responseStripe = await axios.post(backendUrl + '/api/order/stripe', orderData, { headers: { token } });
           if (responseStripe.data.success) {
@@ -146,7 +206,6 @@ const PlaceOrder = () => {
 
   return (
     <form onSubmit={onSubmitHandler} className="flex flex-col sm:flex-row justify-between gap-4 pt-5 sm:pt-14 min-h-[80vh] border-t">
-      {/* Left Side */}
       <div className="flex flex-col gap-4 w-full sm:max-w-[480px]">
         <div className="text-xl sm:text-2xl my-3">
           <Title text1={'DELIVERY'} text2={'INFORMATION'} />
@@ -162,17 +221,43 @@ const PlaceOrder = () => {
 
         <div className="flex gap-3">
           <input required onChange={onChangeHandler} name="city" value={formData.city} type="text" placeholder="City" className="border border-gray-300 rounded px-3.5 py-1.5 w-full" />
-          <input required onChange={onChangeHandler} name="state" value={formData.state} type="text" placeholder="State" className="border border-gray-300 rounded px-3.5 py-1.5 w-full" />
-        </div>
-        <div className="flex gap-3">
-          <input required onChange={onChangeHandler} name="postalCode" value={formData.postalCode} type="number" placeholder="Postal Code" className="border border-gray-300 rounded px-3.5 py-1.5 w-full" />
-          <input required onChange={onChangeHandler} name="country" value={formData.country} type="text" placeholder="Country" className="border border-gray-300 rounded px-3.5 py-1.5 w-full" />
+
+          <div className="relative w-full" ref={autocompleteRef}>
+            <input
+              required
+              value={districtInput}
+              onChange={handleDistrictInputChange}
+              onFocus={() => setShowSuggestions(true)}
+              type="text"
+              placeholder="District"
+              className="border border-gray-300 rounded px-3.5 py-1.5 w-full"
+            />
+            {showSuggestions && (
+              <ul className="absolute z-10 w-full mt-1 max-h-60 overflow-y-auto bg-white border border-gray-300 rounded-md shadow-lg">
+                {filteredDistricts.length > 0 ? (
+                  filteredDistricts.map((district, index) => (
+                    <li
+                      key={index}
+                      className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                      onClick={() => handleSelectDistrict(district)}
+                    >
+                      {district}
+                    </li>
+                  ))
+                ) : (
+                  <li className="px-4 py-2 text-gray-500">No districts found</li>
+                )}
+              </ul>
+            )}
+          </div>
         </div>
 
+        <div className="flex gap-3">
+          <input required onChange={onChangeHandler} name="postalCode" value={formData.postalCode} type="number" placeholder="Postal Code" className="border border-gray-300 rounded px-3.5 py-1.5 w-full" />
+        </div>
         <input required onChange={onChangeHandler} name="phoneNumber" value={formData.phoneNumber} type="tel" pattern="^\+?\d{10,12}$" maxLength={12} placeholder="Phone Number" className="border border-gray-300 rounded px-3.5 py-1.5 w-full" />
       </div>
 
-      {/* Right Side */}
       <div className="mt-8">
         <div className="mt-8 min-w-80">
           <CartTotal />
@@ -180,7 +265,6 @@ const PlaceOrder = () => {
 
         <div className="mt-12 ">
           <Title text1={'PAYMENT'} text2={'METHOD'} />
-          {/* Payment Method Selection */}
           <div className="flex gap-3 flex-col lg:flex-row">
             <div onClick={() => setMethod('stripe')} className="flex items-center gap-3 p-2 px-3 cursor-pointer">
               <p className={`min-w-3.5 h-3.5 border rounded-full ${method === 'stripe' ? 'bg-green-400' : ''}`}></p>
