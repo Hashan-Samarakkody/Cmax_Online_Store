@@ -141,7 +141,7 @@ const Orders = ({ token }) => {
                             border-gray-300 p-5 md:p-8 my-3 md:my-4 text-xs sm:text-sm text-black rounded-xl ${statusClass}`}
                 key={index}
               >
-                <img className='w-12 rounded-xs' src={assets.parcel_icon} alt="" />
+                <img className='w-12 rounded-xs' src={assets.order_iocn} alt="" />
                 <div>
                   <div>
                     {
