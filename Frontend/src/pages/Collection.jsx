@@ -224,15 +224,22 @@ const Collection = () => {
               </select>
             </div>
 
-            <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 gap-y-6'>
-              {filterProducts.length > 0 ? (
-                filterProducts.map((item) => (
-                  <ProductItem key={item._id} id={item._id} image={item.images} name={item.name} price={item.price} />
-                ))
-              ) : (
-                <p>No products found</p>
-              )}
-            </div>
+              <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 gap-y-6'>
+                {filterProducts.length > 0 ? (
+                  filterProducts.map((item) => (
+                    <ProductItem key={item._id} id={item._id} image={item.images} name={item.name} price={item.price} />
+                  ))
+                ) : (
+                  <div className="col-span-full flex flex-col items-center justify-center min-h-[60vh]">
+                    <img
+                      src={assets.product_icon}
+                      alt="No products"
+                      className="w-24 h-24 object-contain mb-4 animate-bounce"
+                    />
+                    <p className="text-gray-600 font-medium text-lg">No products to display</p>
+                  </div>
+                )}
+              </div>
           </div>
         </div>
       )}

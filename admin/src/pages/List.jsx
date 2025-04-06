@@ -1,10 +1,11 @@
-
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { backendUrl, currency } from '../App';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
-import WebSocketService from '../WebSocketService'; // Import WebSocketService
+import WebSocketService from '../WebSocketService';
+import { assets } from '../assets/assets';
+
 
 const ProductList = ({ token }) => {
   const navigate = useNavigate();
@@ -68,60 +69,71 @@ const ProductList = ({ token }) => {
       <div className="py-8">
         <div className="-mx-4 sm:-mx-8 px-4 sm:px-8 py-4 overflow-x-auto">
           <div className="inline-block min-w-full shadow rounded-lg overflow-hidden">
-            <table className="min-w-full leading-normal">
-              <thead>
-                <tr className="bg-gray-100 text-gray-600 uppercase text-sm font-semibold border-b-2 border-gray-200">
-                  <th className="px-5 py-3 text-left">Image</th>
-                  <th className="px-5 py-3 text-left">Name</th>
-                  <th className="px-5 py-3 text-left">Category</th>
-                  <th className="px-5 py-3 text-left">Price</th>
-                  <th className="px-5 py-3 text-center">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {list.map((item, index) => (
-                  <tr key={index} className="border-b border-gray-200 hover:bg-gray-50 transition duration-200">
-                    <td className="px-5 py-5 bg-white text-sm">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0 w-16 h-16">
-                          <img
-                            className="w-full h-full rounded-lg object-cover"
-                            src={item.images[0]}
-                            alt={item.name}
-                          />
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-5 py-5 bg-white text-sm">
-                      <p className="text-gray-900 whitespace-no-wrap">{item.name}</p>
-                    </td>
-                    <td className="px-5 py-5 bg-white text-sm">
-                      <p className="text-gray-900 whitespace-no-wrap">{item.category?.name ||
-                        "Unavailable"}</p>
-                    </td>
-                    <td className="px-5 py-5 bg-white text-sm">
-                      <p className="text-gray-900 whitespace-no-wrap">{currency}{item.price}</p>
-                    </td>
-                    <td className="px-5 py-5 bg-white text-sm text-center">
-                      <div className="flex justify-center space-x-2">
-                        <button
-                          onClick={() => editProduct(item.productId)}  // Changed to use productId
-                          className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition duration-300 ease-in-out transform hover:scale-105"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => removeProduct(item._id)}
-                          className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition duration-300 ease-in-out transform hover:scale-105"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </td>
+            {list.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-20 bg-white">
+                <img
+                  src={assets.product_icon}
+                  alt="Empty parcel"
+                  className="w-32 h-32 opacity-50 mb-4"
+                />
+                <p className="text-xl text-gray-600 font-medium">No products to display</p>
+              </div>
+            ) : (
+              <table className="min-w-full leading-normal">
+                <thead>
+                  <tr className="bg-gray-100 text-gray-600 uppercase text-sm font-semibold border-b-2 border-gray-200">
+                    <th className="px-5 py-3 text-left">Image</th>
+                    <th className="px-5 py-3 text-left">Name</th>
+                    <th className="px-5 py-3 text-left">Category</th>
+                    <th className="px-5 py-3 text-left">Price</th>
+                    <th className="px-5 py-3 text-center">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {list.map((item, index) => (
+                    <tr key={index} className="border-b border-gray-200 hover:bg-gray-50 transition duration-200">
+                      <td className="px-5 py-5 bg-white text-sm">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 w-16 h-16">
+                            <img
+                              className="w-full h-full rounded-lg object-cover"
+                              src={item.images[0]}
+                              alt={item.name}
+                            />
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-5 py-5 bg-white text-sm">
+                        <p className="text-gray-900 whitespace-no-wrap">{item.name}</p>
+                      </td>
+                      <td className="px-5 py-5 bg-white text-sm">
+                        <p className="text-gray-900 whitespace-no-wrap">{item.category?.name ||
+                          "Unavailable"}</p>
+                      </td>
+                      <td className="px-5 py-5 bg-white text-sm">
+                        <p className="text-gray-900 whitespace-no-wrap">{currency}{item.price}</p>
+                      </td>
+                      <td className="px-5 py-5 bg-white text-sm text-center">
+                        <div className="flex justify-center space-x-2">
+                          <button
+                            onClick={() => editProduct(item.productId)}
+                            className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition duration-300 ease-in-out transform hover:scale-105"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => removeProduct(item._id)}
+                            className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition duration-300 ease-in-out transform hover:scale-105"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
       </div>
