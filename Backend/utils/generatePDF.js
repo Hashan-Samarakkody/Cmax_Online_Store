@@ -212,7 +212,7 @@ export const generateOrderLabel = async (req, res) => {
         doc.text(storeName, (doc.page.width - storeNameWidth) / 2, titleY);
 
         // Store tagline (centered manually)
-        const tagline = 'BEST QUALITY PRODUCTS TO YOUR DOORSTEP';
+        const tagline = 'Your Favorite Products, Delivered with Care!';
         doc.font('Helvetica-Oblique').fontSize(8);
         const taglineWidth = doc.widthOfString(tagline);
         doc.text(tagline, (doc.page.width - taglineWidth) / 2, taglineY);
@@ -295,7 +295,8 @@ export const generateOrderLabel = async (req, res) => {
         currentY += lineHeight;
 
         doc.font('Helvetica-Bold').fontSize(12).text('Amount:', rightColumnX, currentY);
-        doc.font('Helvetica').fontSize(12).text(`Rs.${item.price * item.quantity}`, rightColumnX + 130, currentY);
+        let amount = order.amount || 0;
+        doc.font('Helvetica').fontSize(12).text(`Rs.${amount}`, rightColumnX + 130, currentY);
         currentY += lineHeight;
 
         doc.font('Helvetica-Bold').fontSize(12).text('Paid:', rightColumnX, currentY);
@@ -308,11 +309,14 @@ export const generateOrderLabel = async (req, res) => {
         doc.moveTo(40, footerY).lineTo(555, footerY).stroke();
 
         // Contact information
-        doc.font('Helvetica').fontSize(10).text(`TELE: ${process.env.STORE_PHONE || '(075-6424532)'}`, 80, footerY + 15);
-        doc.text(`EMAIL: ${process.env.STORE_EMAIL || '(email)'}`, 200, footerY + 15);
+        doc.font('Helvetica').fontSize(9).text(`TELE: ${process.env.STORE_PHONE || '(075-6424532)'}`, 50, footerY + 15);
+        doc.text(`EMAIL: ${process.env.STORE_EMAIL || '(email)'}`, 160, footerY + 15);
 
-        // Copyright text
-        doc.text(`ALL RIGHTS RESERVED | C-Max©${new Date().getFullYear()}`, 350, footerY + 15);
+        // Get the current year
+        const currentYear = new Date().getFullYear();
+
+        // Return policy
+        doc.text(`Return Policy: 7 Days from the date of delivery - Cmax@${currentYear}`, 300, footerY + 15);
 
         // Finalize the PDF
         doc.end();
