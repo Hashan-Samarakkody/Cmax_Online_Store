@@ -162,3 +162,179 @@ export const generateOrderPDF = async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 };
+
+export const generateOrderLabel = async (req, res) => {
+    try {
+        const { orderId } = req.params;
+        const order = await orderModel.findById(orderId);
+
+        if (!order) {
+            return res.status(404).json({ success: false, message: 'Order not found' });
+        }
+
+        // Get customer information if needed
+        const user = await userModel.findById(order.userId);
+
+        // Create PDF document in landscape mode (A5 size)
+        const doc = new PDFDocument({
+            size: [595, 420], // A5 size in landscape mode
+            margins: {
+                top: 30,
+                bottom: 30,
+                left: 40,
+                right: 40
+            }
+        });
+
+        const outputPath = path.join(process.cwd(), `order_label_${orderId}.pdf`);
+        const writeStream = fs.createWriteStream(outputPath);
+        doc.pipe(writeStream);
+
+        // Header with logo and store name
+        const centerX = doc.page.width / 2;
+
+        // Logo at the top, centered
+        const logoPath = path.join(process.cwd(), 'assets', 'logo.png');
+        if (fs.existsSync(logoPath)) {
+            doc.image(logoPath, centerX - 50, 10, { width: 100 }); // logo at y = 10
+        } else {
+            console.error('Logo file not found at:', logoPath);
+        }
+
+        // Add vertical spacing between logo and title
+        const titleY = 95; // push title lower to create gap
+        const taglineY = 115;
+
+        // Store name (centered manually)
+        const storeName = 'C-Max Online Store';
+        doc.font('Helvetica-Bold').fontSize(20);
+        const storeNameWidth = doc.widthOfString(storeName);
+        doc.text(storeName, (doc.page.width - storeNameWidth) / 2, titleY);
+
+        // Store tagline (centered manually)
+        const tagline = 'BEST QUALITY PRODUCTS TO YOUR DOORSTEP';
+        doc.font('Helvetica-Oblique').fontSize(8);
+        const taglineWidth = doc.widthOfString(tagline);
+        doc.text(tagline, (doc.page.width - taglineWidth) / 2, taglineY);
+
+
+
+        // Draw a line under the header
+        doc.moveTo(40, 130).lineTo(555, 130).stroke();
+
+        // Content area - split into two columns
+        const leftColumnX = 50;
+        const rightColumnX = 320;
+        const lineHeight = 25;
+        let startY = 150;
+
+        // Left Column - Customer Information
+        doc.font('Helvetica-Bold').fontSize(12).text('Order Id:', leftColumnX, startY);
+        doc.font('Helvetica').fontSize(12).text(order._id, leftColumnX + 110, startY);
+
+        doc.font('Helvetica-Bold').fontSize(12).text('Ordered by:', leftColumnX, startY + lineHeight);
+        doc.font('Helvetica').fontSize(12).text(`${order.address.firstName} ${order.address.lastName}`, leftColumnX + 110, startY + lineHeight);
+
+        doc.font('Helvetica-Bold').fontSize(12).text('Address:', leftColumnX, startY + lineHeight * 2);
+
+        // Address indented
+        const addressX = leftColumnX + 20;
+        doc.font('Helvetica').fontSize(12)
+            .text(order.address.street + ",", addressX, startY + lineHeight * 3)
+            .text(order.address.city + ",", addressX, startY + lineHeight * 4)
+            .text(`${order.address.state}, ${order.address.postalCode}`, addressX, startY + lineHeight * 5);
+
+        doc.font('Helvetica-Bold').fontSize(12).text('Contact Number:', leftColumnX, startY + lineHeight * 6);
+        doc.font('Helvetica').fontSize(12).text(order.address.phoneNumber, leftColumnX + 140, startY + lineHeight * 6);
+
+        // Right Column - Order Details
+        // Get first item (for single item display)
+        const item = order.items[0];
+
+        doc.font('Helvetica-Bold').fontSize(12).text('Product Name:', rightColumnX, startY);
+        doc.font('Helvetica').fontSize(12).text(item.name, rightColumnX + 130, startY);
+
+        doc.font('Helvetica-Bold').fontSize(12).text('Quantity:', rightColumnX, startY + lineHeight);
+        doc.font('Helvetica').fontSize(12).text(item.quantity, rightColumnX + 130, startY + lineHeight);
+
+        // Handle size if available
+        let currentY = startY + lineHeight * 2;
+        if (item.size && item.size !== 'undefined_undefined' && item.size !== 'undefined') {
+            let sizeValue = item.size;
+            if (item.size.includes('_')) {
+                const [sizePart] = item.size.split('_');
+                if (sizePart !== 'undefined') {
+                    sizeValue = sizePart;
+                    doc.font('Helvetica-Bold').fontSize(12).text('Size:', rightColumnX, currentY);
+                    doc.font('Helvetica').fontSize(12).text(sizeValue, rightColumnX + 130, currentY);
+                    currentY += lineHeight;
+                }
+            } else {
+                doc.font('Helvetica-Bold').fontSize(12).text('Size:', rightColumnX, currentY);
+                doc.font('Helvetica').fontSize(12).text(sizeValue, rightColumnX + 130, currentY);
+                currentY += lineHeight;
+            }
+        }
+
+        // Handle color if available
+        if (item.color && item.color !== 'undefined_undefined' && item.color !== 'undefined') {
+            doc.font('Helvetica-Bold').fontSize(12).text('Colour:', rightColumnX, currentY);
+            doc.font('Helvetica').fontSize(12).text(item.color.toUpperCase() + item.color.slice(1), rightColumnX + 130, currentY);
+            currentY += lineHeight;
+        } else if (item.size && item.size.includes('_')) {
+            const [, colorPart] = item.size.split('_');
+            if (colorPart && colorPart !== 'undefined') {
+                doc.font('Helvetica-Bold').fontSize(12).text('Colour:', rightColumnX, currentY);
+                doc.font('Helvetica').fontSize(12).text(colorPart, rightColumnX + 130, currentY);
+                currentY += lineHeight;
+            }
+        }
+
+        doc.font('Helvetica-Bold').fontSize(12).text('Payment Method:', rightColumnX, currentY);
+        doc.font('Helvetica').fontSize(12).text(order.paymentMethod, rightColumnX + 130, currentY);
+        currentY += lineHeight;
+
+        doc.font('Helvetica-Bold').fontSize(12).text('Amount:', rightColumnX, currentY);
+        doc.font('Helvetica').fontSize(12).text(`Rs.${item.price * item.quantity}`, rightColumnX + 130, currentY);
+        currentY += lineHeight;
+
+        doc.font('Helvetica-Bold').fontSize(12).text('Paid:', rightColumnX, currentY);
+        doc.font('Helvetica').fontSize(12).text(order.payment ? 'Yes' : 'No', rightColumnX + 130, currentY);
+
+        // Footer
+        const footerY = 350;
+
+        // Draw a line above the footer
+        doc.moveTo(40, footerY).lineTo(555, footerY).stroke();
+
+        // Contact information
+        doc.font('Helvetica').fontSize(10).text(`TELE: ${process.env.STORE_PHONE || '(075-6424532)'}`, 80, footerY + 15);
+        doc.text(`EMAIL: ${process.env.STORE_EMAIL || '(email)'}`, 200, footerY + 15);
+
+        // Copyright text
+        doc.text(`ALL RIGHTS RESERVED | C-Max©${new Date().getFullYear()}`, 350, footerY + 15);
+
+        // Finalize the PDF
+        doc.end();
+
+        // Wait for PDF creation to complete
+        await new Promise((resolve, reject) => {
+            writeStream.on('finish', resolve);
+            writeStream.on('error', reject);
+        });
+
+        // Send the PDF for download
+        res.download(outputPath, `order_label_${orderId}.pdf`, (err) => {
+            if (err) {
+                console.error('Download error:', err);
+                res.status(500).json({ success: false, message: 'Error downloading label' });
+            }
+            // Clean up the temporary file
+            fs.unlinkSync(outputPath);
+        });
+
+    } catch (error) {
+        console.error('Label Generation Error:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};

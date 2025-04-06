@@ -51,6 +51,29 @@ const Orders = ({ token }) => {
     }
   };
 
+  // Label Generation Function
+  const generateOrderLabel = async (orderId) => {
+    try {
+      const response = await axios.get(`${backendUrl}/api/order/generateLabel/${orderId}`, {
+        headers: { token },
+        responseType: 'blob'
+      });
+      // Create a link to download the PDF
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `order_label_${orderId}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      toast.success('Order Label Generated Successfully', { autoClose: 1000 });
+    } catch (error) {
+      console.error('Label Generation Error:', error);
+      toast.error('Failed to generate order label');
+    }
+  };
+
   const statusHandler = async (event, orderId) => {
     try {
       const response = await axios.post(backendUrl + '/api/order/status', { orderId, status: event.target.value }, { headers: { token } });
@@ -171,12 +194,24 @@ const Orders = ({ token }) => {
                   <p className='text-black'>Date: {new Date(order.date).toLocaleString()}</p>
                 </div>
                 <p className='text-sm sm:text-[15px] text-black'>{currency}{order.amount}.00</p>
-                <select onChange={(event) => statusHandler(event, order._id)} value={order.status} className='p-2 font-semibold text-black'>
-                  <option value="Order Placed">Order Placed</option>
-                  <option value="Picking">Picking</option>
-                  <option value="Out for Delivery">Out for Delivery</option>
-                  <option value="Delivered">Delivered</option>
-                </select>
+                <div className="flex flex-col gap-2">
+                  <select onChange={(event) => statusHandler(event, order._id)} value={order.status} className='p-2 font-semibold text-black'>
+                    <option value="Order Placed">Order Placed</option>
+                    <option value="Picking">Picking</option>
+                    <option value="Out for Delivery">Out for Delivery</option>
+                    <option value="Delivered">Delivered</option>
+                  </select>
+
+                  {/* Generate Label button - only show for non-delivered orders */}
+                  {order.status !== "Delivered" && (
+                    <button
+                      onClick={() => generateOrderLabel(order._id)}
+                      className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-2 rounded text-xs"
+                    >
+                      Generate Label
+                    </button>
+                  )}
+                </div>
               </div>
             );
           })
