@@ -217,8 +217,6 @@ export const generateOrderLabel = async (req, res) => {
         const taglineWidth = doc.widthOfString(tagline);
         doc.text(tagline, (doc.page.width - taglineWidth) / 2, taglineY);
 
-
-
         // Draw a line under the header
         doc.moveTo(40, 130).lineTo(555, 130).stroke();
 
@@ -227,6 +225,9 @@ export const generateOrderLabel = async (req, res) => {
         const rightColumnX = 320;
         const lineHeight = 25;
         let startY = 150;
+
+        // Define footer position
+        const footerY = 350;
 
         // Left Column - Customer Information
         doc.font('Helvetica-Bold').fontSize(12).text('Order Id:', leftColumnX, startY);
@@ -248,46 +249,136 @@ export const generateOrderLabel = async (req, res) => {
         doc.font('Helvetica').fontSize(12).text(order.address.phoneNumber, leftColumnX + 140, startY + lineHeight * 6);
 
         // Right Column - Order Details
-        // Get first item (for single item display)
-        const item = order.items[0];
+        let currentY = startY;
 
-        doc.font('Helvetica-Bold').fontSize(12).text('Product Name:', rightColumnX, startY);
-        doc.font('Helvetica').fontSize(12).text(item.name, rightColumnX + 130, startY);
+        // Display title for multiple items
+        if (order.items.length > 1) {
+            doc.font('Helvetica-Bold').fontSize(14).text('Order Items:', rightColumnX, currentY);
+            currentY += lineHeight;
+        }
 
-        doc.font('Helvetica-Bold').fontSize(12).text('Quantity:', rightColumnX, startY + lineHeight);
-        doc.font('Helvetica').fontSize(12).text(item.quantity, rightColumnX + 130, startY + lineHeight);
+        // Track if we need additional pages
+        let currentPage = 1;
+        let totalPages = 1; // We'll calculate this later if needed
 
-        // Handle size if available
-        let currentY = startY + lineHeight * 2;
-        if (item.size && item.size !== 'undefined_undefined' && item.size !== 'undefined') {
-            let sizeValue = item.size;
-            if (item.size.includes('_')) {
-                const [sizePart] = item.size.split('_');
-                if (sizePart !== 'undefined') {
-                    sizeValue = sizePart;
+        // Helper function to add page headers if needed
+        const addPageHeader = () => {
+            // Logo at the top, centered
+            if (fs.existsSync(logoPath)) {
+                doc.image(logoPath, centerX - 50, 10, { width: 100 });
+            }
+
+            // Store name
+            doc.font('Helvetica-Bold').fontSize(20);
+            doc.text(storeName, (doc.page.width - storeNameWidth) / 2, titleY);
+
+            // Store tagline
+            doc.font('Helvetica-Oblique').fontSize(8);
+            doc.text(tagline, (doc.page.width - taglineWidth) / 2, taglineY);
+
+            // Line under header
+            doc.moveTo(40, 130).lineTo(555, 130).stroke();
+
+            // Page indicator
+            doc.font('Helvetica').fontSize(10).text(`Page ${currentPage}`, 500, 10);
+
+            return 150; // Return the starting Y position for content
+        };
+
+        // Helper function to add footer
+        const addFooter = (y) => {
+            // Draw a line above the footer
+            doc.moveTo(40, y).lineTo(555, y).stroke();
+
+            // Contact information
+            doc.font('Helvetica').fontSize(9).text(`TELE: ${process.env.STORE_PHONE || '(075-6424532)'}`, 50, y + 15);
+            doc.text(`EMAIL: ${process.env.STORE_EMAIL || '(email)'}`, 160, y + 15);
+
+            // Get the current year
+            const currentYear = new Date().getFullYear();
+
+            // Return policy
+            doc.text(`Return Policy: 7 Days from the date of delivery - Cmax@${currentYear}`, 300, y + 15);
+        };
+
+        // Iterate through all items in the order
+        for (let i = 0; i < order.items.length; i++) {
+            const item = order.items[i];
+
+            // If we're running out of space, start a new page
+            if (currentY > footerY - 80) {
+                addFooter(footerY);
+                doc.addPage();
+                currentPage++;
+                currentY = addPageHeader();
+
+                // If it's a continuation, add a header
+                doc.font('Helvetica-Bold').fontSize(14).text('Order Items (continued):', rightColumnX, currentY);
+                currentY += lineHeight;
+            }
+
+            // Add item number if there are multiple items
+            if (order.items.length > 1) {
+                doc.font('Helvetica-Bold').fontSize(12).text(`Item ${i + 1}:`, rightColumnX, currentY);
+                currentY += lineHeight;
+            }
+
+            doc.font('Helvetica-Bold').fontSize(12).text('Product Name:', rightColumnX, currentY);
+            doc.font('Helvetica').fontSize(12).text(item.name, rightColumnX + 130, currentY);
+            currentY += lineHeight;
+
+            doc.font('Helvetica-Bold').fontSize(12).text('Quantity:', rightColumnX, currentY);
+            doc.font('Helvetica').fontSize(12).text(item.quantity, rightColumnX + 130, currentY);
+            currentY += lineHeight;
+
+            // Handle size if available
+            if (item.size && item.size !== 'undefined_undefined' && item.size !== 'undefined') {
+                let sizeValue = item.size;
+                if (item.size.includes('_')) {
+                    const [sizePart] = item.size.split('_');
+                    if (sizePart !== 'undefined') {
+                        sizeValue = sizePart;
+                        doc.font('Helvetica-Bold').fontSize(12).text('Size:', rightColumnX, currentY);
+                        doc.font('Helvetica').fontSize(12).text(sizeValue, rightColumnX + 130, currentY);
+                        currentY += lineHeight;
+                    }
+                } else {
                     doc.font('Helvetica-Bold').fontSize(12).text('Size:', rightColumnX, currentY);
                     doc.font('Helvetica').fontSize(12).text(sizeValue, rightColumnX + 130, currentY);
                     currentY += lineHeight;
                 }
-            } else {
-                doc.font('Helvetica-Bold').fontSize(12).text('Size:', rightColumnX, currentY);
-                doc.font('Helvetica').fontSize(12).text(sizeValue, rightColumnX + 130, currentY);
+            }
+
+            // Handle color if available
+            if (item.color && item.color !== 'undefined_undefined' && item.color !== 'undefined') {
+                doc.font('Helvetica-Bold').fontSize(12).text('Colour:', rightColumnX, currentY);
+                doc.font('Helvetica').fontSize(12).text(item.color.charAt(0).toUpperCase() + item.color.slice(1), rightColumnX + 130, currentY);
                 currentY += lineHeight;
+            } else if (item.size && item.size.includes('_')) {
+                const [, colorPart] = item.size.split('_');
+                if (colorPart && colorPart !== 'undefined') {
+                    doc.font('Helvetica-Bold').fontSize(12).text('Colour:', rightColumnX, currentY);
+                    doc.font('Helvetica').fontSize(12).text(colorPart, rightColumnX + 130, currentY);
+                    currentY += lineHeight;
+                }
+            }
+
+            // Add a separator line between items (if not the last item)
+            if (i < order.items.length - 1) {
+                doc.moveTo(rightColumnX, currentY).lineTo(rightColumnX + 220, currentY).stroke();
+                currentY += lineHeight / 2;
             }
         }
 
-        // Handle color if available
-        if (item.color && item.color !== 'undefined_undefined' && item.color !== 'undefined') {
-            doc.font('Helvetica-Bold').fontSize(12).text('Colour:', rightColumnX, currentY);
-            doc.font('Helvetica').fontSize(12).text(item.color.toUpperCase() + item.color.slice(1), rightColumnX + 130, currentY);
-            currentY += lineHeight;
-        } else if (item.size && item.size.includes('_')) {
-            const [, colorPart] = item.size.split('_');
-            if (colorPart && colorPart !== 'undefined') {
-                doc.font('Helvetica-Bold').fontSize(12).text('Colour:', rightColumnX, currentY);
-                doc.font('Helvetica').fontSize(12).text(colorPart, rightColumnX + 130, currentY);
-                currentY += lineHeight;
-            }
+        // Order payment details (after listing all items)
+        currentY += lineHeight / 2;
+
+        // Check if we have space for payment details, otherwise add a new page
+        if (currentY > footerY - 80) {
+            addFooter(footerY);
+            doc.addPage();
+            currentPage++;
+            currentY = addPageHeader();
         }
 
         doc.font('Helvetica-Bold').fontSize(12).text('Payment Method:', rightColumnX, currentY);
@@ -302,22 +393,20 @@ export const generateOrderLabel = async (req, res) => {
         doc.font('Helvetica-Bold').fontSize(12).text('Paid:', rightColumnX, currentY);
         doc.font('Helvetica').fontSize(12).text(order.payment ? 'Yes' : 'No', rightColumnX + 130, currentY);
 
-        // Footer
-        const footerY = 350;
+        // Add footer to the last page
+        addFooter(footerY);
 
-        // Draw a line above the footer
-        doc.moveTo(40, footerY).lineTo(555, footerY).stroke();
+        // Update page numbers on all pages if multiple pages
+        if (currentPage > 1) {
+            totalPages = currentPage;
 
-        // Contact information
-        doc.font('Helvetica').fontSize(9).text(`TELE: ${process.env.STORE_PHONE || '(075-6424532)'}`, 50, footerY + 15);
-        doc.text(`EMAIL: ${process.env.STORE_EMAIL || '(email)'}`, 160, footerY + 15);
-
-        // Get the current year
-        const currentYear = new Date().getFullYear();
-
-        // Return policy
-        doc.text(`Return Policy: 7 Days from the date of delivery - Cmax@${currentYear}`, 300, footerY + 15);
-
+            // Use bufferedPageRange to get the pages that are currently accessible
+            const range = doc.bufferedPageRange();
+            for (let i = 0; i < range.count; i++) {
+                doc.switchToPage(i + range.start);
+                doc.font('Helvetica').fontSize(10).text(`Page ${i + range.start + 1} of ${totalPages}`, 500, 10);
+            }
+        }
         // Finalize the PDF
         doc.end();
 
