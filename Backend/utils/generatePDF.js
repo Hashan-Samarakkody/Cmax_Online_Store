@@ -6,7 +6,18 @@ import userModel from '../models/userModel.js';
 
 export const generateOrderPDF = async (req, res) => {
     try {
-        const placedOrders = await orderModel.find({ status: 'Order Placed' });
+        const placedOrders = await orderModel.find({
+            status: { $in: ['Order Placed', 'Picking'] }
+        });
+
+        // Return error if no eligible orders found
+        if (placedOrders.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'No orders found with status "Order Placed" or "Picking"'
+            });
+        }
+        
         const userOrderGroups = {};
 
         // Predefined sizes

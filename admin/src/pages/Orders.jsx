@@ -40,10 +40,21 @@ const Orders = ({ token }) => {
   // PDF Generation Function
   const generatePDF = async () => {
     try {
+      // Check if there are any orders with status "Order Placed" or "Picking"
+      const eligibleOrders = orders.filter(order =>
+        order.status === "Order Placed" || order.status === "Picking"
+      );
+
+      if (eligibleOrders.length === 0) {
+        toast.error('No orders found with status "Order Placed" or "Picking"');
+        return;
+      }
+
       const response = await axios.get(`${backendUrl}/api/order/generatePDF`, {
         headers: { token },
         responseType: 'blob'
       });
+
       // Create a link to download the PDF
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
@@ -52,15 +63,14 @@ const Orders = ({ token }) => {
       document.body.appendChild(link);
       link.click();
       link.remove();
-      // Clean up the link
 
       toast.success('PDF Generated Successfully', { autoClose: 1000 });
     } catch (error) {
       console.error('PDF Generation Error:', error);
-      toast.error('Failed to generate PDF');
+      // Display the specific error message from the backend
+      toast.error(error.response?.data?.message || 'Failed to generate PDF');
     }
   };
-
   // Label Generation Function
   const generateOrderLabel = async (orderId, labelType = 'standard') => {
     try {
