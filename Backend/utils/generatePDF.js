@@ -17,46 +17,11 @@ export const generateOrderPDF = async (req, res) => {
                 message: 'No orders found with status "Order Placed" or "Picking"'
             });
         }
-        
-        const userOrderGroups = {};
 
-        // Predefined sizes
+        const userOrderGroups = {};
         const validSizes = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL'];
 
-        // Helper function to extract size and color
-        const extractSizeColor = (item) => {
-            let size = '';
-            let color = '';
-
-            if (item.size && item.size !== 'undefined' && item.size !== 'undefined_undefined') {
-                if (validSizes.includes(item.size)) {
-                    size = item.size;
-                } else if (item.size.includes('_')) {
-                    const parts = item.size.split('_');
-                    const potentialSize = parts.find(part => validSizes.includes(part));
-                    if (potentialSize) {
-                        size = potentialSize;
-                    }
-                    const colorPart = parts.find(part => !validSizes.includes(part) && part !== 'undefined');
-                    if (colorPart) {
-                        color = colorPart;
-                    }
-                }
-            }
-
-            if ((!color || color === 'undefined') &&
-                item.color &&
-                item.color !== 'undefined' &&
-                item.color !== 'undefined_undefined') {
-                color = item.color;
-            }
-
-            return {
-                size: size || '',
-                color: color || ''
-            };
-        };
-
+        // Process orders and group items by user and order
         for (const order of placedOrders) {
             const user = await userModel.findById(order.userId);
             const userName = user ? user.name : 'Unknown User';
@@ -65,18 +30,69 @@ export const generateOrderPDF = async (req, res) => {
                 userOrderGroups[userName] = [];
             }
 
-            order.items.forEach(item => {
-                const { size, color } = extractSizeColor(item);
+            // Group items within this specific order by name+size+color
+            const groupedItems = {};
 
-                userOrderGroups[userName].push({
-                    name: item.name,
-                    size: size,
-                    color: color,
-                    quantity: item.quantity
-                });
+            order.items.forEach(item => {
+                // Extract size and color
+                let size = '';
+                let color = '';
+
+                if (item.size && item.size !== 'undefined' && item.size !== 'undefined_undefined') {
+                    if (validSizes.includes(item.size)) {
+                        size = item.size;
+                    } else if (item.size.includes('_')) {
+                        const parts = item.size.split('_');
+                        const sizePart = parts.find(part => validSizes.includes(part));
+                        if (sizePart) size = sizePart;
+
+                        const colorPart = parts.find(part => !validSizes.includes(part) && part !== 'undefined');
+                        if (colorPart) color = colorPart;
+                    }
+                }
+
+                if ((!color || color === 'undefined') &&
+                    item.color &&
+                    item.color !== 'undefined' &&
+                    item.color !== 'undefined_undefined') {
+                    color = item.color;
+                }
+
+                // Create a unique key for grouping
+                const itemKey = `${item.name}|${size}|${color}`;
+
+                if (!groupedItems[itemKey]) {
+                    groupedItems[itemKey] = {
+                        name: item.name,
+                        size: size || '',
+                        color: color || '',
+                        quantity: 0
+                    };
+                }
+
+                // Add this item's quantity to the grouped total
+                groupedItems[itemKey].quantity += item.quantity;
+            });
+
+            // Format order time in 12-hour format
+            const orderDate = new Date(order.date);
+            const orderTime = orderDate.toLocaleString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: 'numeric',
+                hour12: true
+            });
+
+            // Add this order's grouped items to the user's orders
+            userOrderGroups[userName].push({
+                orderId: order._id,
+                orderTime: orderTime,
+                items: Object.values(groupedItems)
             });
         }
 
+        // Create PDF document
         const doc = new PDFDocument({ margin: 30, size: 'A4' });
         const outputPath = path.join(process.cwd(), 'placed_orders_report.pdf');
         const writeStream = fs.createWriteStream(outputPath);
@@ -88,57 +104,78 @@ export const generateOrderPDF = async (req, res) => {
         doc.moveDown(1.5);
 
         // Table Header
-        const startX = 50;
+        const startX = 30;
         let startY = doc.y;
-        const columnWidths = [100, 150, 70, 70, 70];
+        // Updated column widths to include Order ID and Time
+        const columnWidths = [80, 80, 80, 120, 50, 50, 50];
 
         const drawRow = (y, row, isHeader = false) => {
-            const fontSize = isHeader ? 14 : 12;
+            const fontSize = isHeader ? 12 : 10;
             doc.fontSize(fontSize);
-            doc.text(row[0], startX, y, { width: columnWidths[0], align: 'left' });
-            doc.text(row[1], startX + columnWidths[0], y, { width: columnWidths[1], align: 'left' });
 
-            if (row[2]) {
-                doc.text(row[2], startX + columnWidths[0] + columnWidths[1], y, { width: columnWidths[2], align: 'center' });
+            let currentX = startX;
+
+            // Draw each column with proper alignment
+            for (let i = 0; i < row.length; i++) {
+                const alignMode = i === 6 ? 'center' : 'left'; // Center-align quantity
+                doc.text(row[i] || '', currentX, y, {
+                    width: columnWidths[i],
+                    align: alignMode
+                });
+                currentX += columnWidths[i];
             }
 
-            if (row[3]) {
-                doc.text(row[3], startX + columnWidths[0] + columnWidths[1] + columnWidths[2], y, { width: columnWidths[3], align: 'center' });
-            }
-
-            doc.text(row[4], startX + columnWidths[0] + columnWidths[1] + columnWidths[2] + columnWidths[3], y, { width: columnWidths[4], align: 'center' });
-
-            doc.moveTo(startX, y + 15).lineTo(startX + columnWidths.reduce((a, b) => a + b, 0), y + 15).stroke();
+            // Draw separator line
+            doc.moveTo(startX, y + 15)
+                .lineTo(startX + columnWidths.reduce((a, b) => a + b, 0), y + 15)
+                .stroke();
         };
 
         // Draw header row
         doc.font('Helvetica-Bold');
-        drawRow(startY, ['Ordered by', 'Item', 'Size', 'Color', 'Quantity'], true);
+        drawRow(startY, ['Ordered by', 'Order ID', 'Order Time', 'Item', 'Size', 'Color', 'Qty'], true);
         startY += 20;
         doc.font('Helvetica');
 
         // Draw user orders
-        Object.entries(userOrderGroups).forEach(([userName, items]) => {
-            items.forEach((item, index) => {
-                drawRow(startY, [
-                    index === 0 ? userName : '',
-                    item.name,
-                    item.size || '',
-                    item.color || '',
-                    item.quantity.toString()
-                ]);
-                startY += 20;
+        Object.entries(userOrderGroups).forEach(([userName, orders]) => {
+            orders.forEach((order, orderIndex) => {
+                order.items.forEach((item, itemIndex) => {
+                    // Only show username for first item of first order
+                    const userNameToShow = orderIndex === 0 && itemIndex === 0 ? userName : '';
 
-                // Add a new page if the content exceeds the page height
-                if (startY > 750) {
-                    addFooter(doc);
-                    doc.addPage();
-                    startY = 50;
-                    drawRow(startY, ['Ordered by', 'Item', 'Size', 'Color', 'Quantity'], true);
+                    // Only show order ID and time for first item of each order
+                    const orderIdToShow = itemIndex === 0 ? order.orderId.toString().slice(-6) : '';
+                    const orderTimeToShow = itemIndex === 0 ? order.orderTime : '';
+
+                    drawRow(startY, [
+                        userNameToShow,
+                        orderIdToShow,
+                        orderTimeToShow,
+                        item.name,
+                        item.size,
+                        item.color,
+                        item.quantity.toString()
+                    ]);
                     startY += 20;
-                }
+
+                    // Add a new page if needed
+                    if (startY > 750) {
+                        addFooter(doc);
+                        doc.addPage();
+                        startY = 50;
+                        // Redraw header on new page
+                        doc.font('Helvetica-Bold');
+                        drawRow(startY, ['Ordered by', 'Order ID', 'Order Time', 'Item', 'Size', 'Color', 'Qty'], true);
+                        startY += 20;
+                        doc.font('Helvetica');
+                    }
+                });
+                // Small gap between orders from the same user
+                if (orderIndex < orders.length - 1) startY += 5;
             });
-            startY += 5; // Extra space between users
+            // Larger gap between different users
+            startY += 10;
         });
 
         // Add footer and finalize PDF
