@@ -166,6 +166,8 @@ export const generateOrderPDF = async (req, res) => {
 export const generateOrderLabel = async (req, res) => {
     try {
         const { orderId } = req.params;
+        const { type = 'standard' } = req.query; // Get label type from query params, default to standard
+
         const order = await orderModel.findById(orderId);
 
         if (!order) {
@@ -190,223 +192,20 @@ export const generateOrderLabel = async (req, res) => {
         const writeStream = fs.createWriteStream(outputPath);
         doc.pipe(writeStream);
 
-        // Header with logo and store name
+        // Common variables
         const centerX = doc.page.width / 2;
-
-        // Logo at the top, centered
-        const logoPath = path.join(process.cwd(), 'assets', 'logo.png');
-        if (fs.existsSync(logoPath)) {
-            doc.image(logoPath, centerX - 50, 10, { width: 100 }); // logo at y = 10
-        } else {
-            console.error('Logo file not found at:', logoPath);
-        }
-
-        // Add vertical spacing between logo and title
-        const titleY = 95; // push title lower to create gap
+        const titleY = 95;
         const taglineY = 115;
-
-        // Store name (centered manually)
         const storeName = 'C-Max Online Store';
-        doc.font('Helvetica-Bold').fontSize(20);
-        const storeNameWidth = doc.widthOfString(storeName);
-        doc.text(storeName, (doc.page.width - storeNameWidth) / 2, titleY);
-
-        // Store tagline (centered manually)
         const tagline = 'Your Favorite Products, Delivered with Care!';
-        doc.font('Helvetica-Oblique').fontSize(8);
-        const taglineWidth = doc.widthOfString(tagline);
-        doc.text(tagline, (doc.page.width - taglineWidth) / 2, taglineY);
 
-        // Draw a line under the header
-        doc.moveTo(40, 130).lineTo(555, 130).stroke();
-
-        // Content area - split into two columns
-        const leftColumnX = 50;
-        const rightColumnX = 320;
-        const lineHeight = 25;
-        let startY = 150;
-
-        // Define footer position
-        const footerY = 350;
-
-        // Left Column - Customer Information
-        doc.font('Helvetica-Bold').fontSize(12).text('Order Id:', leftColumnX, startY);
-        doc.font('Helvetica').fontSize(12).text(order._id, leftColumnX + 110, startY);
-
-        doc.font('Helvetica-Bold').fontSize(12).text('Ordered by:', leftColumnX, startY + lineHeight);
-        doc.font('Helvetica').fontSize(12).text(`${order.address.firstName} ${order.address.lastName}`, leftColumnX + 110, startY + lineHeight);
-
-        doc.font('Helvetica-Bold').fontSize(12).text('Address:', leftColumnX, startY + lineHeight * 2);
-
-        // Address indented
-        const addressX = leftColumnX + 20;
-        doc.font('Helvetica').fontSize(12)
-            .text(order.address.street + ",", addressX, startY + lineHeight * 3)
-            .text(order.address.city + ",", addressX, startY + lineHeight * 4)
-            .text(`${order.address.state}, ${order.address.postalCode}`, addressX, startY + lineHeight * 5);
-
-        doc.font('Helvetica-Bold').fontSize(12).text('Contact Number:', leftColumnX, startY + lineHeight * 6);
-        doc.font('Helvetica').fontSize(12).text(order.address.phoneNumber, leftColumnX + 140, startY + lineHeight * 6);
-
-        // Right Column - Order Details
-        let currentY = startY;
-
-        // Display title for multiple items
-        if (order.items.length > 1) {
-            doc.font('Helvetica-Bold').fontSize(14).text('Order Items:', rightColumnX, currentY);
-            currentY += lineHeight;
+        // Based on type parameter and number of items, choose the label format
+        if (type === 'table' || (type === 'auto' && order.items.length > 1)) {
+            createTableLabel(doc, order, centerX, titleY, taglineY, storeName, tagline);
+        } else {
+            createStandardLabel(doc, order, centerX, titleY, taglineY, storeName, tagline);
         }
 
-        // Track if we need additional pages
-        let currentPage = 1;
-        let totalPages = 1; // We'll calculate this later if needed
-
-        // Helper function to add page headers if needed
-        const addPageHeader = () => {
-            // Logo at the top, centered
-            if (fs.existsSync(logoPath)) {
-                doc.image(logoPath, centerX - 50, 10, { width: 100 });
-            }
-
-            // Store name
-            doc.font('Helvetica-Bold').fontSize(20);
-            doc.text(storeName, (doc.page.width - storeNameWidth) / 2, titleY);
-
-            // Store tagline
-            doc.font('Helvetica-Oblique').fontSize(8);
-            doc.text(tagline, (doc.page.width - taglineWidth) / 2, taglineY);
-
-            // Line under header
-            doc.moveTo(40, 130).lineTo(555, 130).stroke();
-
-            // Page indicator
-            doc.font('Helvetica').fontSize(10).text(`Page ${currentPage}`, 500, 10);
-
-            return 150; // Return the starting Y position for content
-        };
-
-        // Helper function to add footer
-        const addFooter = (y) => {
-            // Draw a line above the footer
-            doc.moveTo(40, y).lineTo(555, y).stroke();
-
-            // Contact information
-            doc.font('Helvetica').fontSize(9).text(`TELE: ${process.env.STORE_PHONE || '(075-6424532)'}`, 50, y + 15);
-            doc.text(`EMAIL: ${process.env.STORE_EMAIL || '(email)'}`, 160, y + 15);
-
-            // Get the current year
-            const currentYear = new Date().getFullYear();
-
-            // Return policy
-            doc.text(`Return Policy: 7 Days from the date of delivery - Cmax@${currentYear}`, 300, y + 15);
-        };
-
-        // Iterate through all items in the order
-        for (let i = 0; i < order.items.length; i++) {
-            const item = order.items[i];
-
-            // If we're running out of space, start a new page
-            if (currentY > footerY - 80) {
-                addFooter(footerY);
-                doc.addPage();
-                currentPage++;
-                currentY = addPageHeader();
-
-                // If it's a continuation, add a header
-                doc.font('Helvetica-Bold').fontSize(14).text('Order Items (continued):', rightColumnX, currentY);
-                currentY += lineHeight;
-            }
-
-            // Add item number if there are multiple items
-            if (order.items.length > 1) {
-                doc.font('Helvetica-Bold').fontSize(12).text(`Item ${i + 1}:`, rightColumnX, currentY);
-                currentY += lineHeight;
-            }
-
-            doc.font('Helvetica-Bold').fontSize(12).text('Product Name:', rightColumnX, currentY);
-            doc.font('Helvetica').fontSize(12).text(item.name, rightColumnX + 130, currentY);
-            currentY += lineHeight;
-
-            doc.font('Helvetica-Bold').fontSize(12).text('Quantity:', rightColumnX, currentY);
-            doc.font('Helvetica').fontSize(12).text(item.quantity, rightColumnX + 130, currentY);
-            currentY += lineHeight;
-
-            // Handle size if available
-            if (item.size && item.size !== 'undefined_undefined' && item.size !== 'undefined') {
-                let sizeValue = item.size;
-                if (item.size.includes('_')) {
-                    const [sizePart] = item.size.split('_');
-                    if (sizePart !== 'undefined') {
-                        sizeValue = sizePart;
-                        doc.font('Helvetica-Bold').fontSize(12).text('Size:', rightColumnX, currentY);
-                        doc.font('Helvetica').fontSize(12).text(sizeValue, rightColumnX + 130, currentY);
-                        currentY += lineHeight;
-                    }
-                } else {
-                    doc.font('Helvetica-Bold').fontSize(12).text('Size:', rightColumnX, currentY);
-                    doc.font('Helvetica').fontSize(12).text(sizeValue, rightColumnX + 130, currentY);
-                    currentY += lineHeight;
-                }
-            }
-
-            // Handle color if available
-            if (item.color && item.color !== 'undefined_undefined' && item.color !== 'undefined') {
-                doc.font('Helvetica-Bold').fontSize(12).text('Colour:', rightColumnX, currentY);
-                doc.font('Helvetica').fontSize(12).text(item.color.charAt(0).toUpperCase() + item.color.slice(1), rightColumnX + 130, currentY);
-                currentY += lineHeight;
-            } else if (item.size && item.size.includes('_')) {
-                const [, colorPart] = item.size.split('_');
-                if (colorPart && colorPart !== 'undefined') {
-                    doc.font('Helvetica-Bold').fontSize(12).text('Colour:', rightColumnX, currentY);
-                    doc.font('Helvetica').fontSize(12).text(colorPart, rightColumnX + 130, currentY);
-                    currentY += lineHeight;
-                }
-            }
-
-            // Add a separator line between items (if not the last item)
-            if (i < order.items.length - 1) {
-                doc.moveTo(rightColumnX, currentY).lineTo(rightColumnX + 220, currentY).stroke();
-                currentY += lineHeight / 2;
-            }
-        }
-
-        // Order payment details (after listing all items)
-        currentY += lineHeight / 2;
-
-        // Check if we have space for payment details, otherwise add a new page
-        if (currentY > footerY - 80) {
-            addFooter(footerY);
-            doc.addPage();
-            currentPage++;
-            currentY = addPageHeader();
-        }
-
-        doc.font('Helvetica-Bold').fontSize(12).text('Payment Method:', rightColumnX, currentY);
-        doc.font('Helvetica').fontSize(12).text(order.paymentMethod, rightColumnX + 130, currentY);
-        currentY += lineHeight;
-
-        doc.font('Helvetica-Bold').fontSize(12).text('Amount:', rightColumnX, currentY);
-        let amount = order.amount || 0;
-        doc.font('Helvetica').fontSize(12).text(`Rs.${amount}`, rightColumnX + 130, currentY);
-        currentY += lineHeight;
-
-        doc.font('Helvetica-Bold').fontSize(12).text('Paid:', rightColumnX, currentY);
-        doc.font('Helvetica').fontSize(12).text(order.payment ? 'Yes' : 'No', rightColumnX + 130, currentY);
-
-        // Add footer to the last page
-        addFooter(footerY);
-
-        // Update page numbers on all pages if multiple pages
-        if (currentPage > 1) {
-            totalPages = currentPage;
-
-            // Use bufferedPageRange to get the pages that are currently accessible
-            const range = doc.bufferedPageRange();
-            for (let i = 0; i < range.count; i++) {
-                doc.switchToPage(i + range.start);
-                doc.font('Helvetica').fontSize(10).text(`Page ${i + range.start + 1} of ${totalPages}`, 500, 10);
-            }
-        }
         // Finalize the PDF
         doc.end();
 
@@ -431,3 +230,307 @@ export const generateOrderLabel = async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 };
+
+// Helper function to create the standard label
+function createStandardLabel(doc, order, centerX, titleY, taglineY, storeName, tagline) {
+    // Add common header
+    createHeader(doc, centerX, titleY, taglineY, storeName, tagline);
+
+    // Content area - split into two columns
+    const leftColumnX = 50;
+    const rightColumnX = 320;
+    const lineHeight = 25;
+    let startY = 150;
+
+    // Define footer position
+    const footerY = 350;
+
+    // Left Column - Customer Information
+    doc.font('Helvetica-Bold').fontSize(12).text('Order Id:', leftColumnX, startY);
+    doc.font('Helvetica').fontSize(12).text(order._id, leftColumnX + 110, startY);
+
+    doc.font('Helvetica-Bold').fontSize(12).text('Ordered by:', leftColumnX, startY + lineHeight);
+    doc.font('Helvetica').fontSize(12).text(`${order.address.firstName} ${order.address.lastName}`, leftColumnX + 110, startY + lineHeight);
+
+    doc.font('Helvetica-Bold').fontSize(12).text('Address:', leftColumnX, startY + lineHeight * 2);
+
+    // Address indented
+    const addressX = leftColumnX + 20;
+    doc.font('Helvetica').fontSize(12)
+        .text(order.address.street + ",", addressX, startY + lineHeight * 3)
+        .text(order.address.city + ",", addressX, startY + lineHeight * 4)
+        .text(`${order.address.state}, ${order.address.postalCode}`, addressX, startY + lineHeight * 5);
+
+    doc.font('Helvetica-Bold').fontSize(12).text('Contact Number:', leftColumnX, startY + lineHeight * 6);
+    doc.font('Helvetica').fontSize(12).text(order.address.phoneNumber, leftColumnX + 140, startY + lineHeight * 6);
+
+    // Right Column - Order Details
+    let currentY = startY;
+
+    // Get the first item for standard label
+    const item = order.items[0];
+
+    doc.font('Helvetica-Bold').fontSize(14).text('Product Details:', rightColumnX, currentY);
+    currentY += lineHeight;
+
+    doc.font('Helvetica-Bold').fontSize(12).text('Product Name:', rightColumnX, currentY);
+    doc.font('Helvetica').fontSize(12).text(item.name, rightColumnX + 130, currentY);
+    currentY += lineHeight;
+
+    doc.font('Helvetica-Bold').fontSize(12).text('Quantity:', rightColumnX, currentY);
+    doc.font('Helvetica').fontSize(12).text(item.quantity, rightColumnX + 130, currentY);
+    currentY += lineHeight;
+
+    // Handle size if available
+    const size = getSize(item);
+    if (size) {
+        doc.font('Helvetica-Bold').fontSize(12).text('Size:', rightColumnX, currentY);
+        doc.font('Helvetica').fontSize(12).text(size, rightColumnX + 130, currentY);
+        currentY += lineHeight;
+    }
+
+    // Handle color if available
+    const color = getColor(item);
+    if (color) {
+        doc.font('Helvetica-Bold').fontSize(12).text('Colour:', rightColumnX, currentY);
+        doc.font('Helvetica').fontSize(12).text(color.charAt(0).toUpperCase() + color.slice(1), rightColumnX + 130, currentY);
+        currentY += lineHeight;
+    }
+
+    // Order payment details
+    currentY += lineHeight / 2;
+
+    doc.font('Helvetica-Bold').fontSize(12).text('Payment Method:', rightColumnX, currentY);
+    doc.font('Helvetica').fontSize(12).text(order.paymentMethod, rightColumnX + 130, currentY);
+    currentY += lineHeight;
+
+    doc.font('Helvetica-Bold').fontSize(12).text('Amount:', rightColumnX, currentY);
+    let amount = order.amount || 0;
+    doc.font('Helvetica').fontSize(12).text(`Rs.${amount}`, rightColumnX + 130, currentY);
+    currentY += lineHeight;
+
+    doc.font('Helvetica-Bold').fontSize(12).text('Paid:', rightColumnX, currentY);
+    doc.font('Helvetica').fontSize(12).text(order.payment ? 'Yes' : 'No', rightColumnX + 130, currentY);
+
+    // Add footer
+    addFooter(doc, footerY);
+}
+
+// Helper function to create the table-format label
+function createTableLabel(doc, order, centerX, titleY, taglineY, storeName, tagline) {
+    // Add common header
+    createHeader(doc, centerX, titleY, taglineY, storeName, tagline);
+
+    // Customer information section
+    const leftMargin = 50;
+    const lineHeight = 20;
+    let currentY = 150;
+
+    // Define footer position
+    const footerY = 350;
+
+    // Track page numbers
+    let currentPage = 1;
+
+    // Order information
+    doc.font('Helvetica-Bold').fontSize(12).text('Order Id:', leftMargin, currentY);
+    doc.font('Helvetica').fontSize(12).text(order._id, leftMargin + 110, currentY);
+    currentY += lineHeight;
+
+    doc.font('Helvetica-Bold').fontSize(12).text('Ordered by:', leftMargin, currentY);
+    doc.font('Helvetica').fontSize(12).text(`${order.address.firstName} ${order.address.lastName}`, leftMargin + 110, currentY);
+    currentY += lineHeight;
+
+    doc.font('Helvetica-Bold').fontSize(12).text('Contact:', leftMargin, currentY);
+    doc.font('Helvetica').fontSize(12).text(order.address.phoneNumber, leftMargin + 110, currentY);
+    currentY += lineHeight;
+
+    doc.font('Helvetica-Bold').fontSize(12).text('Address:', leftMargin, currentY);
+    doc.font('Helvetica').fontSize(12).text(
+        `${order.address.street}, ${order.address.city}, ${order.address.state}, ${order.address.postalCode}`,
+        leftMargin + 110,
+        currentY,
+        { width: 380 }
+    );
+    currentY += lineHeight * 1.5;
+
+    // Payment information
+    doc.font('Helvetica-Bold').fontSize(12).text('Payment Method:', leftMargin, currentY);
+    doc.font('Helvetica').fontSize(12).text(order.paymentMethod, leftMargin + 110, currentY);
+    currentY += lineHeight;
+
+    doc.font('Helvetica-Bold').fontSize(12).text('Amount:', leftMargin, currentY);
+    doc.font('Helvetica').fontSize(12).text(`Rs.${order.amount}`, leftMargin + 110, currentY);
+    currentY += lineHeight;
+
+    doc.font('Helvetica-Bold').fontSize(12).text('Payment Status:', leftMargin, currentY);
+    doc.font('Helvetica').fontSize(12).text(order.payment ? 'Paid' : 'Pending', leftMargin + 110, currentY);
+
+    // Add footer to first page
+    addFooter(doc, footerY);
+
+    // Always create a new page for the product table
+    doc.addPage();
+    currentPage++;
+
+    // Add header to new page
+    createHeader(doc, centerX, titleY, taglineY, storeName, tagline);
+    doc.font('Helvetica').fontSize(10).text(`Page ${currentPage}`, 500, 10);
+
+    // Reset Y position for new page
+    currentY = 150;
+
+    // Products Table
+    doc.font('Helvetica-Bold').fontSize(14).text('Order Items:', leftMargin, currentY);
+    currentY += lineHeight;
+
+    // Table headers
+    const tableTop = currentY;
+    const colWidths = [210, 80, 80, 80];
+    const colPositions = [leftMargin];
+
+    // Calculate column positions
+    for (let i = 0; i < colWidths.length - 1; i++) {
+        colPositions.push(colPositions[i] + colWidths[i]);
+    }
+
+    // Draw table header
+    doc.font('Helvetica-Bold').fontSize(12);
+    doc.rect(leftMargin, tableTop, colWidths.reduce((sum, w) => sum + w, 0), lineHeight).stroke();
+    doc.text('Product Name', colPositions[0] + 5, tableTop + 5);
+    doc.text('Size', colPositions[1] + 5, tableTop + 5);
+    doc.text('Color', colPositions[2] + 5, tableTop + 5);
+    doc.text('Quantity', colPositions[3] + 5, tableTop + 5);
+
+    currentY = tableTop + lineHeight;
+
+    // Draw table rows
+    doc.font('Helvetica').fontSize(12);
+    for (const item of order.items) {
+        const size = getSize(item) || '-';
+        const color = getColor(item) || '-';
+
+        // Draw row background and borders
+        doc.rect(leftMargin, currentY, colWidths.reduce((sum, w) => sum + w, 0), lineHeight).stroke();
+
+        // Write cell content
+        doc.text(item.name, colPositions[0] + 5, currentY + 5, { width: colWidths[0] - 10 });
+        doc.text(size, colPositions[1] + 5, currentY + 5);
+        doc.text(color, colPositions[2] + 5, currentY + 5);
+        doc.text(item.quantity.toString(), colPositions[3] + 5, currentY + 5);
+
+        currentY += lineHeight;
+
+        // Check if we need yet another page
+        if (currentY > footerY - 30) {
+            addFooter(doc, footerY);
+            doc.addPage();
+            currentPage++;
+
+            // Add the header to the new page
+            createHeader(doc, centerX, titleY, taglineY, storeName, tagline);
+            doc.font('Helvetica').fontSize(10).text(`Page ${currentPage}`, 500, 10);
+
+            currentY = 150;
+
+            // Repeat table headers on new page
+            doc.font('Helvetica-Bold').fontSize(14).text('Order Items (continued):', leftMargin, currentY);
+            currentY += lineHeight;
+
+            const newTableTop = currentY;
+
+            // Draw table header on new page
+            doc.font('Helvetica-Bold').fontSize(12);
+            doc.rect(leftMargin, newTableTop, colWidths.reduce((sum, w) => sum + w, 0), lineHeight).stroke();
+            doc.text('Product Name', colPositions[0] + 5, newTableTop + 5);
+            doc.text('Size', colPositions[1] + 5, newTableTop + 5);
+            doc.text('Color', colPositions[2] + 5, newTableTop + 5);
+            doc.text('Quantity', colPositions[3] + 5, newTableTop + 5);
+
+            currentY = newTableTop + lineHeight;
+            doc.font('Helvetica').fontSize(12);
+        }
+    }
+
+    // Add footer to the last page
+    addFooter(doc, footerY);
+
+    // Update page numbers
+    const range = doc.bufferedPageRange();
+    for (let i = 0; i < range.count; i++) {
+        doc.switchToPage(i + range.start);
+        doc.font('Helvetica').fontSize(10).text(`Page ${i + range.start + 1} of ${currentPage}`, 500, 10);
+    }
+}
+
+// Helper function to create header
+function createHeader(doc, centerX, titleY, taglineY, storeName, tagline) {
+    // Logo at the top, centered
+    const logoPath = path.join(process.cwd(), 'assets', 'logo.png');
+    if (fs.existsSync(logoPath)) {
+        doc.image(logoPath, centerX - 50, 10, { width: 100 });
+    } else {
+        console.error('Logo file not found at:', logoPath);
+    }
+
+    // Store name (centered manually)
+    doc.font('Helvetica-Bold').fontSize(20);
+    const storeNameWidth = doc.widthOfString(storeName);
+    doc.text(storeName, (doc.page.width - storeNameWidth) / 2, titleY);
+
+    // Store tagline (centered manually)
+    doc.font('Helvetica-Oblique').fontSize(8);
+    const taglineWidth = doc.widthOfString(tagline);
+    doc.text(tagline, (doc.page.width - taglineWidth) / 2, taglineY);
+
+    // Draw a line under the header
+    doc.moveTo(40, 130).lineTo(555, 130).stroke();
+}
+
+// Helper function to add footer
+function addFooter(doc, y) {
+    // Draw a line above the footer
+    doc.moveTo(40, y).lineTo(555, y).stroke();
+
+    // Contact information
+    doc.font('Helvetica').fontSize(9).text(`TELE: ${process.env.STORE_PHONE || '(075-6424532)'}`, 50, y + 15);
+    doc.text(`EMAIL: ${process.env.STORE_EMAIL || '(email)'}`, 160, y + 15);
+
+    // Get the current year
+    const currentYear = new Date().getFullYear();
+
+    // Return policy
+    doc.text(`Return Policy: 7 Days from the date of delivery - Cmax@${currentYear}`, 300, y + 15);
+}
+
+// Helper function to extract size
+function getSize(item) {
+    if (!item.size || item.size === 'undefined_undefined' || item.size === 'undefined') {
+        return null;
+    }
+
+    if (item.size.includes('_')) {
+        const [sizePart] = item.size.split('_');
+        if (sizePart !== 'undefined') {
+            return sizePart;
+        }
+    } else {
+        return item.size;
+    }
+
+    return null;
+}
+
+// Helper function to extract color
+function getColor(item) {
+    if (item.color && item.color !== 'undefined_undefined' && item.color !== 'undefined') {
+        return item.color;
+    } else if (item.size && item.size.includes('_')) {
+        const [, colorPart] = item.size.split('_');
+        if (colorPart && colorPart !== 'undefined') {
+            return colorPart;
+        }
+    }
+
+    return null;
+}

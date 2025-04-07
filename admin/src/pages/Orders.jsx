@@ -62,10 +62,11 @@ const Orders = ({ token }) => {
   };
 
   // Label Generation Function
-  const generateOrderLabel = async (orderId) => {
+  const generateOrderLabel = async (orderId, labelType = 'standard') => {
     try {
       const response = await axios.get(`${backendUrl}/api/order/generateLabel/${orderId}`, {
         headers: { token },
+        params: { type: labelType }, // Pass label type as query parameter
         responseType: 'blob'
       });
       // Create a link to download the PDF
@@ -320,14 +321,29 @@ const Orders = ({ token }) => {
                     <option value="Delivered">Delivered</option>
                   </select>
 
-                  {/* Generate Label button - only show for non-delivered orders */}
-                  {order.status !== "Delivered" && (
-                    <button
-                      onClick={() => generateOrderLabel(order._id)}
-                      className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-2 rounded text-xs"
-                    >
-                      Generate Label
-                    </button>
+                  {/* Generate Label section with label type selection */}
+                  {(order.status !== "Delivered" && order.status !== "Out for Delivery") && (
+                    <div className="flex flex-col gap-2">
+                      <div className="flex gap-2">
+                        <select
+                          id={`labelType-${order._id}`}
+                          className="bg-gray-100 text-gray-900 text-xs rounded py-1 px-2 w-28"
+                          defaultValue="standard"
+                        >
+                          <option value="standard">Standard</option>
+                          <option value="table">Table</option>
+                        </select>
+                        <button
+                          onClick={() => {
+                            const labelType = document.getElementById(`labelType-${order._id}`).value;
+                            generateOrderLabel(order._id, labelType);
+                          }}
+                          className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-2 rounded text-xs"
+                        >
+                          Generate Label
+                        </button>
+                      </div>
+                    </div>
                   )}
                 </div>
               </div>
