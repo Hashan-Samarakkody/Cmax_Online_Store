@@ -98,17 +98,20 @@ const ShopContextProvider = (props) => {
         let totalAmount = 0;
 
         for (const items in cartItems) {
-            let itemInfo = products.find((product) => product._id === items);
+            try {
+                let itemInfo = products.find((product) => product._id === items);
 
-            for (const item in cartItems[items]) {
-                try {
+                // Skip if product not found instead of showing toast during calculation
+                if (!itemInfo) continue;
+
+                for (const item in cartItems[items]) {
                     if (cartItems[items][item] > 0) {
                         totalAmount += itemInfo.price * cartItems[items][item];
                     }
-                } catch (error) {
-                    console.log(error);
-                    toast.error(error.message);
                 }
+            } catch (error) {
+                // Only log to console during calculations, don't update state with toast
+                console.error("Error calculating cart amount:", error);
             }
         }
 
