@@ -3,7 +3,7 @@ import axios from 'axios';
 import { backendUrl, currency } from '../App';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
-import WebSocketService from '../WebSocketService';
+import WebSocketService from '../services/WebSocketService';
 import { assets } from '../assets/assets';
 
 

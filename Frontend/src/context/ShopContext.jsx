@@ -2,6 +2,7 @@ import React, { useEffect, useState, createContext } from "react";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import WebSocketService from "../services/WebSocketService";
 
 export const ShopContext = createContext();
 
@@ -17,6 +18,67 @@ const ShopContextProvider = (props) => {
     const [token, setToken] = useState('');
     const navigate = useNavigate();
 
+    // Add WebSocket connection and handlers
+    useEffect(() => {
+        // Ensure WebSocket connection is established
+        if (!WebSocketService.isConnected()) {
+            WebSocketService.connect(() => {
+                console.log("WebSocket connected successfully in ShopContext");
+            });
+        }
+
+        // Handle new products at context level
+        const handleNewProduct = (data) => {
+            console.log("ShopContext received new product:", data);
+            if (data && data.product) {
+                setProducts(prevProducts => {
+                    // Only add if not already in the array
+                    const exists = prevProducts.some(p => p._id === data.product._id);
+                    if (!exists) {
+                        console.log("Adding new product to global state:", data.product.name);
+                        return [...prevProducts, data.product];
+                    }
+                    return prevProducts;
+                });
+            }
+        };
+
+        // Handle product updates at context level
+        const handleUpdateProduct = (data) => {
+            console.log("ShopContext received product update:", data);
+            if (data && data.product) {
+                setProducts(prevProducts =>
+                    prevProducts.map(product =>
+                        product._id === data.product._id ? data.product : product
+                    )
+                );
+            }
+        };
+
+        // Handle product deletions
+        const handleDeleteProduct = (data) => {
+            console.log("ShopContext received product deletion:", data);
+            if (data && data.productId) {
+                setProducts(prevProducts =>
+                    prevProducts.filter(product => product._id !== data.productId)
+                );
+            }
+        };
+
+        // Register WebSocket handlers at the context level
+        WebSocketService.on('newProduct', handleNewProduct);
+        WebSocketService.on('updateProduct', handleUpdateProduct);
+        WebSocketService.on('deleteProduct', handleDeleteProduct);
+
+        return () => {
+            // Cleanup handlers on unmount
+            WebSocketService.off('newProduct', handleNewProduct);
+            WebSocketService.off('updateProduct', handleUpdateProduct);
+            WebSocketService.off('deleteProduct', handleDeleteProduct);
+        };
+    }, []);
+
+    // Keep all existing code below
     const addToCart = async (itemId, size, color) => {
         // If product doesn't have sizes or colors, use 'undefined'
         const cartKey = `${size || 'undefined'}_${color || 'undefined'}`;
@@ -158,21 +220,28 @@ const ShopContextProvider = (props) => {
 
 
     const value = {
-        products, currency, deliveryCharge,
-        search, setSearch, showSearch, setShowSearch,
-        cartItems, addToCart, setCartItems,
-        getCartCount, updateQuantity,
+        products,
+        setProducts, // Explicitly expose setProducts
+        currency,
+        deliveryCharge,
+        search,
+        setSearch,
+        showSearch,
+        setShowSearch,
+        cartItems,
+        addToCart,
+        setCartItems,
+        getCartCount,
+        updateQuantity,
         getCartAmount,
         navigate,
         backendUrl,
-        setToken, token
+        setToken,
+        token
     }
 
     return (
-        <ShopContext.Provider value={{
-            ...value, // spread existing values
-            addToCart, // override with updated method
-        }}>
+        <ShopContext.Provider value={value}>
             {props.children}
         </ShopContext.Provider>
     )
