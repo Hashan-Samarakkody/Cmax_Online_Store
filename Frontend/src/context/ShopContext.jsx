@@ -221,7 +221,7 @@ const ShopContextProvider = (props) => {
 
     const value = {
         products,
-        setProducts, // Explicitly expose setProducts
+        setProducts,
         currency,
         deliveryCharge,
         search,

@@ -4,8 +4,8 @@ class WebSocketService {
     callbacks = {};
     isConnecting = false;
     reconnectAttempts = 0;
-    maxReconnectAttempts = 5;
-    reconnectDelay = 500;
+    maxReconnectAttempts = 10;
+    reconnectDelay = 100;
 
     static getInstance() {
         if (!WebSocketService.instance) {
