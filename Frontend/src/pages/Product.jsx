@@ -6,7 +6,7 @@ import axios from 'axios';
 import RelatedProducts from '../components/RelatedProducts';
 import { toast } from 'react-toastify';
 import { backendUrl } from '../../../admin/src/App';
-import WebSocketService from '../WebSocketService';
+import WebSocketService from '../services/WebSocketService';
 
 const Product = () => {
   const { productId } = useParams();

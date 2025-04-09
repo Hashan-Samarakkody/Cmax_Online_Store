@@ -3,7 +3,7 @@ import axios from 'axios';
 import { backendUrl, currency } from '../App';
 import { toast } from 'react-toastify';
 import { assets } from '../assets/assets';
-import WebSocketService from '../WebSocketService';
+import WebSocketService from '../services/WebSocketService';
 
 const Orders = ({ token }) => {
   const [orders, setOrders] = useState([]);

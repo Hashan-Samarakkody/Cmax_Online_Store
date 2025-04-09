@@ -3,7 +3,7 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import DOMPurify from "dompurify";
 import { backendUrl } from '../App';
-import WebSocketService from '../WebSocketService';  // Import WebSocketService
+import WebSocketService from '../services/WebSocketService';  // Import WebSocketService
 
 const CategoryManager = () => {
     const [categories, setCategories] = useState([]);
