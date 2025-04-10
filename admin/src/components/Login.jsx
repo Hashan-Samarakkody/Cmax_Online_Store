@@ -56,6 +56,7 @@ const LoginPage = ({ setToken }) => {
     validatePassword(sanitized);
   };
 
+  // In the handleSubmit function of your Login.jsx
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -74,6 +75,8 @@ const LoginPage = ({ setToken }) => {
       const response = await axios.post(backendUrl + '/api/user/admin', { email, password });
 
       if (response.data.success) {
+        // Save token to localStorage with the correct key
+        localStorage.setItem('adminToken', response.data.token);
         // Success animation before setting token
         toast.success('Login successful!');
         setTimeout(() => {
@@ -89,7 +92,6 @@ const LoginPage = ({ setToken }) => {
       setIsSubmitting(false);
     }
   };
-
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
       {/* Left side - Login Form */}
