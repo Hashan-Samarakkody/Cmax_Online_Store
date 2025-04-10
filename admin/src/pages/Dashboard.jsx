@@ -226,7 +226,7 @@ const Dashboard = () => {
             <div className="ml-5">
               <div className="text-gray-500 text-sm">Total Users</div>
               <div className="text-2xl font-bold text-gray-900">
-                {stats ? stats.users.total : '0'}
+                {stats ? stats.users.total : '10'}
               </div>
             </div>
           </div>

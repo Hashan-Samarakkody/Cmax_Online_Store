@@ -64,8 +64,6 @@ const getDashboardStats = async (req, res) => {
 
         const monthlyRevenue = monthlyOrders.reduce((sum, order) => sum + order.amount, 0);
         const monthlyOrderCount = monthlyOrders.length;
-
-        // Rest of your code remains the same
         const cashOrders = await orderModel.countDocuments({ paymentMethod: 'Cash On Delivery' });
         const stripeOrders = await orderModel.countDocuments({ paymentMethod: 'Stripe' });
         const totalUsers = await userModel.countDocuments({});
