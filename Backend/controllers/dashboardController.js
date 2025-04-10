@@ -174,7 +174,7 @@ const getProductPerformance = async (req, res) => {
         // Group by product and calculate sales
         const productSales = {};
         allItems.forEach(item => {
-            const itemId = item.productId || item.id; // Use productId if available
+            const itemId = item.productId || item.id;
 
             // Skip invalid items
             if (!itemId || !item.name || typeof item.price !== 'number' || typeof item.quantity !== 'number') {

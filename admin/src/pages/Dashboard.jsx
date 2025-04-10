@@ -200,6 +200,7 @@ const Dashboard = () => {
 
       // User-related events
       WebSocketService.on('userChange', handleUserChange);
+      WebSocketService.on('newUser', handleUserChange); 
 
       // Product-related events
       WebSocketService.on('newProduct', handleProductChange);
@@ -223,6 +224,7 @@ const Dashboard = () => {
     return () => {
       console.log("Cleaning up WebSocket listeners in Dashboard");
       WebSocketService.off('userChange', handleUserChange);
+      WebSocketService.off('newUser', handleUserChange);
       WebSocketService.off('newProduct', handleProductChange);
       WebSocketService.off('updateProduct', handleProductChange);
       WebSocketService.off('deleteProduct', handleProductChange);
