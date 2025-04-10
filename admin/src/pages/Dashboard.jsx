@@ -1,4 +1,3 @@
-// Path: /frontend/src/pages/admin/Dashboard.jsx
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { FiDollarSign, FiShoppingCart, FiUsers, FiShoppingBag } from 'react-icons/fi';
@@ -6,11 +5,13 @@ import { Bar, Line, Pie } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Title, Tooltip, Legend } from 'chart.js';
 import { backendUrl } from '../App';
 import { assets } from '../assets/assets';
+import { useNavigate } from 'react-router-dom';
 
 // Register ChartJS components
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Title, Tooltip, Legend);
 
 const Dashboard = () => {
+  const navigate = useNavigate();
   const [stats, setStats] = useState(null);
   const [salesTrends, setSalesTrends] = useState([]);
   const [productPerformance, setProductPerformance] = useState([]);
@@ -22,7 +23,6 @@ const Dashboard = () => {
     const fetchDashboardData = async () => {
       try {
         const token = localStorage.getItem('adminToken');
-        console.log('Using admin token:', token ? 'Token exists' : 'No token found');
 
         if (!token) {
           setError('Authentication token missing. Please log in again.');
@@ -32,11 +32,9 @@ const Dashboard = () => {
 
         try {
           // Fetch dashboard stats - fixed header format to match adminAuth.js expectations
-          console.log('Fetching dashboard stats...');
           const statsResponse = await axios.get(backendUrl + '/api/dashboard/stats', {
-            headers: { token: token }  // Changed from Authorization: Bearer ${token}
+            headers: { token: token }
           });
-          console.log('Stats data:', statsResponse.data);
 
           if (!statsResponse.data.success) {
             throw new Error(statsResponse.data.message || "Failed to load dashboard stats");
@@ -45,32 +43,26 @@ const Dashboard = () => {
           setStats(statsResponse.data.stats);
 
           // Continue with other API calls with the same header format
-          console.log('Fetching sales trends data...');
           const salesTrendsResponse = await axios.get(backendUrl + '/api/dashboard/sales-trends', {
-            headers: { token: token },  // Changed from Authorization: Bearer ${token}
+            headers: { token: token },
             params: { period: 'monthly' }
           });
-          console.log('Sales trends data:', salesTrendsResponse.data);
 
           if (salesTrendsResponse.data.success) {
             setSalesTrends(salesTrendsResponse.data.salesData || []);
           }
 
-          console.log('Fetching product performance data...');
           const productPerformanceResponse = await axios.get(backendUrl + '/api/dashboard/product-performance', {
-            headers: { token: token }  // Changed from Authorization: Bearer ${token}
+            headers: { token: token }
           });
-          console.log('Product performance data:', productPerformanceResponse.data);
 
           if (productPerformanceResponse.data.success) {
             setProductPerformance(productPerformanceResponse.data.productPerformance || []);
           }
 
-          console.log('Fetching category distribution data...');
           const categoryDistributionResponse = await axios.get(backendUrl + '/api/dashboard/category-distribution', {
-            headers: { token: token }  // Changed from Authorization: Bearer ${token}
+            headers: { token: token }
           });
-          console.log('Category distribution data:', categoryDistributionResponse.data);
 
           if (categoryDistributionResponse.data.success) {
             setCategoryDistribution(categoryDistributionResponse.data.categoryDistribution || []);
@@ -78,7 +70,6 @@ const Dashboard = () => {
         } catch (apiError) {
           console.error('API error:', apiError);
           setError(`API error: ${apiError.message}`);
-          // Continue loading with partial data if possible
         }
 
         setLoading(false);
@@ -347,16 +338,16 @@ const Dashboard = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {productPerformance.slice(0, 5).map((product) => (
-                <tr key={product.id}>
-                  <td className="px-6 py-4 white-space-nowrap text-sm text-gray-900">
-                    {product.name}
+              {productPerformance.slice(0, 5).map((product, index) => (
+                <tr key={product.id || `product-${index}`}>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {product.name || 'Unknown Product'}
                   </td>
-                  <td className="px-6 py-4 white-space-nowrap text-sm text-gray-900">
-                    {product.quantitySold}
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {product.quantitySold !== undefined ? product.quantitySold : 'N/A'}
                   </td>
-                  <td className="px-6 py-4 white-space-nowrap text-sm text-gray-900">
-                    ${product.revenue.toFixed(2)}
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    ${product.revenue !== undefined ? Number(product.revenue).toFixed(2) : '0.00'}
                   </td>
                 </tr>
               ))}
@@ -364,7 +355,7 @@ const Dashboard = () => {
           </table>
         </div>
         <div className="px-5 py-4 border-t border-gray-200 text-right">
-          <button className="text-sm text-indigo-600 hover:text-indigo-900">
+          <button onClick={() => navigate(`/list`)} className="text-sm text-indigo-600 hover:text-indigo-900">
             View All Products
           </button>
         </div>

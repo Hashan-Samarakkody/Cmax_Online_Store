@@ -1,7 +1,6 @@
 import orderModel from '../models/orderModel.js';
 import userModel from '../models/userModel.js';
 import productModel from '../models/productModel.js';
-import mongoose from 'mongoose';
 
 // Get dashboard overview statistics
 const getDashboardStats = async (req, res) => {
@@ -91,7 +90,6 @@ const getDashboardStats = async (req, res) => {
             }
         };
 
-        console.log("Sending stats:", stats);
         res.json({ success: true, stats });
     } catch (error) {
         console.error(error);
@@ -153,7 +151,6 @@ const getSalesTrends = async (req, res) => {
             { $sort: { _id: 1 } }
         ]);
 
-        console.log('Sales data found:', salesData.length);
         res.json({ success: true, salesData });
     } catch (error) {
         console.error(error);
@@ -166,7 +163,6 @@ const getProductPerformance = async (req, res) => {
     try {
         // Get all orders
         const orders = await orderModel.find({});
-        console.log('Found orders:', orders.length);
 
         // Extract items from all orders
         let allItems = [];
@@ -176,45 +172,50 @@ const getProductPerformance = async (req, res) => {
             }
         });
 
-        console.log('Extracted items:', allItems.length);
 
         // Group by product and calculate sales
         const productSales = {};
         allItems.forEach(item => {
-            if (!item.id || !item.name || !item.price || !item.quantity) {
+            const itemId = item.productId || item.id; // Use productId if available
+
+            // Skip invalid items
+            if (!itemId || !item.name || typeof item.price !== 'number' || typeof item.quantity !== 'number') {
                 console.log('Skipping invalid item:', item);
                 return;
             }
 
-            if (!productSales[item.id]) {
-                productSales[item.id] = {
+            if (!productSales[itemId]) {
+                productSales[itemId] = {
+                    id: itemId,
                     name: item.name,
                     quantitySold: 0,
                     revenue: 0
                 };
             }
 
-            productSales[item.id].quantitySold += item.quantity;
-            productSales[item.id].revenue += (item.price * item.quantity);
+            productSales[itemId].quantitySold += item.quantity;
+            productSales[itemId].revenue += item.price * item.quantity;
         });
 
         // Convert to array and sort by quantity sold
-        const productPerformance = Object.keys(productSales).map(id => ({
-            id,
-            ...productSales[id]
-        })).sort((a, b) => b.quantitySold - a.quantitySold);
+        let productPerformance = Object.values(productSales).sort((a, b) => b.quantitySold - a.quantitySold);
 
-        // Log the results for debugging
-        console.log(`Found ${productPerformance.length} products with sales data`);
-
-        // Generate placeholder data if no real data exists
+        // If no product performance data exists, get real products from database
         if (productPerformance.length === 0) {
-            console.log("No product performance data found, adding placeholder data");
-            productPerformance.push(
-                { id: 'demo1', name: 'Sample Product 1', quantitySold: 25, revenue: 2500 },
-                { id: 'demo2', name: 'Sample Product 2', quantitySold: 18, revenue: 1800 },
-                { id: 'demo3', name: 'Sample Product 3', quantitySold: 15, revenue: 1500 }
-            );
+
+
+            const products = await productModel.find({})
+                .select('productId name price bestseller')
+                .sort({ bestseller: -1, price: -1 })
+                .limit(10);
+
+            productPerformance = products.map(product => ({
+                id: product.productId,
+                name: product.name,
+                quantitySold: 0,
+                revenue: 0,
+                isBestseller: product.bestseller
+            }));
         }
 
         res.json({ success: true, productPerformance });
@@ -223,6 +224,7 @@ const getProductPerformance = async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 };
+
 // Get user activity data
 const getUserActivity = async (req, res) => {
     try {
@@ -243,9 +245,6 @@ const getUserActivity = async (req, res) => {
             groupBy = { $dateToString: { format: "%Y-%m", date: "$createdAt" } };
         }
 
-        // We need to add createdAt field to the user model to use this
-        // For now, we'll just return placeholder data
-
         // Placeholder user activity data
         const userActivity = [
             { date: '2024-01', registrations: 12 },
@@ -264,12 +263,6 @@ const getUserActivity = async (req, res) => {
 // Get cart analytics
 const getCartAnalytics = async (req, res) => {
     try {
-        // For abandoned cart analytics, we would need:
-        // 1. List of all active carts with items
-        // 2. Information on when items were added
-
-        // This implementation is simplified and would need to be expanded
-        // with timestamps on cart additions
 
         const usersWithCarts = await userModel.find({
             cartData: { $ne: {} }
@@ -311,8 +304,6 @@ const getCategoryDistribution = async (req, res) => {
         const products = await productModel.find()
             .populate('category', 'name')
             .select('category');
-
-        console.log('Found products:', products.length);
 
         // Group by category
         const categoryCounts = {};
@@ -363,8 +354,7 @@ const generateReport = async (req, res) => {
                 userId: order.userId
             }));
         } else if (type === 'products') {
-            // Similar logic for product report
-            // This is simplified - would need more implementation
+
             const products = await productModel.find({})
                 .populate('category', 'name')
                 .populate('subcategory', 'name');
@@ -379,8 +369,6 @@ const generateReport = async (req, res) => {
             }));
         }
 
-        // In a real implementation, you would generate CSV or PDF here
-        // For now, we'll just return the data
         res.json({
             success: true,
             reportData,
