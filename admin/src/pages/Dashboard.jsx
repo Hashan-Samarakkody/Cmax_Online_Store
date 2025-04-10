@@ -6,6 +6,7 @@ import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement
 import { backendUrl } from '../App';
 import { assets } from '../assets/assets';
 import { useNavigate } from 'react-router-dom';
+import WebSocketService from '../services/WebSocketService';
 
 // Register ChartJS components
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Title, Tooltip, Legend);
@@ -18,70 +19,220 @@ const Dashboard = () => {
   const [categoryDistribution, setCategoryDistribution] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [lastUpdate, setLastUpdate] = useState(Date.now()); // Track last update time
 
+  // Function to fetch all dashboard data
+  const fetchAllData = async () => {
+    console.log("Fetching all dashboard data...");
+    const token = localStorage.getItem('adminToken');
+
+    try {
+      setLoading(true);
+
+      // Fetch dashboard stats
+      const statsResponse = await axios.get(backendUrl + '/api/dashboard/stats', {
+        headers: { token }
+      });
+      if (statsResponse.data.success) {
+        setStats(statsResponse.data.stats);
+      }
+
+      // Fetch product performance
+      const prodResponse = await axios.get(backendUrl + '/api/dashboard/product-performance', {
+        headers: { token }
+      });
+      if (prodResponse.data.success) {
+        setProductPerformance(prodResponse.data.productPerformance || []);
+      }
+
+      // Fetch sales trends
+      const salesRes = await axios.get(backendUrl + '/api/dashboard/sales-trends', {
+        headers: { token },
+        params: { period: 'monthly' }
+      });
+      if (salesRes.data.success) setSalesTrends(salesRes.data.salesData || []);
+
+      // Fetch category distribution
+      const categoryRes = await axios.get(backendUrl + '/api/dashboard/category-distribution', {
+        headers: { token }
+      });
+      if (categoryRes.data.success) setCategoryDistribution(categoryRes.data.categoryDistribution || []);
+
+      // Update last update timestamp
+      setLastUpdate(Date.now());
+    } catch (apiError) {
+      console.error('API error:', apiError);
+      setError(`API error: ${apiError.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Improved focused data fetching functions with consistent error handling and loading states
+  const fetchUserStats = async () => {
+    console.log('[WebSocket Event] Fetching user stats...');
+    const token = localStorage.getItem('adminToken');
+    try {
+      const statsResponse = await axios.get(backendUrl + '/api/dashboard/stats', {
+        headers: { token }
+      });
+      if (statsResponse.data.success) {
+        setStats(statsResponse.data.stats);
+        setLastUpdate(Date.now());
+      }
+    } catch (error) {
+      console.error('Error fetching user stats:', error);
+      // Don't set global error for partial updates
+    }
+  };
+
+  const fetchProductData = async () => {
+    console.log('[WebSocket Event] Fetching product data...');
+    const token = localStorage.getItem('adminToken');
+    try {
+      // Update product performance
+      const response = await axios.get(backendUrl + '/api/dashboard/product-performance', {
+        headers: { token }
+      });
+      if (response.data.success) {
+        setProductPerformance(response.data.productPerformance || []);
+        setLastUpdate(Date.now());
+      }
+    } catch (error) {
+      console.error('Error fetching product data:', error);
+    }
+  };
+
+  const fetchCategoryData = async () => {
+    console.log('[WebSocket Event] Fetching category data...');
+    const token = localStorage.getItem('adminToken');
+    try {
+      const categoryRes = await axios.get(backendUrl + '/api/dashboard/category-distribution', {
+        headers: { token }
+      });
+      if (categoryRes.data.success) {
+        setCategoryDistribution(categoryRes.data.categoryDistribution || []);
+        setLastUpdate(Date.now());
+      }
+    } catch (error) {
+      console.error('Error fetching category data:', error);
+    }
+  };
+
+  const fetchSalesData = async () => {
+    console.log('[WebSocket Event] Fetching sales data...');
+    const token = localStorage.getItem('adminToken');
+    try {
+      // Update sales trends
+      const salesRes = await axios.get(backendUrl + '/api/dashboard/sales-trends', {
+        headers: { token },
+        params: { period: 'monthly' }
+      });
+      if (salesRes.data.success) {
+        setSalesTrends(salesRes.data.salesData || []);
+        setLastUpdate(Date.now());
+      }
+    } catch (error) {
+      console.error('Error fetching sales data:', error);
+    }
+  };
+
+  // Event handlers with better logging and improved reliability
+  const handleUserChange = () => {
+    console.log('[WebSocket] User changed. Updating stats...');
+    fetchUserStats();
+  };
+
+  const handleProductChange = (data) => {
+    console.log('[WebSocket] Product data changed:', data);
+    // Only fetch product data when needed
+    fetchProductData();
+    // Product changes can affect stats and categories
+    fetchUserStats();
+    fetchCategoryData();
+  };
+
+  const handleCategoryChange = () => {
+    console.log('[WebSocket] Category changed. Updating category data...');
+    fetchCategoryData();
+  };
+
+  const handleOrderChange = (data) => {
+    console.log('[WebSocket] Order changed:', data);
+    // Order changes affect multiple aspects of the dashboard
+    fetchSalesData();
+    fetchUserStats();
+    fetchProductData();
+  };
+
+  // Debounced full refresh for multiple rapid changes
+  const debouncedFullRefresh = () => {
+    const currentTime = Date.now();
+    // Only do a full refresh if it's been more than 5 seconds since last update
+    if (currentTime - lastUpdate > 5000) {
+      console.log('[Dashboard] Multiple changes detected, performing full refresh');
+      fetchAllData();
+    }
+  };
+
+  // WebSocket setup and cleanup with improved error handling
   useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        const token = localStorage.getItem('adminToken');
-
-        if (!token) {
-          setError('Authentication token missing. Please log in again.');
-          setLoading(false);
-          return;
-        }
-
-        try {
-          // Fetch dashboard stats - fixed header format to match adminAuth.js expectations
-          const statsResponse = await axios.get(backendUrl + '/api/dashboard/stats', {
-            headers: { token: token }
-          });
-
-          if (!statsResponse.data.success) {
-            throw new Error(statsResponse.data.message || "Failed to load dashboard stats");
-          }
-
-          setStats(statsResponse.data.stats);
-
-          // Continue with other API calls with the same header format
-          const salesTrendsResponse = await axios.get(backendUrl + '/api/dashboard/sales-trends', {
-            headers: { token: token },
-            params: { period: 'monthly' }
-          });
-
-          if (salesTrendsResponse.data.success) {
-            setSalesTrends(salesTrendsResponse.data.salesData || []);
-          }
-
-          const productPerformanceResponse = await axios.get(backendUrl + '/api/dashboard/product-performance', {
-            headers: { token: token }
-          });
-
-          if (productPerformanceResponse.data.success) {
-            setProductPerformance(productPerformanceResponse.data.productPerformance || []);
-          }
-
-          const categoryDistributionResponse = await axios.get(backendUrl + '/api/dashboard/category-distribution', {
-            headers: { token: token }
-          });
-
-          if (categoryDistributionResponse.data.success) {
-            setCategoryDistribution(categoryDistributionResponse.data.categoryDistribution || []);
-          }
-        } catch (apiError) {
-          console.error('API error:', apiError);
-          setError(`API error: ${apiError.message}`);
-        }
-
-        setLoading(false);
-      } catch (err) {
-        console.error('Error details:', err);
-        setError(`Failed to load dashboard data: ${err.message}`);
-        setLoading(false);
+    const connectAndSetup = () => {
+      // First ensure WebSocket is connected before setting up listeners
+      if (!WebSocketService.isConnected()) {
+        WebSocketService.connect(() => {
+          console.log("WebSocket connected from Dashboard component");
+          // Once connected, set up all event listeners and fetch initial data
+          setupWebSocketListeners();
+          fetchAllData();
+        });
+      } else {
+        // WebSocket already connected, set up listeners and fetch data
+        console.log("WebSocket already connected, setting up listeners");
+        setupWebSocketListeners();
+        fetchAllData();
       }
     };
 
-    fetchDashboardData();
+    // Setup all WebSocket event listeners
+    const setupWebSocketListeners = () => {
+      console.log("Setting up WebSocket listeners");
+
+      // User-related events
+      WebSocketService.on('userChange', handleUserChange);
+
+      // Product-related events
+      WebSocketService.on('newProduct', handleProductChange);
+      WebSocketService.on('updateProduct', handleProductChange);
+      WebSocketService.on('deleteProduct', handleProductChange);
+
+      // Category-related events
+      WebSocketService.on('categoryChange', handleCategoryChange);
+
+      // Order-related events
+      WebSocketService.on('orderChange', handleOrderChange);
+      WebSocketService.on('newOrder', handleOrderChange);
+    };
+
+    connectAndSetup();
+
+    // Add an interval to ensure data is fresh
+    const refreshInterval = setInterval(debouncedFullRefresh, 30000);
+
+    // Cleanup function
+    return () => {
+      console.log("Cleaning up WebSocket listeners in Dashboard");
+      WebSocketService.off('userChange', handleUserChange);
+      WebSocketService.off('newProduct', handleProductChange);
+      WebSocketService.off('updateProduct', handleProductChange);
+      WebSocketService.off('deleteProduct', handleProductChange);
+      WebSocketService.off('categoryChange', handleCategoryChange);
+      WebSocketService.off('orderChange', handleOrderChange);
+      WebSocketService.off('newOrder', handleOrderChange);
+      clearInterval(refreshInterval);
+    };
   }, []);
+
   // Prepare chart data
   const salesChartData = {
     labels: salesTrends.map(item => item._id),
@@ -154,22 +305,22 @@ const Dashboard = () => {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
-                <div className="relative w-24 h-24">
-                  {/* Pulsing circle animation */}
-                  <div className="absolute top-0 left-0 w-full h-full border-4 border-gray-200 rounded-full"></div>
-                  <div className="absolute top-0 left-0 w-full h-full border-t-4 border-green-400 rounded-full animate-spin"></div>
-      
-                  {/* Shop icon or logo in center */}
-                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                    <img
-                      src={assets.logo}
-                      alt="Loading"
-                      className="w-12 h-12 object-contain animate-pulse"
-                    />
-                  </div>
-                </div>
-                <p className="mt-4 text-gray-600 font-medium">Loading Dashboard...</p>
-              </div>
+        <div className="relative w-24 h-24">
+          {/* Pulsing circle animation */}
+          <div className="absolute top-0 left-0 w-full h-full border-4 border-gray-200 rounded-full"></div>
+          <div className="absolute top-0 left-0 w-full h-full border-t-4 border-green-400 rounded-full animate-spin"></div>
+
+          {/* Shop icon or logo in center */}
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+            <img
+              src={assets.logo}
+              alt="Loading"
+              className="w-12 h-12 object-contain animate-pulse"
+            />
+          </div>
+        </div>
+        <p className="mt-4 text-gray-600 font-medium">Loading Dashboard...</p>
+      </div>
     );
   }
 
