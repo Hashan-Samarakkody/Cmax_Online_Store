@@ -1,4 +1,3 @@
-// Path: /routes/dashboardRoute.js
 import express from 'express';
 import {
     getDashboardStats,

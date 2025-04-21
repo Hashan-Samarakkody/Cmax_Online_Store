@@ -1,8 +1,11 @@
-import PDFDocument from 'pdfkit';
 import fs from 'fs';
 import path from 'path';
+import PDFDocument from 'pdfkit';
+import mongoose from 'mongoose';
 import orderModel from '../models/orderModel.js';
+import productModel from '../models/productModel.js';
 import userModel from '../models/userModel.js';
+
 
 export const generateOrderPDF = async (req, res) => {
     try {
@@ -279,6 +282,64 @@ export const generateOrderLabel = async (req, res) => {
     }
 };
 
+export const generateSalesReport = async (req, res) => {
+    try {
+        const { startDate } = req.query;
+        const endDate = new Date(); // Use current date as end date
+
+        if (!startDate) {
+            return res.status(400).json({
+                success: false,
+                message: 'Start date is required'
+            });
+        }
+
+        // Parse dates
+        const startDateTime = new Date(startDate);
+
+        // Validate date format
+        if (isNaN(startDateTime.getTime())) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid date format'
+            });
+        }
+
+        // Fetch completed orders between start and end dates
+        const completedOrders = await orderModel.find({
+            status: 'Delivered',
+            date: { $gte: startDateTime.getTime(), $lte: endDate.getTime() }
+        });
+
+        if (completedOrders.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'No completed orders found for the specified date range'
+            });
+        }
+
+        // Process sales data and organize hierarchically
+        const salesData = await processSalesData(completedOrders);
+
+        // Generate PDF report
+        const pdfPath = await generatePDFReport(salesData, startDateTime, endDate);
+
+        // Send PDF for download
+        res.download(pdfPath, `sales_report_${formatDateForFilename(startDateTime)}_to_${formatDateForFilename(endDate)}.pdf`, (err) => {
+            if (err) {
+                console.error('Download error:', err);
+                res.status(500).json({ success: false, message: 'Error downloading PDF' });
+            }
+            // Clean up the temporary file
+            fs.unlinkSync(pdfPath);
+        });
+
+    } catch (error) {
+        console.error('Sales Report Generation Error:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
 // Helper function to create the standard label
 function createStandardLabel(doc, order, centerX, titleY, taglineY, storeName, tagline) {
     // Add common header
@@ -295,7 +356,7 @@ function createStandardLabel(doc, order, centerX, titleY, taglineY, storeName, t
 
     // Left Column - Customer Information
     doc.font('Helvetica-Bold').fontSize(12).text('Order Id:', leftColumnX, startY);
-    doc.font('Helvetica').fontSize(12).text(order._id, leftColumnX + 110, startY);
+    doc.font('Helvetica').fontSize(12).text(order.orderId, leftColumnX + 110, startY);
 
     doc.font('Helvetica-Bold').fontSize(12).text('Ordered by:', leftColumnX, startY + lineHeight);
     doc.font('Helvetica').fontSize(12).text(`${order.address.firstName} ${order.address.lastName}`, leftColumnX + 110, startY + lineHeight);
@@ -558,10 +619,10 @@ function getSize(item) {
     }
 
     if (item.size.includes('_')) {
-        const [sizePart] = item.size.split('_');
-        if (sizePart !== 'undefined') {
-            return sizePart;
-        }
+        const parts = item.size.split('_');
+        const validSizes = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL'];
+        const sizePart = parts.find(part => validSizes.includes(part));
+        if (sizePart) return sizePart;
     } else {
         return item.size;
     }
@@ -571,14 +632,437 @@ function getSize(item) {
 
 // Helper function to extract color
 function getColor(item) {
+    // First check dedicated color field
     if (item.color && item.color !== 'undefined_undefined' && item.color !== 'undefined') {
         return item.color;
-    } else if (item.size && item.size.includes('_')) {
-        const [, colorPart] = item.size.split('_');
-        if (colorPart && colorPart !== 'undefined') {
-            return colorPart;
+    }
+
+    // Then check if color is embedded in size (e.g., "XS_red")
+    if (item.size && item.size.includes('_')) {
+        const parts = item.size.split('_');
+        // Valid sizes to filter out
+        const validSizes = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL'];
+        // Find parts that aren't sizes and aren't "undefined"
+        const colorParts = parts.filter(part =>
+            !validSizes.includes(part) && part !== 'undefined');
+
+        if (colorParts.length > 0) {
+            return colorParts.join('_'); // Join if multiple color parts
         }
     }
 
     return null;
+}
+
+// Helper function to process sales data and organize hierarchically
+async function processSalesData(orders) {
+    // Create a hierarchical structure: Category -> Subcategory -> Item -> Variations
+    const salesHierarchy = {};
+
+    // Process each order's items
+    for (const order of orders) {
+        for (const orderItem of order.items) {
+            try {
+                // Skip items without productId
+                if (!orderItem.productId) {
+                    console.log('Skipping item without productId:', orderItem);
+                    continue;
+                }
+
+                // Get product details to find category and subcategory
+                let product;
+                try {
+                    // Try to find by _id first
+                    product = await productModel.findOne({ _id: orderItem.productId });
+
+                    // If not found, try by productId field
+                    if (!product && typeof orderItem.productId === 'string') {
+                        product = await productModel.findOne({ productId: orderItem.productId });
+                    }
+                } catch (err) {
+                    // This catches the ObjectId casting error
+                    if (err.name === 'CastError' && typeof orderItem.productId === 'string') {
+                        // Try to find by productId field instead
+                        product = await productModel.findOne({ productId: orderItem.productId });
+                    } else {
+                        // Log other errors but continue processing
+                        console.error('Error finding product:', err.message);
+                    }
+                }
+
+                if (!product) {
+                    console.log('Product not found for ID:', orderItem.productId);
+
+                    // Use default values for products that can't be found
+                    const category = 'Uncategorized';
+                    const subcategory = 'Unknown';
+                    const itemName = orderItem.name || 'Unknown Product';
+                    const color = getColor(orderItem) || '-';
+                    const size = getSize(orderItem) || '-';
+
+                    // Initialize hierarchy for missing products
+                    if (!salesHierarchy[category]) {
+                        salesHierarchy[category] = {};
+                    }
+
+                    if (!salesHierarchy[category][subcategory]) {
+                        salesHierarchy[category][subcategory] = {};
+                    }
+
+                    if (!salesHierarchy[category][subcategory][itemName]) {
+                        salesHierarchy[category][subcategory][itemName] = [];
+                    }
+
+                    // Check if this variation already exists
+                    const existingVariation = salesHierarchy[category][subcategory][itemName].find(
+                        v => v.color === color && v.size === size
+                    );
+
+                    if (existingVariation) {
+                        // Update quantity if variation exists
+                        existingVariation.quantity += orderItem.quantity || 1;
+                    } else {
+                        // Add new variation
+                        salesHierarchy[category][subcategory][itemName].push({
+                            color,
+                            size,
+                            quantity: orderItem.quantity || 1
+                        });
+                    }
+
+                    continue;
+                }
+
+                // Get category and subcategory names with fallbacks
+                const category = await getCategoryName(product.category) || 'Uncategorized';
+                const subcategory = await getSubcategoryName(product.subcategory) || 'General';
+
+                // Extract color and size from the item - make sure neither is undefined
+                const color = getColor(orderItem) || '-';
+                const size = getSize(orderItem) || '-';
+
+                // Initialize hierarchy if needed
+                if (!salesHierarchy[category]) {
+                    salesHierarchy[category] = {};
+                }
+
+                if (!salesHierarchy[category][subcategory]) {
+                    salesHierarchy[category][subcategory] = {};
+                }
+
+                if (!salesHierarchy[category][subcategory][orderItem.name || product.name || 'Unnamed Product']) {
+                    salesHierarchy[category][subcategory][orderItem.name || product.name || 'Unnamed Product'] = [];
+                }
+
+                // Use either orderItem.name or product.name as fallback
+                const itemName = orderItem.name || product.name || 'Unnamed Product';
+
+                // Check if this variation already exists
+                const existingVariation = salesHierarchy[category][subcategory][itemName].find(
+                    v => v.color === color && v.size === size
+                );
+
+                if (existingVariation) {
+                    // Update quantity if variation exists
+                    existingVariation.quantity += orderItem.quantity || 1;
+                } else {
+                    // Add new variation
+                    salesHierarchy[category][subcategory][itemName].push({
+                        color,
+                        size,
+                        quantity: orderItem.quantity || 1
+                    });
+                }
+            } catch (err) {
+                // Log error but continue processing other items
+                console.error('Error processing order item:', err);
+                console.error('Problematic item:', orderItem);
+            }
+        }
+    }
+
+    // Convert hierarchical data to format needed for report
+    const reportData = [];
+    let grandTotal = 0;
+
+    for (const [categoryName, subcategories] of Object.entries(salesHierarchy)) {
+        let categoryTotal = 0;
+        const categoryEntries = [];
+
+        for (const [subcategoryName, items] of Object.entries(subcategories)) {
+            let subcategoryTotal = 0;
+            const subcategoryEntries = [];
+
+            for (const [itemName, variations] of Object.entries(items)) {
+                let itemTotal = 0;
+
+                // Add each variation as a row
+                variations.forEach((variation, index) => {
+                    itemTotal += variation.quantity;
+
+                    subcategoryEntries.push({
+                        category: index === 0 ? categoryName : '',
+                        subcategory: index === 0 ? subcategoryName : '',
+                        itemName: index === 0 ? itemName : '',
+                        color: variation.color,
+                        size: variation.size,
+                        quantity: variation.quantity,
+                        total: index === variations.length - 1 ? `${itemTotal}` : ''
+                    });
+                });
+
+                subcategoryTotal += itemTotal;
+            }
+
+            // Add subcategory total row
+            subcategoryEntries.push({
+                category: '',
+                subcategory: '',
+                itemName: `Total in Subcategory: ${subcategoryName}`,
+                color: '',
+                size: '',
+                quantity: '',
+                total: `${subcategoryTotal}`
+            });
+
+            categoryTotal += subcategoryTotal;
+            categoryEntries.push(...subcategoryEntries);
+        }
+
+        // Add category total row
+        categoryEntries.push({
+            category: '',
+            subcategory: '',
+            itemName: `Total in Category: ${categoryName}`,
+            color: '',
+            size: '',
+            quantity: '',
+            total: `${categoryTotal}`
+        });
+
+        grandTotal += categoryTotal;
+        reportData.push(...categoryEntries);
+    }
+
+    // Add grand total row
+    reportData.push({
+        category: '',
+        subcategory: '',
+        itemName: `Total Items Sold`,
+        color: '',
+        size: '',
+        quantity: '',
+        total: `${grandTotal}`
+    });
+
+    return reportData;
+}
+
+// Helper function to generate PDF report
+async function generatePDFReport(reportData, startDate, endDate) {
+    // Create PDF document
+    const doc = new PDFDocument({ margin: 30, size: 'A4', autoFirstPage: true });
+    const outputPath = path.join(process.cwd(), 'sales_report.pdf');
+    const writeStream = fs.createWriteStream(outputPath);
+    doc.pipe(writeStream);
+
+    // Format dates for display
+    const formattedStartDate = formatDate(startDate);
+    const formattedEndDate = formatDate(endDate);
+
+    // Get current date and time for the report generation timestamp
+    const generationDateTime = new Date();
+    const formattedGenerationDateTime = generationDateTime.toLocaleString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: 'numeric',
+        hour12: true
+    });
+
+    // Title and header
+    doc.font('Helvetica-Bold').fontSize(20).text('Sold Items Report – Cmax Online Store', { align: 'center' });
+    doc.fontSize(12).text(`From – (${formattedStartDate}) To – (${formattedEndDate})`, { align: 'center' });
+    doc.fontSize(10).text(`Report Generated: ${formattedGenerationDateTime}`, { align: 'center' });
+    doc.moveDown(1);
+
+    // Define table layout
+    const tableTop = doc.y;
+    const tableWidth = doc.page.width - 60;
+    const columns = [
+        { header: 'Category', width: tableWidth * 0.15, align: 'left' },
+        { header: 'Subcategory', width: tableWidth * 0.15, align: 'left' },
+        { header: 'Item Name', width: tableWidth * 0.25, align: 'left' },
+        { header: 'Color', width: tableWidth * 0.1, align: 'center' },
+        { header: 'Size', width: tableWidth * 0.1, align: 'center' },
+        { header: 'Quantity', width: tableWidth * 0.1, align: 'center' },
+        { header: 'Total', width: tableWidth * 0.15, align: 'right' }
+    ];
+
+    // Draw table header
+    let xPos = 30;
+    doc.font('Helvetica-Bold').fontSize(10);
+    columns.forEach(column => {
+        doc.rect(xPos, tableTop, column.width, 20).stroke();
+        doc.text(column.header, xPos + 5, tableTop + 5, {
+            width: column.width - 10,
+            align: column.align || 'left'
+        });
+        xPos += column.width;
+    });
+
+    // Draw table rows
+    let yPos = tableTop + 20;
+    doc.font('Helvetica').fontSize(9);
+
+    // Track current category and subcategory for alternating row colors
+    let currentCategory = '';
+    let currentSubcategory = '';
+    let rowColor = 1; // 0 = white, 1 = light gray
+
+    reportData.forEach(row => {
+        // Check if we need a new page
+        if (yPos > doc.page.height - 70) {
+
+            // Add new page
+            doc.addPage();
+            yPos = 50;
+
+            // Redraw the header on new page
+            xPos = 30;
+            doc.font('Helvetica-Bold').fontSize(10);
+            columns.forEach(column => {
+                doc.rect(xPos, yPos, column.width, 20).stroke();
+                doc.text(column.header, xPos + 5, yPos + 5, {
+                    width: column.width - 10,
+                    align: column.align || 'left'
+                });
+                xPos += column.width;
+            });
+            yPos += 20;
+            doc.font('Helvetica').fontSize(9);
+        }
+
+        // Determine if this is a total row
+        const isSubcategoryTotal = row.itemName.startsWith('Total in Subcategory');
+        const isCategoryTotal = row.itemName.startsWith('Total in Category');
+        const isGrandTotal = row.itemName === 'Total Items Sold';
+        const isTotal = isSubcategoryTotal || isCategoryTotal || isGrandTotal;
+
+        // Set row height based on content
+        const rowHeight = 20;
+
+        // Use appropriate font and background for different row types
+        if (isGrandTotal) {
+            doc.font('Helvetica-Bold');
+            // Fill with a darker color for grand total
+            doc.fillColor('#d0d0d0').rect(30, yPos, tableWidth, rowHeight).fill();
+        } else if (isCategoryTotal) {
+            doc.font('Helvetica-Bold');
+            // Fill with a medium color for category totals
+            doc.fillColor('#e0e0e0').rect(30, yPos, tableWidth, rowHeight).fill();
+        } else if (isSubcategoryTotal) {
+            doc.font('Helvetica-Bold');
+            // Fill with a lighter color for subcategory totals
+            doc.fillColor('#f0f0f0').rect(30, yPos, tableWidth, rowHeight).fill();
+        } else {
+            doc.font('Helvetica');
+            // Alternate row colors for regular items
+            if (row.category !== currentCategory || row.subcategory !== currentSubcategory) {
+                if (row.category || row.subcategory) {
+                    currentCategory = row.category;
+                    currentSubcategory = row.subcategory;
+                    rowColor = rowColor === 0 ? 1 : 0;
+                }
+            }
+
+            if (rowColor === 1) {
+                doc.fillColor('#f9f9f9').rect(30, yPos, tableWidth, rowHeight).fill();
+            }
+        }
+
+        // Reset fill color for text
+        doc.fillColor('black');
+
+        // Draw row borders
+        doc.rect(30, yPos, tableWidth, rowHeight).stroke();
+
+        // Draw cell borders and content
+        xPos = 30;
+
+        // For total rows, adjust the display
+        const rowData = [
+            isTotal ? '' : row.category,
+            isTotal ? '' : row.subcategory,
+            row.itemName,
+            isTotal ? '' : row.color,
+            isTotal ? '' : row.size,
+            isTotal ? '' : (row.quantity ? row.quantity.toString() : ''),
+            row.total || ''
+        ];
+
+        // Draw each cell in the row
+        rowData.forEach((cell, i) => {
+            // Draw cell border
+            doc.rect(xPos, yPos, columns[i].width, rowHeight).stroke();
+
+            // Format the cell content
+            let cellText = cell || '';
+
+            // Draw the cell text
+            doc.text(cellText, xPos + 5, yPos + 5, {
+                width: columns[i].width - 10,
+                align: columns[i].align || 'left'
+            });
+
+            xPos += columns[i].width;
+        });
+
+        yPos += rowHeight;
+    });
+    // Finalize the PDF
+    doc.end();
+
+    // Return a promise that resolves when the PDF is written
+    return new Promise((resolve, reject) => {
+        writeStream.on('finish', () => resolve(outputPath));
+        writeStream.on('error', reject);
+    });
+}
+
+// Helper function to get category name
+async function getCategoryName(categoryId) {
+    try {
+        const category = await mongoose.model('Category').findById(categoryId);
+        return category ? category.name : 'Unknown Category';
+    } catch (error) {
+        console.error('Error getting category name:', error);
+        return 'Unknown Category';
+    }
+}
+
+// Helper function to get subcategory name
+async function getSubcategoryName(subcategoryId) {
+    try {
+        const subcategory = await mongoose.model('Subcategory').findById(subcategoryId);
+        return subcategory ? subcategory.name : 'Unknown Subcategory';
+    } catch (error) {
+        console.error('Error getting subcategory name:', error);
+        return 'Unknown Subcategory';
+    }
+}
+
+// Helper function to format date
+function formatDate(date) {
+    return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+    });
+}
+
+// Helper function to format date for filename
+function formatDateForFilename(date) {
+    return date.toISOString().split('T')[0];
 }

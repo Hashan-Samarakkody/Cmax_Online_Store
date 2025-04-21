@@ -140,7 +140,7 @@ const Orders = ({ token }) => {
       const term = searchTerm.toLowerCase();
 
       // Search by Order ID if selected
-      if (searchCriteria.orderId && order._id.toLowerCase().includes(term)) {
+      if (searchCriteria.orderId && order.orderId.toLowerCase().includes(term)) {
         return true;
       }
 
@@ -298,16 +298,25 @@ const Orders = ({ token }) => {
                 <img className='w-12 rounded-xs' src={assets.order_iocn} alt="" />
                 <div>
                   <div>
-                    {
-                      order.items.map((item, index) => {
-                        const detailsText = renderItemDetails(item);
-                        if (index === order.items.length - 1) {
-                          return <p className='py-0.5 text-black' key={index}>{item.name} <b>×</b> {item.quantity}{detailsText && ` (${detailsText})`}</p>
-                        } else {
-                          return <p className='py-0.5 text-black' key={index}>{item.name} <b>×</b> {item.quantity}{detailsText && ` (${detailsText})`},</p>
-                        }
-                      })
-                    }
+                    <p className='font-bold text-sm mb-2 text-black'>Order ID: {order.orderId || 'N/A'}</p>
+                    <div>
+                      {
+                        order.items.map((item, index) => {
+                          const detailsText = renderItemDetails(item);
+                          if (index === order.items.length - 1) {
+                            return <p className='py-0.5 text-black' key={index}>{item.name} <b>×</b> {item.quantity}{detailsText && ` (${detailsText})`}</p>
+                          } else {
+                            return <p className='py-0.5 text-black' key={index}>{item.name} <b>×</b> {item.quantity}{detailsText && ` (${detailsText})`},</p>
+                          }
+                        })
+                      }
+                    </div>
+                    <p className='mt-3 mb-2 font-medium text-black'>{order.address.firstName + " " + order.address.lastName}</p>
+                    <div>
+                      <p className='text-black'>{order.address.street + ","}</p>
+                      <p className='text-black'>{order.address.city + ", " + order.address.state + ", " + order.address.postalCode}</p>
+                    </div>
+                    <p className='text-black'>{order.address.phoneNumber}</p>
                   </div>
                   <p className='mt-3 mb-2 font-medium text-black'>{order.address.firstName + " " + order.address.lastName}</p>
                   <div>

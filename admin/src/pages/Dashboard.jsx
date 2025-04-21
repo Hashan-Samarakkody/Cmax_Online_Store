@@ -8,7 +8,6 @@ import { assets } from '../assets/assets';
 import { useNavigate } from 'react-router-dom';
 import WebSocketService from '../services/WebSocketService';
 
-// Register ChartJS components
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Title, Tooltip, Legend);
 
 const Dashboard = () => {
@@ -82,7 +81,7 @@ const Dashboard = () => {
       }
     } catch (error) {
       console.error('Error fetching user stats:', error);
-      // Don't set global error for partial updates
+
     }
   };
 
@@ -336,7 +335,16 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Dashboard Overview</h1>
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Dashboard Overview</h1>
+
+        <button
+          onClick={() => navigate('/sales')}
+          className="flex items-center px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors"
+        >
+          Sales Report
+        </button>
+      </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">

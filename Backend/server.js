@@ -8,7 +8,8 @@ import productRouter from './routes/productRoute.js';
 import cartRouter from './routes/cartRoute.js';
 import orderRouter from './routes/orderRoute.js';
 import categoryRouter from './routes/categoryRoute.js';
-import dashboardRouter from './routes/dashboardRoute.js'; // Import the new dashboard router
+import dashboardRouter from './routes/dashboardRoute.js';
+import reportRouter from './routes/reportRoute.js';
 import { WebSocketServer } from 'ws'; 
 
 // App Config
@@ -27,6 +28,7 @@ app.use('/api/cart', cartRouter);
 app.use('/api/order', orderRouter);
 app.use('/api/categories', categoryRouter);
 app.use('/api/dashboard', dashboardRouter);
+app.use('/api/reports', reportRouter);
 app.get('/', (req, res) => {
     res.send('API is working');
 });
