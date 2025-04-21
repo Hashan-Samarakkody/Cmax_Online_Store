@@ -3,6 +3,8 @@ import { ShopContext } from '../context/ShopContext'
 import Title from '../components/Title';
 import axios from 'axios';
 import { toast } from 'react-toastify'
+import WebSocketService from '../services/WebSocketService';
+import {assets} from '../assets/assets';
 
 const Orders = () => {
   const { backendUrl, token, currency } = useContext(ShopContext);
@@ -34,7 +36,32 @@ const Orders = () => {
   }
 
   useEffect(() => {
+    // Initial load of orders
     loadOrderData()
+
+    // Connect to WebSocket if authenticated
+    if (token) {
+      // Connect to WebSocket
+      WebSocketService.connect(() => {
+        console.log('WebSocket connected in Orders component')
+      })
+
+      // Register callback for new orders
+      const handleNewOrder = (data) => {
+        console.log('New order received via WebSocket:', data)
+        // Reload orders when a new one arrives
+        loadOrderData()
+        toast.info('New order has been added!')
+      }
+
+      // Subscribe to newOrder events
+      WebSocketService.on('newOrder', handleNewOrder)
+
+      // Cleanup on unmount
+      return () => {
+        WebSocketService.off('newOrder', handleNewOrder)
+      }
+    }
   }, [token])
 
   // Helper function to render additional details
@@ -75,7 +102,16 @@ const Orders = () => {
         <Title text1={'MY'} text2={'ORDERS'} />
       </div>
       <div>
-        {
+        {orderData.length === 0 ? (
+          <div className='flex flex-col justify-center items-center h-[50vh]'>
+            <img
+              className='w-40 sm:w-60 animate-pulse'
+              src={assets.empty_order}
+              alt='Empty Cart'
+            />
+            <p className='text-gray-400 font-semibold text-4xl mt-4'>No orders to display!</p>
+          </div>
+        ) : (
           orderData.map((item, index) => {
             // Get additional details
             const itemDetails = renderItemDetails(item);
@@ -107,7 +143,7 @@ const Orders = () => {
               </div>
             )
           })
-        }
+        )}
       </div>
     </div>
   )
