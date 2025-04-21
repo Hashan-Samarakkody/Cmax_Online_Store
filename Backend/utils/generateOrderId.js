@@ -50,11 +50,29 @@ class OrderCounterManager {
 const counterManager = new OrderCounterManager();
 
 const generateOrderId = (orderData) => {
+    // Check if orderData exists and has items
+    if (!orderData || !orderData.items || !orderData.items.length) {
+        // Fallback for when there are no items
+        const now = new Date();
+        const year = now.getFullYear().toString().slice(-2);
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const seconds = String(now.getSeconds()).padStart(2, '0');
+
+        const dateTime = `${year}${month}${day}-${hours}${minutes}${seconds}`;
+        const counter = counterManager.getNextCounter();
+
+        // Use 'O' for Order when no item name is available
+        return `O${dateTime}-XX-${counter}`;
+    }
+
     // Get the first item in the order
     const firstItem = orderData.items[0];
 
-    // Get first letter of the first item's name (uppercase)
-    const firstLetter = firstItem.name.charAt(0).toUpperCase();
+    // Safely get first letter of the first item's name (uppercase)
+    const firstLetter = firstItem.name ? firstItem.name.charAt(0).toUpperCase() : 'O';
 
     // Get current date and time
     const now = new Date();
@@ -68,15 +86,10 @@ const generateOrderId = (orderData) => {
     // Create date-time part
     const dateTime = `${year}${month}${day}-${hours}${minutes}${seconds}`;
 
-    const categoryPrefix = firstItem.category && firstItem.category.name
-        ? firstItem.category.name.slice(0, 2).toUpperCase()
-        : 'XX'; // Default if category is not available
-
     // Get the next counter value
     const counter = counterManager.getNextCounter();
 
     // Construct order ID
-    return `${firstLetter}${dateTime}-${categoryPrefix}-${counter}`;
+    return `${dateTime}${firstLetter}-${counter}`;
 };
-
 export default generateOrderId;
