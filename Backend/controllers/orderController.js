@@ -2,6 +2,7 @@ import orderModel from '../models/orderModel.js'
 import userModel from '../models/userModel.js'
 import Stripe from 'stripe'
 import { broadcast } from '../server.js'
+import generateOrderId from '../utils/generateOrderId.js'
 
 // Global variables
 const currency = "LKR"
@@ -10,14 +11,17 @@ const deliveryCharge = 150
 // Initialize the payment gateway
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
 
-
 // Place orders using cash on delivery method
 const placeOrder = async (req, res) => {
     try {
         const { userId, items, amount, address } = req.body
 
+        // Generate custom order ID
+        const orderId = generateOrderId({ items });
+
         const orderData = {
             userId,
+            orderId,
             items,
             amount,
             address,
@@ -46,12 +50,15 @@ const placeOrder = async (req, res) => {
 // Place orders using Stripe method
 const placeOrderStripe = async (req, res) => {
     try {
-
         const { userId, items, amount, address } = req.body
         const { origin } = req.headers
 
+        // Generate custom order ID
+        const orderId = generateOrderId({ items });
+
         const orderData = {
             userId,
+            orderId,
             items,
             amount,
             address,
@@ -99,6 +106,7 @@ const placeOrderStripe = async (req, res) => {
         res.json({ success: false, message: error.message })
     }
 }
+
 
 // Verify Stripe
 const verifyStripe = async (req, res) => {

@@ -295,7 +295,7 @@ function createStandardLabel(doc, order, centerX, titleY, taglineY, storeName, t
 
     // Left Column - Customer Information
     doc.font('Helvetica-Bold').fontSize(12).text('Order Id:', leftColumnX, startY);
-    doc.font('Helvetica').fontSize(12).text(order._id, leftColumnX + 110, startY);
+    doc.font('Helvetica').fontSize(12).text(order.orderId, leftColumnX + 110, startY);
 
     doc.font('Helvetica-Bold').fontSize(12).text('Ordered by:', leftColumnX, startY + lineHeight);
     doc.font('Helvetica').fontSize(12).text(`${order.address.firstName} ${order.address.lastName}`, leftColumnX + 110, startY + lineHeight);
