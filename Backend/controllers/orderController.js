@@ -17,7 +17,7 @@ const placeOrder = async (req, res) => {
         const { userId, items, amount, address } = req.body
 
         // Generate custom order ID
-        const orderId = generateOrderId({ items });
+        const orderId = await generateOrderId({ items });
 
         const orderData = {
             userId,
@@ -54,7 +54,7 @@ const placeOrderStripe = async (req, res) => {
         const { origin } = req.headers
 
         // Generate custom order ID
-        const orderId = generateOrderId({ items });
+        const orderId = await generateOrderId({ items });
 
         const orderData = {
             userId,
