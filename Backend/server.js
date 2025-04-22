@@ -10,6 +10,7 @@ import orderRouter from './routes/orderRoute.js';
 import categoryRouter from './routes/categoryRoute.js';
 import dashboardRouter from './routes/dashboardRoute.js';
 import reportRouter from './routes/reportRoute.js';
+import adminRouter from './routes/adminRoute.js';
 import { WebSocketServer } from 'ws'; 
 
 // App Config
@@ -20,6 +21,7 @@ connectCloudinary();
 
 app.use(cors());
 app.use(express.json());
+app.use('/uploads', express.static('uploads'));
 
 // api endpoints
 app.use('/api/user', userRouter);
@@ -29,6 +31,7 @@ app.use('/api/order', orderRouter);
 app.use('/api/categories', categoryRouter);
 app.use('/api/dashboard', dashboardRouter);
 app.use('/api/reports', reportRouter);
+app.use('/api/admin', adminRouter);
 app.get('/', (req, res) => {
     res.send('API is working');
 });

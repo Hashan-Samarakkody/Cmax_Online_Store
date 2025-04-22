@@ -1,62 +1,69 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { toast } from 'react-toastify';
 import axios from 'axios';
 import { assets } from '../assets/assets';
 import { backendUrl } from '../App';
 import { motion } from 'framer-motion';
+import AdminSignup from './SignUp';
+import DOMPurify from 'dompurify';
 
 const LoginPage = ({ setToken }) => {
+  const [showSignup, setShowSignup] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Validation functions
-  const validateEmail = (value) => {
-    // Email validation regex
+  // Sanitize input
+  const sanitizeInput = (input) => {
+    return DOMPurify.sanitize(input.trim());
+  };
+
+  // Validate email
+  const validateEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!value) {
+    if (!email) {
       setEmailError('Email is required');
       return false;
-    } else if (!emailRegex.test(value)) {
+    } else if (!emailRegex.test(email)) {
       setEmailError('Please enter a valid email address');
       return false;
+    } else {
+      setEmailError('');
+      return true;
     }
-    setEmailError('');
-    return true;
   };
 
-  const validatePassword = (value) => {
-    if (!value) {
+  // Validate password
+  const validatePassword = (password) => {
+    if (!password) {
       setPasswordError('Password is required');
       return false;
-    } else if (value.length < 6) {
-      setPasswordError('Password must be at least 6 characters');
+    } else if (password.length < 8) {
+      setPasswordError('Password must be at least 8 characters long');
       return false;
+    } else {
+      setPasswordError('');
+      return true;
     }
-    setPasswordError('');
-    return true;
   };
 
-  // Sanitize inputs to prevent XSS
-  const sanitizeInput = (input) => {
-    return input.trim().replace(/[<>&"'/]/g, '');
-  };
-
+  // Handle email change
   const handleEmailChange = (e) => {
     const sanitized = sanitizeInput(e.target.value);
     setEmail(sanitized);
     validateEmail(sanitized);
   };
 
+  // Handle password change
   const handlePasswordChange = (e) => {
     const sanitized = sanitizeInput(e.target.value);
     setPassword(sanitized);
     validatePassword(sanitized);
   };
 
-  // In the handleSubmit function of your Login.jsx
+  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -72,11 +79,12 @@ const LoginPage = ({ setToken }) => {
     setIsSubmitting(true);
 
     try {
-      const response = await axios.post(backendUrl + '/api/user/admin', { email, password });
+      const response = await axios.post(backendUrl + '/api/admin/login', { email, password });
 
       if (response.data.success) {
-        // Save token to localStorage with the correct key
+        // Save token to localStorage
         localStorage.setItem('adminToken', response.data.token);
+
         // Success animation before setting token
         toast.success('Login successful!');
         setTimeout(() => {
@@ -92,6 +100,12 @@ const LoginPage = ({ setToken }) => {
       setIsSubmitting(false);
     }
   };
+
+  // If signup mode is active, show signup component
+  if (showSignup) {
+    return <AdminSignup setShowSignup={setShowSignup} setToken={setToken} />;
+  }
+
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
       {/* Left side - Login Form */}
@@ -211,15 +225,16 @@ const LoginPage = ({ setToken }) => {
             transition={{ delay: 0.7, duration: 0.5 }}
           >
             <p className="text-sm text-gray-600">
-              Need admin access?
-              <motion.a
-                href="#"
+              Need a new admin account?
+              <motion.button
+                type="button"
                 className="text-green-700 hover:text-green-800 ml-1"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
+                onClick={() => setShowSignup(true)}
               >
-                Contact support
-              </motion.a>
+                Sign up here
+              </motion.button>
             </p>
           </motion.div>
         </div>
