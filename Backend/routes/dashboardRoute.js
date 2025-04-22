@@ -1,0 +1,24 @@
+import express from 'express';
+import {
+    getDashboardStats,
+    getSalesTrends,
+    getProductPerformance,
+    getUserActivity,
+    getCartAnalytics,
+    getCategoryDistribution,
+    generateReport
+} from '../controllers/dashboardController.js';
+import adminAuth from '../middleware/adminAuth.js';
+
+const dashboardRouter = express.Router();
+
+// All routes are protected with adminAuth middleware
+dashboardRouter.get('/stats', adminAuth, getDashboardStats);
+dashboardRouter.get('/sales-trends', adminAuth, getSalesTrends);
+dashboardRouter.get('/product-performance', adminAuth, getProductPerformance);
+dashboardRouter.get('/user-activity', adminAuth, getUserActivity);
+dashboardRouter.get('/cart-analytics', adminAuth, getCartAnalytics);
+dashboardRouter.get('/category-distribution', adminAuth, getCategoryDistribution);
+dashboardRouter.post('/generate-report', adminAuth, generateReport);
+
+export default dashboardRouter;

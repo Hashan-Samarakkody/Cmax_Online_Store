@@ -2,6 +2,7 @@ import userModel from "../models/userModel.js";
 import validator from 'validator';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import { broadcast } from '../server.js';
 
 const createToken = (id) => {
     return jwt.sign({ id }, process.env.JWT_SECRET);
@@ -76,6 +77,8 @@ const registerUser = async (req, res) => {
 
         // Provide a token to the user
         const token = createToken(user._id);
+        // Broadcast the new user
+        broadcast({ type: "newUser", user });
         res.json({ success: true, token });
 
     } catch (error) {
