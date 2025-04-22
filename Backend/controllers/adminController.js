@@ -1,6 +1,7 @@
 import adminModel from '../models/adminModel.js';
 import jwt from 'jsonwebtoken';
 import { broadcast } from '../server.js';
+import { v2 as cloudinary } from 'cloudinary';
 
 // Admin login
 const adminLogin = async (req, res) => {
@@ -87,6 +88,13 @@ const registerAdmin = async (req, res) => {
             });
         }
 
+        // Upload image to Cloudinary if provided
+        let profileImageUrl = 'default-admin.png';
+        if (req.file) {
+            const result = await cloudinary.uploader.upload(req.file.path, { resource_type: 'image' });
+            profileImageUrl = result.secure_url;
+        }
+
         // Create new admin with appropriate permissions based on role
         const permissions = {
             manageProducts: role === 'superadmin' || role === 'manager',
@@ -101,7 +109,7 @@ const registerAdmin = async (req, res) => {
             username,
             email,
             password,
-            profileImage: req.file ? req.file.path : 'default-admin.png',
+            profileImage: profileImageUrl,
             role: role || 'staff',
             permissions
         });
@@ -138,7 +146,7 @@ const registerAdmin = async (req, res) => {
                 name: admin.name,
                 email: admin.email,
                 role: admin.role,
-                profileImage: admin.profileImage,
+                profileImage: profileImageUrl,
                 permissions: admin.permissions
             }
         });
@@ -149,19 +157,6 @@ const registerAdmin = async (req, res) => {
     }
 };
 
-// Get all admins
-const getAllAdmins = async (req, res) => {
-    try {
-        const admins = await adminModel.find()
-            .select('-password')
-            .sort({ createdAt: -1 });
-
-        res.json({ success: true, admins });
-    } catch (error) {
-        console.log(error);
-        res.json({ success: false, message: error.message });
-    }
-};
 
 // Get admin profile
 const getAdminProfile = async (req, res) => {
@@ -198,10 +193,22 @@ const updateAdminProfile = async (req, res) => {
             }
         }
 
+        // Get current admin data
+        const currentAdmin = await adminModel.findById(adminId);
+
         // Update profile image if provided
         const updateData = { name, username, email };
         if (req.file) {
-            updateData.profileImage = req.file.path;
+            // Upload new image to Cloudinary
+            const result = await cloudinary.uploader.upload(req.file.path, { resource_type: 'image' });
+            updateData.profileImage = result.secure_url;
+
+            // Delete old image from Cloudinary if it's not the default
+            if (currentAdmin.profileImage && !currentAdmin.profileImage.includes('default-admin')) {
+                // Extract public ID from URL
+                const publicId = currentAdmin.profileImage.split('/').pop().split('.')[0];
+                await cloudinary.uploader.destroy(publicId);
+            }
         }
 
         const updatedAdmin = await adminModel.findByIdAndUpdate(
@@ -288,12 +295,38 @@ const updateAdminStatus = async (req, res) => {
     }
 };
 
+// Delete admin account 
+const deleteAdminAccount = async (req, res) => {
+    try {
+        const adminId = req.admin.id;
+        const admin = await adminModel.findById(adminId);
+        if (!admin) {
+            return res.json({ success: false, message: "Admin not found" });
+        }
+
+        // Delete profile image from Cloudinary if it's not the default
+        if (admin.profileImage && !admin.profileImage.includes('default-admin')) {
+            // Extract public ID from URL
+            const publicId = admin.profileImage.split('/').pop().split('.')[0];
+            await cloudinary.uploader.destroy(publicId);
+        }
+
+        // Delete admin account
+        await adminModel.findByIdAndDelete(adminId);
+        res.json({ success: true, message: "Admin account deleted successfully" });
+
+    } catch (error) {
+        console.log(error);
+        res.json({ success: false, message: error.message });
+    }
+}
+
 export {
     adminLogin,
     registerAdmin,
-    getAllAdmins,
     getAdminProfile,
     updateAdminProfile,
     changePassword,
-    updateAdminStatus
+    updateAdminStatus,
+    deleteAdminAccount
 };

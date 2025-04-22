@@ -3,8 +3,11 @@ import axios from 'axios';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { assets } from '../assets/assets';
+import { backendUrl } from '../App';
+import { useNavigate } from 'react-router-dom';
 
 const Profile = ({ token, setToken }) => {
+    const navigate = useNavigate();
     const [admin, setAdmin] = useState(null);
     const [loading, setLoading] = useState(true);
     const [editMode, setEditMode] = useState(false);
@@ -29,7 +32,7 @@ const Profile = ({ token, setToken }) => {
     useEffect(() => {
         const fetchProfile = async () => {
             try {
-                const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/admin/profile`, {
+                const response = await axios.get(`${backendUrl}/api/admin/profile`, {
                     headers: {
                         Authorization: `Bearer ${token}`
                     }
@@ -100,7 +103,7 @@ const Profile = ({ token, setToken }) => {
             }
 
             const response = await axios.put(
-                `${process.env.REACT_APP_API_URL}/api/admin/profile`,
+                `${backendUrl}/api/admin/profile`,
                 form,
                 {
                     headers: {
@@ -144,7 +147,7 @@ const Profile = ({ token, setToken }) => {
 
         try {
             const response = await axios.put(
-                `${process.env.REACT_APP_API_URL}/api/admin/change-password`,
+                `${backendUrl}/api/admin/change-password`,
                 {
                     currentPassword: passwordData.currentPassword,
                     newPassword: passwordData.newPassword
@@ -177,7 +180,7 @@ const Profile = ({ token, setToken }) => {
     const handleDeleteAccount = async () => {
         try {
             const response = await axios.delete(
-                `${process.env.REACT_APP_API_URL}/api/admin/admin`,
+                `${backendUrl}/api/admin/delete`,
                 {
                     headers: {
                         Authorization: `Bearer ${token}`
@@ -187,8 +190,17 @@ const Profile = ({ token, setToken }) => {
 
             if (response.data.success) {
                 toast.success('Account deleted successfully');
-                setToken(''); // Log out the user
+
+                // Check if setToken is a function before calling it
+                if (typeof setToken === 'function') {
+                    setToken(''); // Log out the user
+                } else {
+                    // Alternative: use localStorage directly if setToken isn't available
+                    localStorage.removeItem('adminToken'); // Assuming you store the token in localStorage
+                }
+
                 setShowDeleteModal(false);
+                navigate('/login'); // Redirect to login page
             } else {
                 toast.error(response.data.message || 'Failed to delete account');
                 setShowDeleteModal(false);
@@ -218,9 +230,23 @@ const Profile = ({ token, setToken }) => {
     // Loading state
     if (loading) {
         return (
-            <div className="flex items-center justify-center min-h-[80vh]">
-                <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500"></div>
-            </div>
+           <div className="flex flex-col items-center justify-center min-h-[60vh]">
+                   <div className="relative w-24 h-24">
+                     {/* Pulsing circle animation */}
+                     <div className="absolute top-0 left-0 w-full h-full border-4 border-gray-200 rounded-full"></div>
+                     <div className="absolute top-0 left-0 w-full h-full border-t-4 border-green-400 rounded-full animate-spin"></div>
+           
+                     {/* Shop icon or logo in center */}
+                     <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                       <img
+                         src={assets.logo}
+                         alt="Loading"
+                         className="w-12 h-12 object-contain animate-pulse"
+                       />
+                     </div>
+                   </div>
+                   <p className="mt-4 text-gray-600 font-medium">Loading Profile...</p>
+                 </div>
         );
     }
 
@@ -230,7 +256,7 @@ const Profile = ({ token, setToken }) => {
 
             {/* Profile Card */}
             <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-                <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-6 text-white">
+                <div className="bg-gradient-to-r from-green-800 to-green-400 p-6 text-white">
                     <h1 className="text-2xl font-bold">Admin Profile</h1>
                 </div>
 
@@ -245,7 +271,7 @@ const Profile = ({ token, setToken }) => {
                                         onClick={() => fileInputRef.current.click()}
                                     >
                                         <img
-                                            src={previewImage || (admin?.profileImage?.includes('http') ? admin.profileImage : `${process.env.REACT_APP_API_URL}/uploads/${admin.profileImage}`)}
+                                            src={previewImage || (admin?.profileImage?.includes('http') ? admin.profileImage : `${backendUrl}/uploads/${admin.profileImage}`)}
                                             alt={admin.name}
                                             className="h-full w-full object-cover"
                                         />
@@ -264,12 +290,12 @@ const Profile = ({ token, setToken }) => {
                             ) : (
                                 <div className="h-32 w-32 rounded-full overflow-hidden border-4 border-gray-200">
                                     <img
-                                        src={admin?.profileImage?.includes('http') ? admin.profileImage : `${process.env.REACT_APP_API_URL}/uploads/${admin.profileImage}`}
+                                        src={admin?.profileImage?.includes('http') ? admin.profileImage : `${backendUrl}/uploads/${admin.profileImage}`}
                                         alt={admin.name}
                                         className="h-full w-full object-cover"
                                         onError={(e) => {
                                             e.target.onerror = null;
-                                            e.target.src = assets.defaultAvatar || 'https://via.placeholder.com/150';
+                                            e.target.src = assets.defaultAvatar || 'https://ralfvanveen.com/wp-content/uploads/2021/06/Placeholder-_-Glossary-800x450.webp';
                                         }}
                                     />
                                 </div>
