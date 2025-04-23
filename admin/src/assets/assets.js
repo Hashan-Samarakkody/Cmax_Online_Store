@@ -7,6 +7,7 @@ import list_icon from './list.png'
 import order_iocn from './orders.png'
 import category_icon from './category.svg'
 import dashboard_icon from './dashboard.png'
+import profile_icon from './profile.png'
 
 export const assets = {
     logo,
@@ -17,6 +18,7 @@ export const assets = {
     list_icon,
     category_icon,
     order_iocn,
-    dashboard_icon
+    dashboard_icon,
+    profile_icon
 }
 

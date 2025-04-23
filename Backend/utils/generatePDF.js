@@ -89,7 +89,7 @@ export const generateOrderPDF = async (req, res) => {
 
             // Add this order's grouped items to the user's orders
             userOrderGroups[userName].push({
-                orderId: order._id,
+                orderId: order.orderId,
                 orderTime: orderTime,
                 items: Object.values(groupedItems)
             });
@@ -148,7 +148,7 @@ export const generateOrderPDF = async (req, res) => {
                     const userNameToShow = orderIndex === 0 && itemIndex === 0 ? userName : '';
 
                     // Only show order ID and time for first item of each order
-                    const orderIdToShow = itemIndex === 0 ? order.orderId.toString().slice(-6) : '';
+                    const orderIdToShow = itemIndex === 0 ? order.orderId : '';
                     const orderTimeToShow = itemIndex === 0 ? order.orderTime : '';
 
                     drawRow(startY, [
