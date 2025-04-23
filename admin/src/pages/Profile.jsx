@@ -23,10 +23,10 @@ const Profile = ({ token, setToken }) => {
     const [passwordData, setPasswordData] = useState({
         currentPassword: '',
         newPassword: '',
-        confirmPassword: ''
+        confirmPassword: '',
+        code:''
     });
     const [updateLoading, setUpdateLoading] = useState(false);
-
     const fileInputRef = useRef(null);
 
     const [showLogoutModal, setShowLogoutModal] = useState(false);
@@ -362,7 +362,7 @@ const Profile = ({ token, setToken }) => {
 
     return (
         <div className="container mx-auto px-4 py-8 max-w-5xl">
-            <ToastContainer position="top-right" autoClose={300} />
+            <ToastContainer position="top-right" autoClose={500} />
 
             {/* Profile Card - Green Theme Design */}
             <div className="bg-gradient-to-br from-white to-green-50 rounded-2xl shadow-xl overflow-hidden">
@@ -651,6 +651,56 @@ const Profile = ({ token, setToken }) => {
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                 </svg>
+                            </button>
+                        </div>
+
+                        {/* Request verification code */}
+                        <div className="mb-4">
+                            <button
+                                type="button"
+                                className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded"
+                                onClick={async () => {
+                                    try {
+                                        const res = await axios.post(`${backendUrl}/api/admin/send-code`, {}, {
+                                            headers: { Authorization: `Bearer ${token}` }
+                                        });
+                                        toast[res.data.success ? 'success' : 'error'](res.data.message);
+                                    } catch (err) {
+                                        toast.error("Failed to send code");
+                                    }
+                                }}
+                            >
+                                Send Verification Code to Email
+                            </button>
+                        </div>
+
+                        {/* Code input + Verify */}
+                        <div className="mb-4">
+                            <label className="block mb-1 text-sm text-gray-700">Verification Code</label>
+                            <input
+                                type="text"
+                                className="w-full border rounded px-3 py-2"
+                                placeholder="Enter code from email"
+                                value={passwordData.code}
+                                onChange={(e) => setPasswordData({ ...passwordData, code: e.target.value })}
+                            />
+                            <button
+                                type="button"
+                                className="mt-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
+                                onClick={async () => {
+                                    try {
+                                        const res = await axios.post(`${backendUrl}/api/admin/verify-code`, {
+                                            code: passwordData.code
+                                        }, {
+                                            headers: { Authorization: `Bearer ${token}` }
+                                        });
+                                        toast[res.data.success ? 'success' : 'error'](res.data.message);
+                                    } catch (err) {
+                                        toast.error("Failed to verify code");
+                                    }
+                                }}
+                            >
+                                Verify Code
                             </button>
                         </div>
 

@@ -47,7 +47,13 @@ const adminSchema = new mongoose.Schema({
     createdAt: {
         type: Date,
         default: Date.now
-    }
+    },
+    verificationCode: String,
+    verificationCodeExpires: Date,
+    isCodeVerified: {
+        type: Boolean,
+        default: false
+    },
 });
 
 // Password comparison method

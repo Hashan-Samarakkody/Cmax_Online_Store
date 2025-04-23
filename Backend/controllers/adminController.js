@@ -2,6 +2,8 @@ import adminModel from '../models/adminModel.js';
 import jwt from 'jsonwebtoken';
 import { broadcast } from '../server.js';
 import { v2 as cloudinary } from 'cloudinary';
+import nodemailer from 'nodemailer';
+import 'dotenv/config';
 
 // Admin login
 const adminLogin = async (req, res) => {
@@ -181,17 +183,24 @@ const updateAdminProfile = async (req, res) => {
         const adminId = req.admin.id;
         const { name, username, email } = req.body;
 
-        // Check if username already exists (if changed)
-        if (username) {
+        // Check if username or email already exists (if changed)
+        if (username || email) {
             const existingAdmin = await adminModel.findOne({
-                username,
+                $or: [
+                    { username },
+                    { email }
+                ],
                 _id: { $ne: adminId }
             });
 
             if (existingAdmin) {
-                return res.json({ success: false, message: "Username is already taken" });
+                const message = existingAdmin.username === username
+                    ? "Username is already taken"
+                    : "Email is already registered";
+                return res.json({ success: false, message });
             }
         }
+
 
         // Get current admin data
         const currentAdmin = await adminModel.findById(adminId);
@@ -240,55 +249,34 @@ const changePassword = async (req, res) => {
             return res.json({ success: false, message: "Admin not found" });
         }
 
+        // Check if verification code was validated
+        if (!admin.isCodeVerified) {
+            return res.json({ success: false, message: "Please verify your email before changing the password" });
+        }
+
         // Verify current password
         const isPasswordValid = await admin.comparePassword(currentPassword);
         if (!isPasswordValid) {
             return res.json({ success: false, message: "Current password is incorrect" });
         }
 
+        // Password strength check (optional: you can enforce this via regex too)
+        if (newPassword.length < 8) {
+            return res.json({ success: false, message: "New password must be at least 8 characters" });
+        }
+
         // Update password
         admin.password = newPassword;
+
+        // Clear verification fields
+        admin.verificationCode = undefined;
+        admin.verificationCodeExpires = undefined;
+        admin.isCodeVerified = false;
+
         await admin.save();
 
         res.json({ success: true, message: "Password changed successfully" });
-    } catch (error) {
-        console.log(error);
-        res.json({ success: false, message: error.message });
-    }
-};
 
-// Manage admin status (activate/deactivate)
-const updateAdminStatus = async (req, res) => {
-    try {
-        const { adminId, active } = req.body;
-        const requestingAdmin = req.admin;
-
-        // Check if requesting admin has super admin privileges
-        const superAdmin = await adminModel.findById(requestingAdmin.id);
-        if (!superAdmin || superAdmin.role !== 'superadmin') {
-            return res.json({ success: false, message: "You don't have permission to manage admin accounts" });
-        }
-
-        // Prevent deactivating your own account
-        if (requestingAdmin.id === adminId && active === false) {
-            return res.json({ success: false, message: "You cannot deactivate your own account" });
-        }
-
-        const updatedAdmin = await adminModel.findByIdAndUpdate(
-            adminId,
-            { active },
-            { new: true }
-        ).select('-password');
-
-        if (!updatedAdmin) {
-            return res.json({ success: false, message: "Admin not found" });
-        }
-
-        res.json({
-            success: true,
-            message: active ? "Admin account activated" : "Admin account deactivated",
-            admin: updatedAdmin
-        });
     } catch (error) {
         console.log(error);
         res.json({ success: false, message: error.message });
@@ -321,12 +309,81 @@ const deleteAdminAccount = async (req, res) => {
     }
 }
 
+// Send verification code for password change
+const sendVerificationCode = async (req, res) => {
+    try {
+        const adminId = req.admin.id;
+        const admin = await adminModel.findById(adminId);
+
+        if (!admin) return res.json({ success: false, message: "Admin not found" });
+
+        const code = Math.floor(100000 + Math.random() * 900000).toString();
+        admin.verificationCode = code;
+        admin.verificationCodeExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+        admin.isCodeVerified = false;
+        await admin.save();
+
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS
+            }
+        });
+
+        const mailOptions = {
+            from: process.env.EMAIL_USER,
+            to: admin.email,
+            subject: 'Password Change Verification Code',
+            html: `
+            <div style="font-family: 'Times New Roman', Times, serif; font-size: 14pt;">
+                <p>Your verification code is:</p>
+                <h2 style="font-weight: bold; font-style: italic;">${code}</h2>
+                <p>This code will expire in 15 minutes.</p>
+            </div>
+            `
+        };
+
+        await transporter.sendMail(mailOptions);
+        res.json({ success: true, message: "Verification code sent to your email" });
+
+    } catch (error) {
+        console.error(error);
+        res.json({ success: false, message: error.message });
+    }
+};
+
+// Verify the code sent to the admin's email
+const verifyCode = async (req, res) => {
+    try {
+        const { code } = req.body;
+
+        const admin = await adminModel.findOne({
+            verificationCode: code,
+            verificationCodeExpires: { $gt: new Date() }
+        });
+
+        if (!admin) {
+            return res.json({ success: false, message: "Invalid or expired verification code" });
+        }
+
+        admin.isCodeVerified = true;
+        await admin.save();
+
+        res.json({ success: true, message: "Code verified successfully" });
+    } catch (error) {
+        res.json({ success: false, message: error.message });
+    }
+};
+
+
 export {
     adminLogin,
     registerAdmin,
     getAdminProfile,
     updateAdminProfile,
     changePassword,
-    updateAdminStatus,
-    deleteAdminAccount
-};
+    deleteAdminAccount,
+    sendVerificationCode,
+    verifyCode
+}
