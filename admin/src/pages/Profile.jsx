@@ -29,6 +29,14 @@ const Profile = ({ token, setToken }) => {
 
     const fileInputRef = useRef(null);
 
+    const [showLogoutModal, setShowLogoutModal] = useState(false);
+
+    // Add this function to handle actual logout
+    const handleLogout = () => {
+        setToken('');
+        navigate('/login');
+    };
+
     // Fetch admin profile data
     useEffect(() => {
         const fetchProfile = async () => {
@@ -320,6 +328,7 @@ const Profile = ({ token, setToken }) => {
                 if (showPasswordModal) setShowPasswordModal(false);
                 if (showDeleteModal) setShowDeleteModal(false);
                 if (showEditModal) setShowEditModal(false);
+                if (showLogoutModal) setShowLogoutModal(false);
             }
         };
 
@@ -327,8 +336,7 @@ const Profile = ({ token, setToken }) => {
         return () => {
             document.removeEventListener('keydown', handleEscKey);
         };
-    }, [showPasswordModal, showDeleteModal, showEditModal]);
-
+    }, [showPasswordModal, showDeleteModal, showEditModal, showLogoutModal]);
     // Loading state
     if (loading) {
         return (
@@ -376,7 +384,7 @@ const Profile = ({ token, setToken }) => {
                                     className="h-full w-full object-cover"
                                     onError={(e) => {
                                         e.target.onerror = null;
-                                        e.target.src = assets.defaultAvatar || 'https://ralfvanveen.com/wp-content/uploads/2021/06/Placeholder-_-Glossary-800x450.webp';
+                                        e.target.src = assets.defaultAvatar || 'https://www.w3schools.com/w3images/team2.jpg';
                                     }}
                                 />
                             </div>
@@ -437,7 +445,7 @@ const Profile = ({ token, setToken }) => {
                                 </div>
                                 <div>
                                     <label className="block text-green-600 text-sm mb-1">Username</label>
-                                    <p className="text-gray-800 font-medium">@{admin.username}</p>
+                                    <p className="text-gray-800 font-medium">{admin.username}</p>
                                 </div>
                             </div>
                         </div>
@@ -488,7 +496,7 @@ const Profile = ({ token, setToken }) => {
                         </button>
                         <button
                             type="button"
-                            onClick={() => setToken('')}
+                            onClick={() => setShowLogoutModal(true)}
                             className="bg-gradient-to-r from-gray-500 to-gray-500 hover:from-gray-600 hover:to-gray-600 text-black hover:text-white font-medium py-2.5 px-5 rounded-lg shadow-lg shadow-gray-300/20 flex items-center transition-all duration-200 transform hover:translate-y-px border border-gray-300"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
@@ -633,7 +641,7 @@ const Profile = ({ token, setToken }) => {
                 </div>
             )}
 
-            {/* Password Change Modal - add if you need it as well */}
+            {/* Password Change Modal */}
             {showPasswordModal && (
                 <div className="fixed inset-0 bg-yellow-900/20 backdrop-blur-sm flex items-center justify-center z-50">
                     <div className="bg-gradient-to-br from-white to-yellow-50 rounded-2xl shadow-xl p-6 w-full max-w-lg border border-yellow-200 animate-fade-in-up">
@@ -710,6 +718,52 @@ const Profile = ({ token, setToken }) => {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Logout Confirmation Modal */}
+            {showLogoutModal && (
+                <div className="fixed inset-0 bg-gray-900/30 backdrop-blur-sm flex items-center justify-center z-50">
+                    <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-xl p-6 w-full max-w-md border border-gray-200 animate-fade-in-up">
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-2xl font-bold text-gray-800">Logout</h2>
+                            <button onClick={() => setShowLogoutModal(false)} className="text-gray-500 hover:text-gray-800 transition-colors">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        <div className="mb-6">
+                            <div className="flex justify-center mb-6">
+                                <div className="h-16 w-16 flex items-center justify-center rounded-full bg-gray-100 text-gray-600">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fillRule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clipRule="evenodd" />
+                                    </svg>
+                                </div>
+                            </div>
+
+                            <p className="text-gray-800 text-center font-medium mb-2">Are you sure you want to logout?</p>
+                            <p className="text-gray-600 text-center text-sm">You'll need to sign in again to access your account.</p>
+                        </div>
+
+                        <div className="flex flex-col md:flex-row gap-3 justify-center">
+                            <button
+                                type="button"
+                                onClick={() => setShowLogoutModal(false)}
+                                className="px-5 py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg font-medium transition-colors md:w-1/2"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleLogout}
+                                className="px-5 py-2.5 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center md:w-1/2"
+                            >
+                                Confirm Logout
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
