@@ -537,7 +537,7 @@ const Profile = ({ token, setToken }) => {
                                 <div className="relative">
                                     <div className="h-32 w-32 rounded-2xl overflow-hidden border-4 border-green-400/30">
                                         <img
-                                            src={previewImage || (admin?.profileImage?.includes('http') ? admin.profileImage : `${backendUrl}/uploads/${admin.profileImage}`)}
+                                            src={'https://www.w3schools.com/w3images/team2.jpg' || (admin?.profileImage?.includes('http') ? admin.profileImage : `${backendUrl}/uploads/${admin.profileImage}`)}
                                             alt={admin.name}
                                             className="h-full w-full object-cover"
                                             onError={(e) => {

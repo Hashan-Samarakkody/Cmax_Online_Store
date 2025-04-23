@@ -196,7 +196,7 @@ const AdminManagement = ({ token }) => {
                                                     ? new Date(admin.lastLogin).toLocaleString()
                                                     : 'Never logged in'}
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium flex items-center justify-end h-full">
                                                 {admin.role !== 'superadmin' && (
                                                     <button
                                                         onClick={() => toggleAdminStatus(admin._id, admin.active)}
