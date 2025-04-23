@@ -376,6 +376,205 @@ const verifyCode = async (req, res) => {
     }
 };
 
+// Send reset code
+const sendResetCode = async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        // Find admin by email
+        const admin = await adminModel.findOne({ email });
+        if (!admin) {
+            // For security reasons, don't reveal if email exists
+            return res.json({ success: true, message: "If your email exists in our system, a verification code has been sent" });
+        }
+
+        // Generate verification code
+        const code = Math.floor(100000 + Math.random() * 900000).toString();
+
+        // Store code and expiration (10 minutes)
+        admin.verificationCode = code;
+        admin.verificationCodeExpires = new Date(Date.now() + 10 * 60 * 1000);
+        admin.isCodeVerified = false;
+        await admin.save();
+
+        // Send email with code
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS
+            }
+        });
+
+        const mailOptions = {
+            from: process.env.EMAIL_USER,
+            to: admin.email,
+            subject: 'Password Reset Verification Code',
+            html: `
+        <div style="font-family: 'Times New Roman', Times, serif; font-size: 14pt;">
+          <p>Your verification code for password reset is:</p>
+          <h2 style="font-weight: bold; font-style: italic;">${code}</h2>
+          <p>This code will expire in 10 minutes.</p>
+        </div>
+      `
+        };
+
+        await transporter.sendMail(mailOptions);
+
+        // Always return success for security
+        res.json({ success: true, message: "If your email exists in our system, a verification code has been sent" });
+
+    } catch (error) {
+        console.error('Error sending reset code:', error);
+        res.status(500).json({ success: false, message: "Error processing request" });
+    }
+};
+
+// Verify reset code
+const verifyResetCode = async (req, res) => {
+    try {
+        const { email, code } = req.body;
+
+        const admin = await adminModel.findOne({
+            email,
+            verificationCode: code,
+            verificationCodeExpires: { $gt: new Date() }
+        });
+
+        if (!admin) {
+            return res.json({ success: false, message: "Invalid or expired verification code" });
+        }
+
+        // Mark code as verified
+        admin.isCodeVerified = true;
+        await admin.save();
+
+        res.json({ success: true, message: "Code verified successfully" });
+    } catch (error) {
+        console.error('Error verifying reset code:', error);
+        res.status(500).json({ success: false, message: "Error processing request" });
+    }
+};
+
+// Reset password
+const resetPassword = async (req, res) => {
+    try {
+        const { email, code, newPassword } = req.body;
+
+        const admin = await adminModel.findOne({
+            email,
+            verificationCode: code,
+            isCodeVerified: true,
+            verificationCodeExpires: { $gt: new Date() }
+        });
+
+        if (!admin) {
+            return res.json({ success: false, message: "Invalid request. Please restart the password reset process." });
+        }
+
+        // Update password
+        admin.password = newPassword;
+
+        // Clear verification fields
+        admin.verificationCode = undefined;
+        admin.verificationCodeExpires = undefined;
+        admin.isCodeVerified = false;
+
+        await admin.save();
+
+        res.json({ success: true, message: "Password reset successful. You can now log in with your new password." });
+    } catch (error) {
+        console.error('Error resetting password:', error);
+        res.status(500).json({ success: false, message: "Error processing request" });
+    }
+};
+
+// Toggle admin account activation status
+const toggleAdminStatus = async (req, res) => {
+    try {
+        const { adminId } = req.params;
+        const requestingAdmin = req.admin; // This is from the auth middleware
+
+        // Find the admin to be activated/deactivated
+        const targetAdmin = await adminModel.findById(adminId);
+
+        if (!targetAdmin) {
+            return res.json({
+                success: false,
+                message: "Admin not found"
+            });
+        }
+
+        // Prevent deactivation of superadmins by anyone
+        if (targetAdmin.role === 'superadmin') {
+            return res.json({
+                success: false,
+                message: "Superadmin accounts cannot be deactivated"
+            });
+        }
+
+        // Only superadmins can toggle admin status
+        if (requestingAdmin.role !== 'superadmin') {
+            return res.json({
+                success: false,
+                message: "You don't have permission to perform this action"
+            });
+        }
+
+        // Toggle the active status
+        targetAdmin.active = !targetAdmin.active;
+        await targetAdmin.save();
+
+        res.json({
+            success: true,
+            message: `Admin account ${targetAdmin.active ? 'activated' : 'deactivated'} successfully`,
+            active: targetAdmin.active
+        });
+
+    } catch (error) {
+        console.log(error);
+        res.json({ success: false, message: error.message });
+    }
+};
+
+// Get all admins with filtering capability
+const getAllAdmins = async (req, res) => {
+    try {
+        const requestingAdmin = req.admin;
+
+        // Only superadmins can view all admins
+        if (requestingAdmin.role !== 'superadmin' && !requestingAdmin.permissions.manageAdmins) {
+            return res.json({
+                success: false,
+                message: "You don't have permission to access this resource"
+            });
+        }
+
+        // Add query filters for role if provided
+        const filter = {};
+        if (req.query.role) {
+            filter.role = req.query.role;
+        }
+
+        // Add active status filter if provided
+        if (req.query.active !== undefined) {
+            filter.active = req.query.active === 'true';
+        }
+
+        const admins = await adminModel.find(filter)
+            .select('-password -verificationCode -verificationCodeExpires')
+            .sort({ createdAt: -1 });
+
+        res.json({
+            success: true,
+            admins
+        });
+
+    } catch (error) {
+        console.log(error);
+        res.json({ success: false, message: error.message });
+    }
+};
 
 export {
     adminLogin,
@@ -385,5 +584,10 @@ export {
     changePassword,
     deleteAdminAccount,
     sendVerificationCode,
-    verifyCode
+    sendResetCode,
+    verifyResetCode,
+    resetPassword,
+    verifyCode,
+    toggleAdminStatus,
+    getAllAdmins
 }

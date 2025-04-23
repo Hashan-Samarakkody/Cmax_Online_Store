@@ -15,6 +15,15 @@ const LoginPage = ({ setToken }) => {
   const [passwordError, setPasswordError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Password reset state
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetCode, setResetCode] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [resetStep, setResetStep] = useState(1); // 1: Email entry, 2: Code verification, 3: New password
+  const [isResetting, setIsResetting] = useState(false);
+
   // Sanitize input
   const sanitizeInput = (input) => {
     return DOMPurify.sanitize(input.trim());
@@ -85,6 +94,11 @@ const LoginPage = ({ setToken }) => {
         // Save token to localStorage
         localStorage.setItem('adminToken', response.data.token);
 
+        // Also save the admin role for immediate access
+        if (response.data.admin && response.data.admin.role) {
+          localStorage.setItem('adminRole', response.data.admin.role);
+        }
+
         // Success animation before setting token
         toast.success('Login successful!');
         setTimeout(() => {
@@ -98,6 +112,256 @@ const LoginPage = ({ setToken }) => {
       toast.error(error.response?.data?.message || 'Login failed. Please try again.');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  // Handle reset password email submission
+  const handleResetEmailSubmit = async () => {
+    if (!resetEmail || !validateEmail(resetEmail)) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+
+    setIsResetting(true);
+
+    try {
+      // Create a dedicated reset password endpoint or use the existing sendVerificationCode
+      const response = await axios.post(`${backendUrl}/api/admin/reset-password/send-code`, {
+        email: resetEmail
+      });
+
+      if (response.data.success) {
+        toast.success('Verification code has been sent to your email');
+        setResetStep(2); // Move to code verification step
+      } else {
+        toast.error(response.data.message || 'Failed to send verification code');
+      }
+    } catch (error) {
+      console.error('Error sending verification code:', error);
+      toast.error(error.response?.data?.message || 'Error sending verification code');
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
+  // Handle verification code submission
+  const handleVerifyCode = async () => {
+    if (!resetCode || resetCode.length < 6) {
+      toast.error('Please enter a valid verification code');
+      return;
+    }
+
+    setIsResetting(true);
+
+    try {
+      const response = await axios.post(`${backendUrl}/api/admin/reset-password/verify-code`, {
+        email: resetEmail,
+        code: resetCode
+      });
+
+      if (response.data.success) {
+        toast.success('Code verified successfully');
+        setResetStep(3); // Move to new password step
+      } else {
+        toast.error(response.data.message || 'Invalid or expired verification code');
+      }
+    } catch (error) {
+      console.error('Error verifying code:', error);
+      toast.error(error.response?.data?.message || 'Error verifying code');
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
+  // Handle new password submission
+  const handleResetPassword = async () => {
+    // Password validation
+    if (!newPassword || newPassword.length < 8) {
+      toast.error('Password must be at least 8 characters long');
+      return;
+    }
+
+    // Password strength check 
+    const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/;
+    if (!passwordRegex.test(newPassword)) {
+      toast.error('Password must contain letters, numbers, and special characters');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      toast.error('Passwords do not match');
+      return;
+    }
+
+    setIsResetting(true);
+
+    try {
+      const response = await axios.post(`${backendUrl}/api/admin/reset-password/reset`, {
+        email: resetEmail,
+        code: resetCode,
+        newPassword
+      });
+
+      if (response.data.success) {
+        toast.success('Password reset successful! Please login with your new password');
+
+        // Reset all fields and close modal
+        setShowResetModal(false);
+        setResetEmail('');
+        setResetCode('');
+        setNewPassword('');
+        setConfirmPassword('');
+        setResetStep(1);
+      } else {
+        toast.error(response.data.message || 'Failed to reset password');
+      }
+    } catch (error) {
+      console.error('Error resetting password:', error);
+      toast.error(error.response?.data?.message || 'Error resetting password');
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
+  // Reset modal content based on current step
+  const renderResetModalContent = () => {
+    switch (resetStep) {
+      case 1: // Email entry
+        return (
+          <>
+            <h3 className="text-xl font-bold text-gray-800 mb-4">Reset Your Password</h3>
+            <p className="text-gray-600 mb-4">Enter your email address and we'll send you a verification code to reset your password.</p>
+            <div className="mb-4">
+              <label className="block text-sm text-gray-600 mb-2">Email Address</label>
+              <input
+                type="email"
+                className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                placeholder="Enter your email address"
+                value={resetEmail}
+                onChange={(e) => setResetEmail(sanitizeInput(e.target.value))}
+              />
+            </div>
+            <div className="flex justify-end">
+              <button
+                type="button"
+                className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition duration-200 flex items-center"
+                onClick={handleResetEmailSubmit}
+                disabled={isResetting}
+              >
+                {isResetting ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                    </svg>
+                    Sending...
+                  </>
+                ) : "Send Verification Code"}
+              </button>
+            </div>
+          </>
+        );
+
+      case 2: // Code verification
+        return (
+          <>
+            <h3 className="text-xl font-bold text-gray-800 mb-4">Enter Verification Code</h3>
+            <p className="text-gray-600 mb-4">We've sent a verification code to <span className="font-medium">{resetEmail}</span>. Please check your inbox.</p>
+            <div className="mb-4">
+              <label className="block text-sm text-gray-600 mb-2">Verification Code</label>
+              <input
+                type="text"
+                className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                placeholder="Enter 6-digit code"
+                value={resetCode}
+                onChange={(e) => setResetCode(e.target.value.replace(/[^0-9]/g, ''))}
+                maxLength={6}
+              />
+            </div>
+            <div className="flex justify-between">
+              <button
+                type="button"
+                className="text-gray-600 hover:text-gray-800"
+                onClick={() => setResetStep(1)}
+              >
+                Back
+              </button>
+              <button
+                type="button"
+                className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition duration-200 flex items-center"
+                onClick={handleVerifyCode}
+                disabled={isResetting}
+              >
+                {isResetting ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                    </svg>
+                    Verifying...
+                  </>
+                ) : "Verify Code"}
+              </button>
+            </div>
+          </>
+        );
+
+      case 3: // New password
+        return (
+          <>
+            <h3 className="text-xl font-bold text-gray-800 mb-4">Set New Password</h3>
+            <p className="text-gray-600 mb-4">Create a new password for your account.</p>
+            <div className="mb-4">
+              <label className="block text-sm text-gray-600 mb-2">New Password</label>
+              <input
+                type="password"
+                className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                placeholder="Enter new password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(sanitizeInput(e.target.value))}
+              />
+              <p className="mt-1 text-xs text-gray-500">Password must be at least 8 characters with letters, numbers, and special characters.</p>
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm text-gray-600 mb-2">Confirm Password</label>
+              <input
+                type="password"
+                className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                placeholder="Confirm new password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(sanitizeInput(e.target.value))}
+              />
+            </div>
+            <div className="flex justify-between">
+              <button
+                type="button"
+                className="text-gray-600 hover:text-gray-800"
+                onClick={() => setResetStep(2)}
+              >
+                Back
+              </button>
+              <button
+                type="button"
+                className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition duration-200 flex items-center"
+                onClick={handleResetPassword}
+                disabled={isResetting}
+              >
+                {isResetting ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                    </svg>
+                    Resetting...
+                  </>
+                ) : "Reset Password"}
+              </button>
+            </div>
+          </>
+        );
+
+      default:
+        return null;
     }
   };
 
@@ -186,14 +450,15 @@ const LoginPage = ({ setToken }) => {
                 </motion.p>
               )}
               <div className="flex justify-end mt-2">
-                <motion.a
-                  href="#"
+                <motion.button
+                  type="button"
                   className="text-sm text-green-700 hover:text-green-800"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
+                  onClick={() => setShowResetModal(true)}
                 >
                   Forget password
-                </motion.a>
+                </motion.button>
               </div>
             </motion.div>
 
@@ -272,6 +537,53 @@ const LoginPage = ({ setToken }) => {
           </motion.div>
         </div>
       </motion.div>
+
+      {/* Password Reset Modal */}
+      {showResetModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm">
+          <motion.div
+            className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <div className="flex justify-between items-center mb-4">
+              <div className="text-green-600">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                </svg>
+              </div>
+              <button
+                onClick={() => {
+                  setShowResetModal(false);
+                  setResetStep(1);
+                  setResetEmail('');
+                  setResetCode('');
+                  setNewPassword('');
+                  setConfirmPassword('');
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Step indicators */}
+            <div className="flex items-center justify-center mb-6">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-medium ${resetStep >= 1 ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-600'}`}>1</div>
+              <div className={`h-1 w-10 ${resetStep >= 2 ? 'bg-green-500' : 'bg-gray-200'}`}></div>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-medium ${resetStep >= 2 ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-600'}`}>2</div>
+              <div className={`h-1 w-10 ${resetStep >= 3 ? 'bg-green-500' : 'bg-gray-200'}`}></div>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-medium ${resetStep >= 3 ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-600'}`}>3</div>
+            </div>
+
+            {/* Dynamic content based on current step */}
+            {renderResetModalContent()}
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 };
