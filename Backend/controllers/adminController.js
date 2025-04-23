@@ -205,9 +205,6 @@ const updateAdminProfile = async (req, res) => {
         const currentAdmin = await adminModel.findById(adminId);
 
 
-        // Get current admin data
-        const currentAdmin = await adminModel.findById(adminId);
-
         // Update profile image if provided
         const updateData = { name, username, email };
         if (req.file) {
@@ -579,37 +576,18 @@ const getAllAdmins = async (req, res) => {
     }
 };
 
-// Delete admin account 
-const deleteAdminAccount = async (req, res) => {
-    try {
-        const adminId = req.admin.id;
-        const admin = await adminModel.findById(adminId);
-        if (!admin) {
-            return res.json({ success: false, message: "Admin not found" });
-        }
-
-        // Delete profile image from Cloudinary if it's not the default
-        if (admin.profileImage && !admin.profileImage.includes('default-admin')) {
-            // Extract public ID from URL
-            const publicId = admin.profileImage.split('/').pop().split('.')[0];
-            await cloudinary.uploader.destroy(publicId);
-        }
-
-        // Delete admin account
-        await adminModel.findByIdAndDelete(adminId);
-        res.json({ success: true, message: "Admin account deleted successfully" });
-
-    } catch (error) {
-        console.log(error);
-        res.json({ success: false, message: error.message });
-    }
-}
-
 export {
     adminLogin,
     registerAdmin,
     getAdminProfile,
     updateAdminProfile,
     changePassword,
-    updateAdminStatus
+    deleteAdminAccount,
+    sendVerificationCode,
+    verifyCode,
+    sendResetCode,
+    verifyResetCode,
+    resetPassword,
+    toggleAdminStatus,
+    getAllAdmins
 };
