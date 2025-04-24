@@ -1,5 +1,5 @@
 import React from 'react'
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, useLocation } from 'react-router-dom'
 import Home from './pages/Home'
 import About from './pages/About'
 import Contact from './pages/Contact'
@@ -11,6 +11,7 @@ import PlaceOrder from './pages/PlaceOrder'
 import Collection from './pages/Collection'
 import Orders from './pages/Orders'
 import Navbar from './components/Navbar'
+import SignUpLoginNavbar from './components/SigupLoginNavbar'
 import Footer from './components/Footer'
 import SearchBar from './components/SearchBar'
 import { ToastContainer, toast } from 'react-toastify';
@@ -19,11 +20,14 @@ import Verify from './pages/Verify'
 
 
 const App = () => {
+  const location = useLocation();
+  const isAuthPage = location.pathname === '/login' || location.pathname === '/signup';
+
   return (
     <div className='px-2 py-0 smnpx-[5vw] md:px-[7vw] lg:px[9vw]'>
       <ToastContainer />
-      <Navbar />
-      <SearchBar />
+      {isAuthPage ? <SignUpLoginNavbar /> : <Navbar />}
+      {!isAuthPage && <SearchBar />}
       <Routes>
         <Route path='/' element={<Home />} />
         <Route path='/about' element={<About />} />
@@ -37,7 +41,7 @@ const App = () => {
         <Route path='/orders' element={<Orders />} />
         <Route path='/verify' element={<Verify />} />
       </Routes>
-      <Footer/>
+      {!isAuthPage && <Footer />}
     </div>
   )
 }
