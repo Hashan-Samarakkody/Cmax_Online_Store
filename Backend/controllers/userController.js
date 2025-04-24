@@ -202,7 +202,7 @@ const sendResetCode = async (req, res) => {
                 </div>
                 <div style="text-align: center; margin-top: 20px; color: #888888; font-size: 14px;">
                     <p>Cmax Online Store © ${new Date().getFullYear()}</p>
-                    <p>This is an automated email. Please do not reply.</p>
+                    <p>This is an automated email. Please do not reply. (Generade on ${new Date().toLocaleString()} at ${new Date().toLocaleTimeString()})</p>
                 </div>
             </div>
             `
