@@ -6,11 +6,13 @@ const userSchema = new mongoose.Schema({
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     phoneNumber: { type: String },
-    profileImage: { type: String, default: 'default-user.png' },
+    profileImage: {
+        type: String,
+        default: 'https://static.vecteezy.com/system/resources/thumbnails/036/594/092/small_2x/man-empty-avatar-photo-placeholder-for-social-networks-resumes-forums-and-dating-sites-male-and-female-no-photo-images-for-unfilled-user-profile-free-vector.jpg'
+    },
     cartData: { type: Object, default: {} },
     lastLogin: { type: Date },
     createdAt: { type: Date, default: Date.now },
-    // For password reset
     resetCode: String,
     resetCodeExpires: Date,
     isResetCodeVerified: Boolean

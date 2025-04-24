@@ -257,11 +257,8 @@ const SignUp = () => {
                                             className="w-full h-full object-cover"
                                         />
                                     ) : (
-                                        <FiUser size={40} className="text-gray-400" />
+                                            <img src="https://static.vecteezy.com/system/resources/thumbnails/036/594/092/small_2x/man-empty-avatar-photo-placeholder-for-social-networks-resumes-forums-and-dating-sites-male-and-female-no-photo-images-for-unfilled-user-profile-free-vector.jpg" alt="" />
                                     )}
-                                    <div className="absolute bottom-0 right-0 bg-green-600 text-white p-1 rounded-full">
-                                        <FiCamera size={14} />
-                                    </div>
                                 </div>
                                 <input
                                     ref={fileInputRef}

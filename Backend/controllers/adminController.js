@@ -93,8 +93,21 @@ const registerAdmin = async (req, res) => {
         // Upload image to Cloudinary if provided
         let profileImageUrl = 'default-admin.png';
         if (req.file) {
-            const result = await cloudinary.uploader.upload(req.file.path, { resource_type: 'image' });
-            profileImageUrl = result.secure_url;
+            try {
+                // Create a data URI from the buffer
+                const dataUri = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+
+                // Upload directly to Cloudinary
+                const result = await cloudinary.uploader.upload(dataUri, {
+                    resource_type: 'image',
+                    folder: 'admin_profiles'
+                });
+
+                profileImageUrl = result.secure_url;
+            } catch (uploadError) {
+                console.log('Error uploading image to Cloudinary:', uploadError);
+                // Continue with default image if upload fails
+            }
         }
 
         // Create new admin with appropriate permissions based on role
@@ -204,19 +217,45 @@ const updateAdminProfile = async (req, res) => {
         // Get current admin data
         const currentAdmin = await adminModel.findById(adminId);
 
-
         // Update profile image if provided
         const updateData = { name, username, email };
         if (req.file) {
-            // Upload new image to Cloudinary
-            const result = await cloudinary.uploader.upload(req.file.path, { resource_type: 'image' });
-            updateData.profileImage = result.secure_url;
+            try {
+                // Create a data URI from the buffer for direct Cloudinary upload
+                const dataUri = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
 
-            // Delete old image from Cloudinary if it's not the default
-            if (currentAdmin.profileImage && !currentAdmin.profileImage.includes('default-admin')) {
-                // Extract public ID from URL
-                const publicId = currentAdmin.profileImage.split('/').pop().split('.')[0];
-                await cloudinary.uploader.destroy(publicId);
+                // Upload directly to Cloudinary
+                const result = await cloudinary.uploader.upload(dataUri, {
+                    resource_type: 'image',
+                    folder: 'admin_profiles'
+                });
+
+                updateData.profileImage = result.secure_url;
+
+                // Delete old image from Cloudinary if it's not the default
+                if (currentAdmin.profileImage && !currentAdmin.profileImage.includes('default-admin')) {
+                    try {
+                        // Extract public ID from URL - handle both asset ID and path formats
+                        const urlParts = currentAdmin.profileImage.split('/');
+                        const publicIdWithExtension = urlParts[urlParts.length - 1];
+                        const publicId = publicIdWithExtension.split('.')[0];
+
+                        // For images in folders, include folder path
+                        if (urlParts.includes('admin_profiles')) {
+                            const folderIndex = urlParts.indexOf('admin_profiles');
+                            const fullPublicId = urlParts.slice(folderIndex).join('/').split('.')[0];
+                            await cloudinary.uploader.destroy(fullPublicId);
+                        } else {
+                            await cloudinary.uploader.destroy(publicId);
+                        }
+                    } catch (deleteError) {
+                        console.log('Error deleting old image:', deleteError);
+                        // Continue even if old image deletion fails
+                    }
+                }
+            } catch (uploadError) {
+                console.log('Error uploading image to Cloudinary:', uploadError);
+                return res.json({ success: false, message: 'Error uploading profile image' });
             }
         }
 

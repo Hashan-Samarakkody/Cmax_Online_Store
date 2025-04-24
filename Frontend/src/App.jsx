@@ -10,6 +10,7 @@ import Cart from './pages/Cart'
 import PlaceOrder from './pages/PlaceOrder'
 import Collection from './pages/Collection'
 import Orders from './pages/Orders'
+import Profile from './pages/Profile'
 import Navbar from './components/Navbar'
 import SignUpLoginNavbar from './components/SigupLoginNavbar'
 import Footer from './components/Footer'
@@ -40,6 +41,7 @@ const App = () => {
         <Route path='/collection' element={<Collection />} />
         <Route path='/orders' element={<Orders />} />
         <Route path='/verify' element={<Verify />} />
+        <Route path='/profile' element={<Profile />} />
       </Routes>
       {!isAuthPage && <Footer />}
     </div>

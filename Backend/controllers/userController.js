@@ -82,16 +82,21 @@ const registerUser = async (req, res) => {
             return res.json({ success: false, message: "Password must be at least 8 characters long!" });
         }
 
+        // Set default placeholder image URL
+        let profileImageUrl = 'https://static.vecteezy.com/system/resources/thumbnails/036/594/092/small_2x/man-empty-avatar-photo-placeholder-for-social-networks-resumes-forums-and-dating-sites-male-and-female-no-photo-images-for-unfilled-user-profile-free-vector.jpg';
+
         // Upload profile image to Cloudinary if provided
-        let profileImageUrl = 'default-user.png';
         if (req.file) {
             try {
                 const result = await cloudinary.uploader.upload(req.file.path, {
-                    folder: 'user_profiles'
+                    folder: 'user_profiles',
+                    use_filename: true,
+                    unique_filename: true
                 });
                 profileImageUrl = result.secure_url;
             } catch (uploadError) {
                 console.log("Error uploading to Cloudinary:", uploadError);
+                // Continue with registration using the default image
             }
         }
 
@@ -302,4 +307,195 @@ const resetPassword = async (req, res) => {
     }
 }
 
-export { loginUser, registerUser, sendResetCode, verifyResetCode, resetPassword };
+// Get user profile
+const getUserProfile = async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        // Find user by ID but exclude the password field
+        const user = await userModel.findById(userId).select('-password');
+
+        if (!user) {
+            return res.status(404).json({ success: false, message: "User not found" });
+        }
+
+        res.json({
+            success: true,
+            user
+        });
+    } catch (error) {
+        console.error('Error fetching user profile:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// Update user profile
+const updateUserProfile = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { name, phoneNumber } = req.body;
+
+        // Get current user data
+        const user = await userModel.findById(userId);
+
+        if (!user) {
+            return res.status(404).json({ success: false, message: "User not found" });
+        }
+
+        // Update basic information
+        const updateData = {};
+        if (name) updateData.name = name;
+        if (phoneNumber !== undefined) updateData.phoneNumber = phoneNumber;
+
+        // Handle profile image upload
+        if (req.file) {
+            try {
+                // Create a data URI from the buffer
+                const dataUri = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+
+                // Upload directly to Cloudinary
+                const result = await cloudinary.uploader.upload(dataUri, {
+                    folder: 'user_profiles',
+                    use_filename: true,
+                    unique_filename: true,
+                    overwrite: true,
+                });
+
+                // Set the Cloudinary URL
+                updateData.profileImage = result.secure_url;
+
+                // If user already had a Cloudinary profile image (not the default one), delete it
+                if (user.profileImage && user.profileImage.includes('cloudinary.com') &&
+                    !user.profileImage.includes('default-user')) {
+                    // Extract the public_id from the URL
+                    const publicId = user.profileImage.split('/').pop().split('.')[0];
+                    // Delete the old image
+                    await cloudinary.uploader.destroy(`user_profiles/${publicId}`);
+                }
+            } catch (uploadError) {
+                console.error('Cloudinary upload error:', uploadError);
+                return res.status(500).json({
+                    success: false,
+                    message: "Failed to upload profile image. Please try again."
+                });
+            }
+        }
+
+        // Update user in database
+        const updatedUser = await userModel.findByIdAndUpdate(
+            userId,
+            updateData,
+            { new: true, runValidators: true }
+        ).select('-password');
+
+        res.json({
+            success: true,
+            message: "Profile updated successfully",
+            user: updatedUser
+        });
+    } catch (error) {
+        console.error('Error updating user profile:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// Change user password with verification
+const changePassword = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { currentPassword, newPassword, code } = req.body;
+
+        // Find user
+        const user = await userModel.findById(userId);
+        if (!user) {
+            return res.status(404).json({ success: false, message: "User not found" });
+        }
+
+        // Verify current password
+        const isPasswordCorrect = await bcrypt.compare(currentPassword, user.password);
+        if (!isPasswordCorrect) {
+            return res.status(400).json({ success: false, message: "Current password is incorrect" });
+        }
+
+        // Check if code was verified
+        if (!user.isResetCodeVerified) {
+            return res.status(400).json({ success: false, message: "Please verify your email first" });
+        }
+
+        // Hash the new password
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+        // Update password and clear verification fields
+        user.password = hashedPassword;
+        user.resetCode = undefined;
+        user.resetCodeExpires = undefined;
+        user.isResetCodeVerified = false;
+
+        await user.save();
+
+        res.json({ success: true, message: "Password changed successfully" });
+    } catch (error) {
+        console.error('Error changing password:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// Delete user account
+const deleteUserAccount = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { password } = req.body;
+
+        // Validate password is provided
+        if (!password) {
+            return res.status(400).json({ success: false, message: "Password is required to delete account" });
+        }
+
+        // Find user
+        const user = await userModel.findById(userId);
+        if (!user) {
+            return res.status(404).json({ success: false, message: "User not found" });
+        }
+
+        // Verify password
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+        if (!isPasswordValid) {
+            return res.status(400).json({ success: false, message: "Incorrect password" });
+        }
+
+        // Delete profile image from Cloudinary if it's not the default
+        if (user.profileImage && !user.profileImage.includes('default-user')) {
+            try {
+                // Extract public ID from URL or filename
+                const publicId = user.profileImage.includes('cloudinary')
+                    ? user.profileImage.split('/').pop().split('.')[0]
+                    : `user_profiles/${user.profileImage.split('/').pop().split('.')[0]}`;
+                await cloudinary.uploader.destroy(publicId);
+            } catch (cloudinaryError) {
+                console.error('Error deleting profile image:', cloudinaryError);
+                // Continue with account deletion even if image deletion fails
+            }
+        }
+
+        // Delete user account
+        await userModel.findByIdAndDelete(userId);
+
+        res.json({ success: true, message: "Account deleted successfully" });
+    } catch (error) {
+        console.error('Error deleting account:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+export {
+    loginUser,
+    registerUser,
+    sendResetCode,
+    verifyResetCode,
+    resetPassword,
+    getUserProfile,
+    updateUserProfile,
+    changePassword,
+    deleteUserAccount
+};

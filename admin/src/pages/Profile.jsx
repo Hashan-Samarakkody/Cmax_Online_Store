@@ -377,10 +377,14 @@ const Profile = ({ token, setToken }) => {
                     {/* Profile Header with Image - Improved Layout */}
                     <div className="flex flex-col md:flex-row items-center md:items-start gap-8 mb-8">
                         <div className="relative group">
-                            <div className="h-32 w-32 md:h-40 md:w-40 rounded-2xl overflow-hidden border-4 border-green-400/30 shadow-lg shadow-green-400/20 transition-all duration-300 group-hover:border-green-400/60 group-hover:shadow-green-400/30">
+                            <div className="h-32 w-32 rounded-2xl overflow-hidden border-4 border-green-400/30">
                                 <img
-                                    src={admin?.profileImage?.includes('http') ? admin.profileImage : `${backendUrl}/uploads/${admin.profileImage}`}
-                                    alt={admin.name}
+                                    src={previewImage || (admin?.profileImage
+                                        ? (admin.profileImage.includes('http')
+                                            ? admin.profileImage
+                                            : `${backendUrl}/uploads/${admin.profileImage}`)
+                                        : assets.defaultAvatar || 'https://www.w3schools.com/w3images/team2.jpg')}
+                                    alt={admin?.name || "Profile"}
                                     className="h-full w-full object-cover"
                                     onError={(e) => {
                                         e.target.onerror = null;
@@ -399,12 +403,12 @@ const Profile = ({ token, setToken }) => {
                         </div>
 
                         <div className="text-center md:text-left md:flex-1">
-                            <h2 className="text-3xl font-bold text-gray-800 mb-1">{admin.name}</h2>
+                            <h2 className="text-3xl font-bold text-gray-800 mb-1">{admin?.name}</h2>
                             <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mb-4">
-                                <p className="text-green-700 font-medium">@{admin.username}</p>
+                                <p className="text-green-700 font-medium">@{admin?.username}</p>
                                 <div className="h-4 w-px bg-gray-300"></div>
                                 <div className="inline-block bg-green-100 text-green-700 text-sm font-medium px-3 py-1 rounded-full border border-green-200">
-                                    {admin.role.charAt(0).toUpperCase() + admin.role.slice(1)}
+                                    {admin?.role.charAt(0).toUpperCase() + admin?.role.slice(1)}
                                 </div>
                             </div>
 
@@ -416,7 +420,7 @@ const Profile = ({ token, setToken }) => {
                                     Permissions
                                 </h3>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                    {Object.entries(admin.permissions || {}).map(([key, value]) => (
+                                    {Object.entries(admin?.permissions || {}).map(([key, value]) => (
                                         value && (
                                             <span key={key} className="flex items-center text-sm text-green-700">
                                                 <span className="h-2 w-2 rounded-full bg-green-400 mr-2"></span>
@@ -441,11 +445,11 @@ const Profile = ({ token, setToken }) => {
                             <div className="space-y-3">
                                 <div>
                                     <label className="block text-green-600 text-sm mb-1">Full Name</label>
-                                    <p className="text-gray-800 font-medium">{admin.name}</p>
+                                    <p className="text-gray-800 font-medium">{admin?.name}</p>
                                 </div>
                                 <div>
                                     <label className="block text-green-600 text-sm mb-1">Username</label>
-                                    <p className="text-gray-800 font-medium">{admin.username}</p>
+                                    <p className="text-gray-800 font-medium">{admin?.username}</p>
                                 </div>
                             </div>
                         </div>
@@ -461,11 +465,11 @@ const Profile = ({ token, setToken }) => {
                             <div className="space-y-3">
                                 <div>
                                     <label className="block text-green-600 text-sm mb-1">Email Address</label>
-                                    <p className="text-gray-800 font-medium">{admin.email}</p>
+                                    <p className="text-gray-800 font-medium">{admin?.email}</p>
                                 </div>
                                 <div>
                                     <label className="block text-green-600 text-sm mb-1">Role</label>
-                                    <p className="text-gray-800 font-medium capitalize">{admin.role}</p>
+                                    <p className="text-gray-800 font-medium capitalize">{admin?.role}</p>
                                 </div>
                             </div>
                         </div>
@@ -537,7 +541,7 @@ const Profile = ({ token, setToken }) => {
                                 <div className="relative">
                                     <div className="h-32 w-32 rounded-2xl overflow-hidden border-4 border-green-400/30">
                                         <img
-                                            src={'https://www.w3schools.com/w3images/team2.jpg' || (admin?.profileImage?.includes('http') ? admin.profileImage : `${backendUrl}/uploads/${admin.profileImage}`)}
+                                            src={ admin?.profileImage || (admin?.profileImage?.includes('http') ? admin.profileImage : `${backendUrl}/uploads/${admin.profileImage}`)}
                                             alt={admin.name}
                                             className="h-full w-full object-cover"
                                             onError={(e) => {
