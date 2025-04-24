@@ -334,12 +334,30 @@ const sendVerificationCode = async (req, res) => {
         const mailOptions = {
             from: process.env.EMAIL_USER,
             to: admin.email,
-            subject: 'Password Change Verification Code',
+            subject: 'Password Change Verification Code - Cmax Online Store',
             html: `
-            <div style="font-family: 'Times New Roman', Times, serif; font-size: 14pt;">
-                <p>Your verification code is:</p>
-                <h2 style="font-weight: bold; font-style: italic;">${code}</h2>
-                <p>This code will expire in 15 minutes.</p>
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px; background: linear-gradient(to right, #f5f7fa, #eef2f7);">
+            <div style="text-align: center; margin-bottom: 20px;">
+                <h1 style="color: #3366cc;">Cmax Online Store</h1>
+            </div>
+            <div style="background-color: #ffffff; padding: 20px; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                <h2 style="color: #333333; margin-bottom: 20px;">Password Change Request</h2>
+                <p style="font-size: 16px; color: #555555; line-height: 1.5;">Hello Admin,</p>
+                <p style="font-size: 16px; color: #555555; line-height: 1.5;">Please enter the verification code below to continue the password change process:</p>
+                
+                <div style="text-align: center; margin: 30px 0;">
+                <div style="font-size: 32px; font-weight: bold; letter-spacing: 5px; padding: 15px; background-color: #f0f5ff; border-radius: 5px; border: 1px dashed #3366cc;">
+                    ${code}
+                </div>
+                <p style="font-size: 14px; color: #777777; margin-top: 10px;">This code will expire in 10 minutes.</p>
+                </div>
+                
+                <p style="font-size: 16px; color: #555555; line-height: 1.5;">If you did not request a password change, please ignore this email or contact our support team if you have any concerns.</p>
+            </div>
+            <div style="text-align: center; margin-top: 20px; color: #888888; font-size: 14px;">
+                <p>Cmax Online Store © ${new Date().getFullYear()}</p>
+                <p>This is an automated email. Please do not reply.</p>
+            </div>
             </div>
             `
         };
