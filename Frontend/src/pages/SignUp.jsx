@@ -243,34 +243,7 @@ const SignUp = () => {
                                     {formError}
                                 </div>
                             )}
-
-                            {/* Profile Image Upload */}
-                            <div className="mb-6 flex flex-col items-center">
-                                <div
-                                    className="relative w-24 h-24 rounded-full overflow-hidden mb-3 bg-gray-100 flex items-center justify-center border-2 border-dashed border-green-300 hover:border-green-500 transition-colors cursor-pointer"
-                                    onClick={() => fileInputRef.current.click()}
-                                >
-                                    {profilePreview ? (
-                                        <img
-                                            src={profilePreview}
-                                            alt="Profile Preview"
-                                            className="w-full h-full object-cover"
-                                        />
-                                    ) : (
-                                            <img src="https://static.vecteezy.com/system/resources/thumbnails/036/594/092/small_2x/man-empty-avatar-photo-placeholder-for-social-networks-resumes-forums-and-dating-sites-male-and-female-no-photo-images-for-unfilled-user-profile-free-vector.jpg" alt="" />
-                                    )}
-                                </div>
-                                <input
-                                    ref={fileInputRef}
-                                    type="file"
-                                    accept="image/jpeg, image/png, image/webp"
-                                    className="hidden"
-                                    onChange={handleImageChange}
-                                />
-                                <p className="text-sm text-gray-500 mb-1">Profile Picture</p>
-                                <ErrorMessage message={errors.profileImage} />
-                            </div>
-
+                            
                             <div className="space-y-4">
                                 <div className="relative">
                                     <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">

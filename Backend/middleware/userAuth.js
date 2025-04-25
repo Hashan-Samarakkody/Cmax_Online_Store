@@ -26,9 +26,8 @@ const userAuth = async (req, res, next) => {
             return res.status(401).json({ success: false, message: 'Invalid token. User not found.' });
         }
 
-        // Set the user in the request
         req.user = {
-            id: user._id,
+            id: user._id.toString(),
             name: user.name,
             email: user.email
         };
