@@ -140,14 +140,7 @@ const Product = () => {
         {/* Product Details */}
         <div className='flex-1'>
           <h1 className='text-3xl font-medium'>{productData.name}</h1>
-          <div className='flex items-center gap-1 mt-2'>
-            <img src={assets.star_icon} alt="" className="w-3 5" />
-            <img src={assets.star_icon} alt="" className="w-3 5" />
-            <img src={assets.star_icon} alt="" className="w-3 5" />
-            <img src={assets.star_icon} alt="" className="w-3 5" />
-            <img src={assets.star_dull_icon} alt="" className="w-3 5" />
-            <p className='pl-2'>(122)</p>
-          </div>
+  
           <p className='text-xl mt-5 font-medium'>{currency}{productData.price}</p>
           <p className='mt-5 text-gray-600 md:w-4/5 text-justify'>{productData.description}</p>
           {/* Size selection */}
