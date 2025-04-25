@@ -1,6 +1,6 @@
 import express from 'express';
 import { placeOrder, placeOrderStripe, allOrders, userOrders, updateStatus, verifyStripe } from '../controllers/orderController.js';
-import authUser from '../middleware/auth.js';
+import { orderAndCartAuth } from '../middleware/userAuth.js';
 import adminAuth from '../middleware/adminAuth.js';
 import { generateOrderPDF, generateOrderLabel } from '../utils/generatePDF.js';
 
@@ -13,13 +13,13 @@ orderRouter.get('/generatePDF', adminAuth, generateOrderPDF)
 orderRouter.get('/generateLabel/:orderId', adminAuth, generateOrderLabel);
 
 // Payment Features
-orderRouter.post('/place', authUser, placeOrder)
-orderRouter.post('/stripe', authUser, placeOrderStripe)
+orderRouter.post('/place', orderAndCartAuth, placeOrder)
+orderRouter.post('/stripe', orderAndCartAuth, placeOrderStripe)
 
 // User Features
-orderRouter.post('/userorders', authUser, userOrders)
+orderRouter.post('/userorders', orderAndCartAuth, userOrders)
 
 // Verify Payment
-orderRouter.post('/verifyStripe', authUser, verifyStripe)
+orderRouter.post('/verifyStripe', orderAndCartAuth, verifyStripe)
 
 export default orderRouter;

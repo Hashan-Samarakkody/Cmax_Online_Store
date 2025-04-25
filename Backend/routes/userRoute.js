@@ -10,7 +10,7 @@ import {
     changePassword,
     deleteUserAccount
 } from '../controllers/userController.js';
-import userAuth from '../middleware/userAuth.js';
+import {userAuth} from '../middleware/userAuth.js';
 import uploadMiddleware from '../middleware/upload.js';
 
 const userRouter = express.Router();
