@@ -2,10 +2,21 @@ import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema({
     name: { type: String, required: true },
+    username: { type: String, required: true, unique: true },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
-    cartData: { type: Object, default: {} }
-},{minimize: false}); // This is to prevent mongoose from removing empty objects from the cartData object
+    phoneNumber: { type: String },
+    profileImage: {
+        type: String,
+        default: 'https://static.vecteezy.com/system/resources/thumbnails/036/594/092/small_2x/man-empty-avatar-photo-placeholder-for-social-networks-resumes-forums-and-dating-sites-male-and-female-no-photo-images-for-unfilled-user-profile-free-vector.jpg'
+    },
+    cartData: { type: Object, default: {} },
+    lastLogin: { type: Date },
+    createdAt: { type: Date, default: Date.now },
+    resetCode: String,
+    resetCodeExpires: Date,
+    isResetCodeVerified: Boolean
+}, { minimize: false });
 
 const userModel = mongoose.models.user || mongoose.model("user", userSchema);
 

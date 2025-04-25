@@ -1,11 +1,11 @@
 import express from 'express'
 import { addToCart, updateCart, getUserCart } from '../controllers/cartController.js'
-import authUser from '../middleware/auth.js'
+import {orderAndCartAuth} from '../middleware/userAuth.js'
 
 const cartRouter = express.Router()
 
-cartRouter.post('/get',authUser, getUserCart)
-cartRouter.post('/add',authUser, addToCart)
-cartRouter.post('/update',authUser, updateCart)
+cartRouter.post('/get',orderAndCartAuth, getUserCart)
+cartRouter.post('/add',orderAndCartAuth, addToCart)
+cartRouter.post('/update',orderAndCartAuth, updateCart)
 
 export default cartRouter
