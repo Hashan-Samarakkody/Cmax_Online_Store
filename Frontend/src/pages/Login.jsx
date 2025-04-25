@@ -2,27 +2,38 @@ import React, { useState, useContext, useEffect } from 'react'
 import { ShopContext } from '../context/ShopContext'
 import axios from 'axios'
 import { toast } from 'react-toastify'
+import { motion } from 'framer-motion';
 import DOMPurify from 'dompurify'
 import { assets } from '../assets/assets';
+import { FiMail, FiLock, FiLoader, FiArrowRight, FiArrowLeft } from 'react-icons/fi';
+import { FcGoogle } from 'react-icons/fc';
+import { Link } from 'react-router-dom';
 
 const Login = () => {
-  const [currentState, setCurrentState] = useState('Login');
   const { token, setToken, navigate, backendUrl } = useContext(ShopContext);
 
   // Form fields
-  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [username, setUsername] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Password reset states
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetCode, setResetCode] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [resetStep, setResetStep] = useState(1);
+  const [isResetting, setIsResetting] = useState(false);
 
   // Validation errors
   const [errors, setErrors] = useState({
-    name: '',
     email: '',
     password: '',
-    username: '',
-    phoneNumber: ''
+    resetEmail: '',
+    resetCode: '',
+    newPassword: '',
+    confirmPassword: ''
   });
 
   // General form error
@@ -33,33 +44,10 @@ const Login = () => {
     return DOMPurify.sanitize(input.trim());
   };
 
-  // Validate name
-  const validateName = (name) => {
-    const nameRegex = /^[a-zA-Z\s]+$/;
-    return nameRegex.test(name) && name.length >= 2;
-  };
-
-  // Validate username
-  const validateUsername = (username) => {
-    const usernameRegex = /^[a-zA-Z0-9_]+$/;
-    return usernameRegex.test(username) && username.length >= 3;
-  };
-
   // Validate email
   const validateEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
-  };
-
-  // Validate phone number
-  const validatePhoneNumber = (phone) => {
-    const phoneRegex = /^[\d\s\+\-\(\)]{7,15}$/;
-    return phoneRegex.test(phone);
-  };
-
-  // Validate password strength
-  const validatePassword = (password) => {
-    return password.length >= 8;
   };
 
   // Handle input changes with sanitization
@@ -79,33 +67,7 @@ const Login = () => {
     // Reset form error
     setFormError('');
 
-    if (currentState === 'Sign Up') {
-      // Name validation
-      if (!name) {
-        newErrors.name = 'Name is required';
-        isValid = false;
-      } else if (!validateName(name)) {
-        newErrors.name = 'Name must be at least 2 characters and contain only letters and spaces';
-        isValid = false;
-      }
-
-      // Username validation
-      if (!username) {
-        newErrors.username = 'Username is required';
-        isValid = false;
-      } else if (!validateUsername(username)) {
-        newErrors.username = 'Username must be alphanumeric and at least 3 characters';
-        isValid = false;
-      }
-
-      // Phone validation (if provided)
-      if (phoneNumber && !validatePhoneNumber(phoneNumber)) {
-        newErrors.phoneNumber = 'Please enter a valid phone number';
-        isValid = false;
-      }
-    }
-
-    // Email validation (for both login and signup)
+    // Email validation
     if (!email) {
       newErrors.email = 'Email is required';
       isValid = false;
@@ -118,15 +80,13 @@ const Login = () => {
     if (!password) {
       newErrors.password = 'Password is required';
       isValid = false;
-    } else if (currentState === 'Sign Up' && !validatePassword(password)) {
-      newErrors.password = 'Password must be at least 8 characters';
-      isValid = false;
     }
 
     setErrors(newErrors);
     return isValid;
   };
 
+  // Form submit handler
   const onSubmitHandler = async (event) => {
     event.preventDefault();
 
@@ -135,44 +95,272 @@ const Login = () => {
       return;
     }
 
+    setIsSubmitting(true);
+
     try {
-      if (currentState === 'Sign Up') {
-        const response = await axios.post(backendUrl + '/api/user/register', {
-          name,
-          email,
-          password,
-          username, // Include new fields if needed by your API
-          phoneNumber: phoneNumber || undefined
-        });
+      const response = await axios.post(backendUrl + '/api/user/login', { email, password });
 
-        if (response.data.success) {
-          toast.success('Account created successfully!');
-          setToken(response.data.token);
-          localStorage.setItem('token', response.data.token);
-        } else {
-          setFormError(response.data.message || 'Registration failed');
-          toast.error(response.data.message);
-        }
+      if (response.data.success) {
+        toast.success('Logged in successfully!');
+        setToken(response.data.token);
+        localStorage.setItem('token', response.data.token);
       } else {
-        const response = await axios.post(backendUrl + '/api/user/login', { email, password });
-
-        if (response.data.success) {
-          toast.success('Logged in successfully!');
-          setToken(response.data.token);
-          localStorage.setItem('token', response.data.token);
-        } else {
-          setFormError(response.data.message || 'Login failed');
-          toast.error(response.data.message);
-        }
+        setFormError(response.data.message || 'Login failed');
+        toast.error(response.data.message);
       }
     } catch (error) {
       console.log(error);
       const errorMessage = error.response?.data?.message || error.message || 'An error occurred';
       setFormError(errorMessage);
       toast.error(errorMessage);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
+  // Password reset handlers
+  const handleResetEmailSubmit = async () => {
+    // Validate email
+    if (!resetEmail || !validateEmail(resetEmail)) {
+      setErrors({ ...errors, resetEmail: 'Please enter a valid email address' });
+      return;
+    }
+
+    setIsResetting(true);
+    try {
+      const response = await axios.post(backendUrl + '/api/user/reset-password/send-code', {
+        email: resetEmail
+      });
+
+      if (response.data.success) {
+        toast.success('Verification code sent to your email');
+        setResetStep(2);
+      } else {
+        toast.error(response.data.message || 'Failed to send verification code');
+      }
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || error.message || 'An error occurred';
+      toast.error(errorMessage);
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
+  const handleVerifyCode = async () => {
+    if (!resetCode || resetCode.length < 4) {
+      setErrors({ ...errors, resetCode: 'Please enter the verification code' });
+      return;
+    }
+
+    setIsResetting(true);
+    try {
+      const response = await axios.post(backendUrl + '/api/user/reset-password/verify-code', {
+        email: resetEmail,
+        code: resetCode
+      });
+
+      if (response.data.success) {
+        toast.success('Code verified successfully');
+        setResetStep(3);
+      } else {
+        toast.error(response.data.message || 'Invalid verification code');
+      }
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || error.message || 'An error occurred';
+      toast.error(errorMessage);
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    // Validate passwords
+    if (!newPassword || newPassword.length < 8) {
+      setErrors({ ...errors, newPassword: 'Password must be at least 8 characters' });
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setErrors({ ...errors, confirmPassword: 'Passwords do not match' });
+      return;
+    }
+
+    setIsResetting(true);
+    try {
+      const response = await axios.post(backendUrl + '/api/user/reset-password/reset', {
+        email: resetEmail,
+        code: resetCode,
+        password: newPassword
+      });
+
+      if (response.data.success) {
+        toast.success('Password reset successfully');
+        setShowResetModal(false);
+        setResetStep(1);
+        // Clear all reset form fields
+        setResetEmail('');
+        setResetCode('');
+        setNewPassword('');
+        setConfirmPassword('');
+      } else {
+        toast.error(response.data.message || 'Failed to reset password');
+      }
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || error.message || 'An error occurred';
+      toast.error(errorMessage);
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
+  // Reset modal content based on current step
+  const renderResetModalContent = () => {
+    switch (resetStep) {
+      case 1:
+        return (
+          <div className="p-6">
+            <h3 className="text-xl font-semibold mb-4">Reset Password</h3>
+            <p className="mb-4 text-gray-600">Enter your email address to receive a verification code</p>
+            <div className="mb-4">
+              <input
+                type="email"
+                className={`w-full p-3 rounded-lg border ${errors.resetEmail ? 'border-red-500' : 'border-gray-300'} bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-500`}
+                placeholder="Email Address"
+                value={resetEmail}
+                onChange={(e) => handleInputChange(e, setResetEmail, 'resetEmail')}
+              />
+              {errors.resetEmail && <p className="text-red-500 text-xs mt-1">{errors.resetEmail}</p>}
+            </div>
+            <div className="flex justify-between">
+              <button
+                type="button"
+                className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                onClick={() => setShowResetModal(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center"
+                onClick={handleResetEmailSubmit}
+                disabled={isResetting}
+              >
+                {isResetting ? (
+                  <>
+                    <FiLoader className="animate-spin mr-2" />
+                    Sending...
+                  </>
+                ) : (
+                  <>
+                    Send Code <FiArrowRight className="ml-1" />
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        );
+
+      case 2:
+        return (
+          <div className="p-6">
+            <h3 className="text-xl font-semibold mb-4">Verification Code</h3>
+            <p className="mb-4 text-gray-600">Enter the verification code sent to {resetEmail}</p>
+            <div className="mb-4">
+              <input
+                type="text"
+                className={`w-full p-3 rounded-lg border ${errors.resetCode ? 'border-red-500' : 'border-gray-300'} bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-500`}
+                placeholder="Verification Code"
+                value={resetCode}
+                onChange={(e) => handleInputChange(e, setResetCode, 'resetCode')}
+              />
+              {errors.resetCode && <p className="text-red-500 text-xs mt-1">{errors.resetCode}</p>}
+            </div>
+            <div className="flex justify-between">
+              <button
+                type="button"
+                className="px-4 py-2 flex items-center text-gray-600 hover:text-gray-800"
+                onClick={() => setResetStep(1)}
+              >
+                <FiArrowLeft className="mr-1" /> Back
+              </button>
+              <button
+                type="button"
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center"
+                onClick={handleVerifyCode}
+                disabled={isResetting}
+              >
+                {isResetting ? (
+                  <>
+                    <FiLoader className="animate-spin mr-2" />
+                    Verifying...
+                  </>
+                ) : (
+                  <>
+                    Verify Code <FiArrowRight className="ml-1" />
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        );
+
+      case 3:
+        return (
+          <div className="p-6">
+            <h3 className="text-xl font-semibold mb-4">Create New Password</h3>
+            <p className="mb-4 text-gray-600">Enter your new password</p>
+            <div className="mb-4">
+              <input
+                type="password"
+                className={`w-full p-3 rounded-lg border ${errors.newPassword ? 'border-red-500' : 'border-gray-300'} bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-500 mb-3`}
+                placeholder="New Password"
+                value={newPassword}
+                onChange={(e) => handleInputChange(e, setNewPassword, 'newPassword')}
+              />
+              {errors.newPassword && <p className="text-red-500 text-xs mt-1">{errors.newPassword}</p>}
+
+              <input
+                type="password"
+                className={`w-full p-3 rounded-lg border ${errors.confirmPassword ? 'border-red-500' : 'border-gray-300'} bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-500`}
+                placeholder="Confirm Password"
+                value={confirmPassword}
+                onChange={(e) => handleInputChange(e, setConfirmPassword, 'confirmPassword')}
+              />
+              {errors.confirmPassword && <p className="text-red-500 text-xs mt-1">{errors.confirmPassword}</p>}
+            </div>
+            <div className="flex justify-between">
+              <button
+                type="button"
+                className="px-4 py-2 flex items-center text-gray-600 hover:text-gray-800"
+                onClick={() => setResetStep(2)}
+              >
+                <FiArrowLeft className="mr-1" /> Back
+              </button>
+              <button
+                type="button"
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center"
+                onClick={handleResetPassword}
+                disabled={isResetting}
+              >
+                {isResetting ? (
+                  <>
+                    <FiLoader className="animate-spin mr-2" />
+                    Resetting...
+                  </>
+                ) : (
+                  "Reset Password"
+                )}
+              </button>
+            </div>
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  // Navigate home if already logged in
   useEffect(() => {
     if (token) {
       navigate('/');
@@ -186,224 +374,204 @@ const Login = () => {
     ) : null;
   };
 
-  // Signup form based on Image 1
-  const renderSignupForm = () => {
-    return (
-      <div className="w-full max-w-md mx-auto">
-        <div className="text-center mb-6">
-          <h1 className="text-3xl font-bold mb-2">Create an account</h1>
-          <p className="text-gray-600">Enter your details below</p>
-        </div>
-
-        {formError && (
-          <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 mb-4 rounded">
-            {formError}
-          </div>
-        )}
-
-        <div className="space-y-4">
-          <div>
-            <input
-              type="text"
-              placeholder="Name"
-              className={`w-full p-2 border-b ${errors.name ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:border-gray-500`}
-              value={name}
-              onChange={(e) => handleInputChange(e, setName, 'name')}
-              required
-            />
-            <ErrorMessage message={errors.name} />
-          </div>
-
-          <div>
-            <input
-              type="tel"
-              placeholder="Phone Number"
-              required
-              className={`w-full p-2 border-b ${errors.phoneNumber ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:border-gray-500`}
-              value={phoneNumber}
-              onChange={(e) => handleInputChange(e, setPhoneNumber, 'phoneNumber')}
-            />
-            <ErrorMessage message={errors.phoneNumber} />
-          </div>
-
-          <div>
-            <input
-              type="text"
-              placeholder="User Name"
-              className={`w-full p-2 border-b ${errors.username ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:border-gray-500`}
-              value={username}
-              onChange={(e) => handleInputChange(e, setUsername, 'username')}
-              required
-            />
-            <ErrorMessage message={errors.username} />
-          </div>
-
-          <div>
-            <input
-              type="email"
-              placeholder="Email"
-              className={`w-full p-2 border-b ${errors.email ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:border-gray-500`}
-              value={email}
-              onChange={(e) => handleInputChange(e, setEmail, 'email')}
-              required
-            />
-            <ErrorMessage message={errors.email} />
-          </div>
-
-          <div>
-            <input
-              type="password"
-              placeholder="Password"
-              className={`w-full p-2 border-b ${errors.password ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:border-gray-500`}
-              value={password}
-              onChange={(e) => handleInputChange(e, setPassword, 'password')}
-              required
-            />
-            <ErrorMessage message={errors.password} />
-            <p className="text-xs text-gray-500 mt-1">Password must be at least 8 characters</p>
-          </div>
-        </div>
-
-        <div className="mt-6">
-          <button
-            type="submit"
-            className="w-full bg-green-700 text-white py-3 rounded hover:bg-green-800 transition"
-          >
-            Create Account
-          </button>
-
-          <div className="my-4">
-            <button
-              type="button"
-              className="w-full border border-gray-300 py-3 rounded flex items-center justify-center gap-2"
-            >
-              <svg viewBox="0 0 24 24" width="18" height="18">
-                <path
-                  fill="#4285F4"
-                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                />
-                <path
-                  fill="#34A853"
-                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                />
-                <path
-                  fill="#FBBC05"
-                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                />
-                <path
-                  fill="#EA4335"
-                  d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                />
-              </svg>
-              Sign up with Google
-            </button>
-          </div>
-
-          <div className="text-center mt-4 text-sm">
-            <span className="text-gray-600">Already have account? </span>
-            <span
-              className="text-green-700 cursor-pointer"
-              onClick={() => setCurrentState('Login')}
-            >
-              Log in
-            </span>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Login form based on Image 2
-  const renderLoginForm = () => {
-    return (
-      <div className="w-full max-w-md mx-auto">
-        <div className="text-center mb-6">
-          <h1 className="text-3xl font-bold mb-2">Log in to Cmax</h1>
-          <p className="text-gray-600">Enter your details below</p>
-        </div>
-
-        {formError && (
-          <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 mb-4 rounded">
-            {formError}
-          </div>
-        )}
-
-        <div className="space-y-4">
-          <div>
-            <input
-              type="email"
-              placeholder="Email"
-              className={`w-full p-2 border-b ${errors.email ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:border-gray-500`}
-              value={email}
-              onChange={(e) => handleInputChange(e, setEmail, 'email')}
-              required
-            />
-            <ErrorMessage message={errors.email} />
-          </div>
-
-          <div>
-            <input
-              type="password"
-              placeholder="Password"
-              className={`w-full p-2 border-b ${errors.password ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:border-gray-500`}
-              value={password}
-              onChange={(e) => handleInputChange(e, setPassword, 'password')}
-              required
-            />
-            <ErrorMessage message={errors.password} />
-          </div>
-        </div>
-
-        <div className="mt-6 flex flex-col gap-2">
-          <div className="flex justify-between items-center">
-            <button
-              type="submit"
-              className="bg-green-700 text-white py-2 px-6 rounded hover:bg-green-800 transition"
-            >
-              Log In
-            </button>
-
-            <span className="text-green-700 cursor-pointer text-sm">
-              Forgot Password?
-            </span>
-          </div>
-
-          <div className="text-center mt-4 text-sm">
-            <span
-              className="text-green-700 cursor-pointer"
-              onClick={() => setCurrentState('Sign Up')}
-            >
-              Create Account
-            </span>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      <div className="w-full md:w-1/2 flex items-center justify-center">
-        <div className="w-full max-w-md px-4">
-          <form onSubmit={onSubmitHandler} className="py-8">
-            {currentState === 'Login' ? renderLoginForm() : renderSignupForm()}
+    <div className="flex min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      <div className="w-full md:w-1/2 flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <form onSubmit={onSubmitHandler} className="py-8 px-4 sm:px-0">
+            <div className="w-full max-w-md mx-auto">
+              <div className="text-center mb-8">
+                <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-green-500 to-teal-400 bg-clip-text text-transparent">Welcome Back!</h1>
+                <p className="text-gray-600">Log in to your account</p>
+              </div>
+
+              {formError && (
+                <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 mb-6 rounded-lg">
+                  {formError}
+                </div>
+              )}
+
+              <div className="space-y-5">
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                    <FiMail className="text-gray-500" />
+                  </div>
+                  <input
+                    type="email"
+                    placeholder="Email"
+                    className={`w-full p-3 pl-10 rounded-lg border ${errors.email ? 'border-red-500' : 'border-gray-300'} bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-300`}
+                    value={email}
+                    onChange={(e) => handleInputChange(e, setEmail, 'email')}
+                    required
+                  />
+                  <ErrorMessage message={errors.email} />
+                </div>
+
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                    <FiLock className="text-gray-500" />
+                  </div>
+                  <input
+                    type="password"
+                    placeholder="Password"
+                    className={`w-full p-3 pl-10 rounded-lg border ${errors.password ? 'border-red-500' : 'border-gray-300'} bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-300`}
+                    value={password}
+                    onChange={(e) => handleInputChange(e, setPassword, 'password')}
+                    required
+                  />
+                  <ErrorMessage message={errors.password} />
+                </div>
+              </div>
+
+              <div className="mt-2 text-right">
+                <span
+                  className="text-green-600 text-sm cursor-pointer hover:underline"
+                  onClick={() => setShowResetModal(true)}
+                >
+                  Forgot Password?
+                </span>
+              </div>
+
+              <div className="mt-6">
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full bg-gradient-to-r from-green-600 to-teal-600 text-white py-3 rounded-lg hover:opacity-90 transition flex items-center justify-center"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <FiLoader className="animate-spin mr-2" />
+                      Logging in...
+                    </>
+                  ) : (
+                    "Log In"
+                  )}
+                </button>
+
+                <div className="my-4 flex items-center">
+                  <div className="flex-1 h-px bg-gray-300"></div>
+                  <p className="mx-4 text-gray-500 text-sm">OR</p>
+                  <div className="flex-1 h-px bg-gray-300"></div>
+                </div>
+
+                <button
+                  type="button"
+                  className="w-full border border-gray-300 py-3 rounded-lg flex items-center justify-center gap-2 hover:bg-gray-50 transition"
+                >
+                  <FcGoogle size={20} />
+                  <span>Continue with Google</span>
+                </button>
+
+                <div className="text-center mt-6 text-sm">
+                  <span className="text-gray-600">Don't have an account? </span>
+                  <Link
+                    to="/signup"
+                    className="text-green-600 font-medium cursor-pointer hover:underline"
+                  >
+                    Sign up now
+                  </Link>
+                </div>
+              </div>
+            </div>
           </form>
         </div>
       </div>
 
-      <div className="hidden md:block md:w-1/2 bg-blue-50 relative">
-        {/* Illustration section - we'll use a colored div as placeholder */}
+      <div className="hidden md:block md:w-1/2 relative overflow-hidden">
+        {/* Animated background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-green-500 to-teal-600">
+          <div className="absolute inset-0 opacity-20">
+            {Array.from({ length: 20 }).map((_, i) => (
+              <div
+                key={i}
+                className="absolute rounded-full bg-white"
+                style={{
+                  width: `${Math.random() * 20 + 5}px`,
+                  height: `${Math.random() * 20 + 5}px`,
+                  left: `${Math.random() * 100}%`,
+                  top: `${Math.random() * 100}%`,
+                  opacity: Math.random() * 0.8 + 0.2,
+                  animation: `float ${Math.random() * 10 + 10}s infinite linear`
+                }}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Centered image with glass effect */}
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="relative w-3/4 h-3/4 bg-blue-100 rounded-full flex items-center justify-center">
-            {/* This would be where the illustrations from the images would go */}
-            {currentState === 'Login' ? (
-              <img src={assets.login_img} />
-            ) : (
-              <img src={assets.signup_img} />
-            )}
+          <div className="relative w-3/4 h-3/4 backdrop-blur-sm bg-white/20 rounded-3xl overflow-hidden border border-white/30 shadow-2xl flex items-center justify-center p-8">
+            <img src={assets.login_img} className="max-w-full max-h-full object-contain" alt="Login illustration" />
           </div>
         </div>
       </div>
+
+      {/* Reset Password Modal */}
+      {showResetModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm">
+          <motion.div
+            className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <div className="flex justify-between items-center mb-4">
+              <div className="text-green-600">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                </svg>
+              </div>
+              <button
+                onClick={() => {
+                  setShowResetModal(false);
+                  setResetStep(1);
+                  setResetEmail('');
+                  setResetCode('');
+                  setNewPassword('');
+                  setConfirmPassword('');
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Step indicators */}
+            <div className="flex items-center justify-center mb-6">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-medium ${resetStep >= 1 ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-600'}`}>1</div>
+              <div className={`h-1 w-10 ${resetStep >= 2 ? 'bg-green-500' : 'bg-gray-200'}`}></div>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-medium ${resetStep >= 2 ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-600'}`}>2</div>
+              <div className={`h-1 w-10 ${resetStep >= 3 ? 'bg-green-500' : 'bg-gray-200'}`}></div>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-medium ${resetStep >= 3 ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-600'}`}>3</div>
+            </div>
+
+            {/* Dynamic content based on current step */}
+            {renderResetModalContent()}
+          </motion.div>
+        </div>
+      )}
+
+      {/* Add some keyframe animations for the floating effect */}
+      <style dangerouslySetInnerHTML={{
+        __html: `
+    @keyframes float {
+      0%, 100% {
+        transform: translateY(0) translateX(0);
+      }
+      25% {
+        transform: translateY(-20px) translateX(10px);
+      }
+      50% {
+        transform: translateY(0) translateX(20px);
+      }
+      75% {
+        transform: translateY(20px) translateX(10px);
+      }
+    }
+  `
+      }} />
     </div>
   )
 }

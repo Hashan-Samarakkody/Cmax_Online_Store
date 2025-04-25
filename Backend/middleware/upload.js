@@ -1,34 +1,7 @@
 import multer from 'multer';
-import path from 'path';
-import fs from 'fs';
 
-// Create uploads directory if it doesn't exist
-const uploadsDir = './uploads';
-const adminUploadsDir = './uploads/admin';
-
-if (!fs.existsSync(uploadsDir)) {
-    fs.mkdirSync(uploadsDir);
-}
-
-if (!fs.existsSync(adminUploadsDir)) {
-    fs.mkdirSync(adminUploadsDir);
-}
-
-// Configure storage
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        // Save admin profile images in a separate folder
-        if (req.originalUrl.includes('/admin')) {
-            cb(null, 'uploads/admin/');
-        } else {
-            cb(null, 'uploads/');
-        }
-    },
-    filename: function (req, file, cb) {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-    }
-});
+// Use memory storage instead of disk storage
+const storage = multer.memoryStorage();
 
 // File filter to accept only images
 const fileFilter = (req, file, cb) => {
