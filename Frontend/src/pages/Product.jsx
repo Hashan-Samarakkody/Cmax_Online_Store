@@ -4,6 +4,7 @@ import { ShopContext } from '../context/ShopContext';
 import { assets } from '../assets/assets';
 import axios from 'axios';
 import RelatedProducts from '../components/RelatedProducts';
+import ProductReviews from '../components/ProductReviews';
 import { toast } from 'react-toastify';
 import { backendUrl } from '../../../admin/src/App';
 import WebSocketService from '../services/WebSocketService';
@@ -17,6 +18,7 @@ const Product = () => {
   const [size, setSize] = useState('');
   const [color, setColor] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('description');
 
   // Fetch product data
   const fetchProductData = async () => {
@@ -138,14 +140,7 @@ const Product = () => {
         {/* Product Details */}
         <div className='flex-1'>
           <h1 className='text-3xl font-medium'>{productData.name}</h1>
-          <div className='flex items-center gap-1 mt-2'>
-            <img src={assets.star_icon} alt="" className="w-3 5" />
-            <img src={assets.star_icon} alt="" className="w-3 5" />
-            <img src={assets.star_icon} alt="" className="w-3 5" />
-            <img src={assets.star_icon} alt="" className="w-3 5" />
-            <img src={assets.star_dull_icon} alt="" className="w-3 5" />
-            <p className='pl-2'>(122)</p>
-          </div>
+  
           <p className='text-xl mt-5 font-medium'>{currency}{productData.price}</p>
           <p className='mt-5 text-gray-600 md:w-4/5 text-justify'>{productData.description}</p>
           {/* Size selection */}
@@ -207,26 +202,44 @@ const Product = () => {
           </div>
         </div>
       </div>
-      {/* Description and Reviews */}
+      {/* Description and Reviews Tabs */}
       <div className='mt-20'>
         <div className='flex'>
-          <b className='border px-5 py-3 text-sm'>Description</b>
-          <p className='border px-5 py-3 text-sm'>Reviews (122)</p>
+          <button
+            onClick={() => setActiveTab('description')}
+            className={`px-5 py-3 text-sm border ${activeTab === 'description' ? 'font-bold' : ''}`}
+          >
+            Description
+          </button>
+          <button
+            onClick={() => setActiveTab('reviews')}
+            className={`px-5 py-3 text-sm border ${activeTab === 'reviews' ? 'font-bold' : ''}`}
+          >
+            Reviews
+          </button>
         </div>
-        <div className='flex flex-col gap-4 border px-6 py-6 text-sm text-gray-500 text-justify'>
-          <p>
-            An e-commerce platform for the fashion-forward, bringing the latest in casual
-            wear and formal wear for men and women. We offer a wide range of trendy and
-            affordable clothing items, from casual and formal shirts to stylish dresses,
-            trousers, and skirts. Our collection of clothing items is designed to cater to
-            the fashion needs of the modern man and woman.
-          </p>
-          <p>
-            E-commerce websites have revolutionized the way people shop for clothes. With
-            the convenience of shopping from home, customers can browse through a wide
-            range of clothing items and choose the ones that best suit their style and
-            budget.
-          </p>
+
+        {/* Tab content */}
+        <div className='border p-6'>
+          {activeTab === 'description' ? (
+            <div className='flex flex-col gap-4 text-sm text-gray-500 text-justify'>
+              <p>
+                An e-commerce platform for the fashion-forward, bringing the latest in casual
+                wear and formal wear for men and women. We offer a wide range of trendy and
+                affordable clothing items, from casual and formal shirts to stylish dresses,
+                trousers, and skirts. Our collection of clothing items is designed to cater to
+                the fashion needs of the modern man and woman.
+              </p>
+              <p>
+                E-commerce websites have revolutionized the way people shop for clothes. With
+                the convenience of shopping from home, customers can browse through a wide
+                range of clothing items and choose the ones that best suit their style and
+                budget.
+              </p>
+            </div>
+          ) : (
+            <ProductReviews productId={productId} />
+          )}
         </div>
       </div>
       {/* Related Products */}

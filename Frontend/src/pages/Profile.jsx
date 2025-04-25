@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { assets } from '../assets/assets';
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -405,12 +406,22 @@ const Profile = () => {
   // Loading state
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="relative w-16 h-16">
-          <div className="absolute top-0 left-0 w-full h-full border-4 border-gray-200 rounded-full"></div>
-          <div className="absolute top-0 left-0 w-full h-full border-t-4 border-blue-500 rounded-full animate-spin"></div>
-        </div>
-      </div>
+      <div className="flex flex-col items-center justify-center min-h-[60vh]">
+              <div className="relative w-24 h-24">
+                {/* Pulsing circle animation */}
+                <div className="absolute top-0 left-0 w-full h-full border-4 border-gray-200 rounded-full"></div>
+                <div className="absolute top-0 left-0 w-full h-full border-t-4 border-green-400 rounded-full animate-spin"></div>
+                {/* Shop icon or logo in center */}
+                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                  <img
+                    src={assets.logo}
+                    alt="Loading"
+                    className="w-12 h-12 object-contain animate-pulse"
+                  />
+                </div>
+              </div>
+              <p className="mt-4 text-gray-600 font-medium">Loading Profile...</p>
+            </div>
     );
   }
 

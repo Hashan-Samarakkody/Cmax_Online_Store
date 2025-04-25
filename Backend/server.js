@@ -11,6 +11,7 @@ import categoryRouter from './routes/categoryRoute.js';
 import dashboardRouter from './routes/dashboardRoute.js';
 import reportRouter from './routes/reportRoute.js';
 import adminRouter from './routes/adminRoute.js';
+import reviewRouter from './routes/reviewRoute.js';
 import { WebSocketServer } from 'ws'; 
 
 // App Config
@@ -24,6 +25,7 @@ app.use(express.json());
 app.use('/uploads', express.static('uploads'));
 
 // api endpoints
+app.use('/api/reviews', reviewRouter);
 app.use('/api/user', userRouter);
 app.use('/api/product', productRouter);
 app.use('/api/cart', cartRouter);
