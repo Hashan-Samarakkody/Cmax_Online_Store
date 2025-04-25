@@ -317,17 +317,125 @@ const userOrders = async (req, res) => {
     }
 }
 
-// Update order status from admin panel
+// Helper function to send order status update email
+const sendOrderStatusUpdateEmail = async (userId, order, trackingId = null) => {
+    try {
+        // Get user details
+        const user = await userModel.findById(userId);
+        if (!user || !user.email) return;
+
+        // Create email transporter
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS
+            }
+        });
+
+        // Customize subject and message based on status
+        let subject = `Order #${order.orderId} Status Update - ${order.status}`;
+        let statusMessage = '';
+        let trackingInfo = '';
+
+        switch (order.status) {
+            case 'Order Placed':
+                statusMessage = 'Your order has been received and is being processed.';
+                break;
+            case 'Picking':
+                statusMessage = 'Good news! We are now picking items for your order.';
+                break;
+            case 'Out for Delivery':
+                statusMessage = 'Your order is now out for delivery and will arrive soon.';
+                break;
+            case 'Delivered':
+                statusMessage = 'Your order has been delivered successfully!';
+                if (trackingId) {
+                    trackingInfo = `
+          <div style="background-color: #f0f7ff; padding: 15px; margin: 15px 0; border-radius: 5px; border-left: 4px solid #3366cc;">
+            <h3 style="margin-top: 0; color: #3366cc;">Tracking Information</h3>
+            <p>You can track your delivery using the following tracking ID: <b>${trackingId}</b></p>
+            <p>Visit <a href="https://koombiyodelivery.lk/Track/track_id" style="color: #3366cc; font-weight: bold;">KoombiyoDelivery Tracking</a> to track your package.</p>
+          </div>`;
+                }
+                break;
+            default:
+                statusMessage = `Your order status has been updated to: ${order.status}`;
+        }
+
+        // Setup email content
+        const mailOptions = {
+            from: process.env.EMAIL_USER,
+            to: user.email,
+            subject: subject,
+            html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px; background: linear-gradient(to right, #f5f7fa, #eef2f7);">
+          <div style="text-align: center; margin-bottom: 20px;">
+              <h1 style="color: #3366cc;">Cmax Online Store</h1>
+              <h2 style="margin-top: 10px;">Order Status Update</h2>
+          </div>
+          
+          <div style="background-color: #ffffff; padding: 20px; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+              <p>Dear ${user.name},</p>
+              <p>${statusMessage}</p>
+              
+              <div style="background-color: #f8f9fa; padding: 15px; margin: 15px 0; border-radius: 5px;">
+                  <h3 style="margin-top: 0;">Order Information</h3>
+                  <p><b>Order ID:</b> ${order.orderId}</p>
+                  <p><b>Status:</b> <span style="color: #3366cc; font-weight: bold;">${order.status}</span></p>
+                  <p><b>Date:</b> ${new Date(order.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+              </div>
+              
+              ${trackingInfo}
+              
+              <p>Thank you for shopping with us!</p>
+              <p>Best regards,<br>The Cmax Online Store Team</p>
+          </div>
+          
+          <div style="margin-top: 20px; text-align: center; color: #777777; font-size: 12px;">
+              <p>© ${new Date().getFullYear()} Cmax Online Store. All rights reserved.</p>
+          </div>
+      </div>
+      `
+        };
+
+        // Send the email
+        await transporter.sendMail(mailOptions);
+        console.log(`Order status update email sent to ${user.email}`);
+    } catch (error) {
+        console.error('Error sending status update email:', error);
+    }
+};
+
+// Update order status from admin panel (updated function)
 const updateStatus = async (req, res) => {
     try {
-        const { orderId, status } = req.body
+        const { orderId, status, trackingId } = req.body;
         const updatedOrder = await orderModel.findByIdAndUpdate(orderId, { status }, { new: true });
 
-        res.json({ success: true, message: 'Status Updated!' })
+        // Send email notification about status update
+        await sendOrderStatusUpdateEmail(updatedOrder.userId, updatedOrder, status === 'Delivered' ? trackingId : null);
+
+        // If tracking ID is provided and status is Delivered, save it to the order
+        if (status === 'Delivered' && trackingId) {
+            updatedOrder.trackingId = trackingId;
+            await updatedOrder.save();
+        }
+
+        // Broadcast status update via WebSocket
+        broadcast({
+            type: 'orderStatusUpdate',
+            orderId: updatedOrder._id,
+            userId: updatedOrder.userId,
+            status: status,
+            trackingId: trackingId || null
+        });
+
+        res.json({ success: true, message: 'Status Updated!' });
     } catch (error) {
         console.log(error);
-        res.json({ success: false, message: error.message })
+        res.json({ success: false, message: error.message });
     }
-}
+};
 
 export { placeOrder, placeOrderStripe, allOrders, userOrders, updateStatus, verifyStripe }
