@@ -38,6 +38,7 @@ const Orders = () => {
             item['date'] = order.date
             item['trackingId'] = order.trackingId
             item['orderId'] = order._id
+            item['orderDisplayId'] = order.orderId
             allOrdersItems.push(item)
           })
         })
@@ -159,7 +160,7 @@ const Orders = () => {
                 <div className='flex items-start gap-6 text-sm'>
                   <img className='w-16 sm:w-20 rounded-lg' src={item.images[0]} alt="" />
                   <div>
-                    <p className='sm:text-base font-bold'>{item.name}</p>
+                    <p className='sm:text-base font-bold'>Item Name: {item.name}</p>
                     <div className='flex items-center gap-3 mt-1 text-base text-gray-700'>
                       <p className='font-semibold text-gray-500'>{currency}{item.price}</p>
                       <p className='font-semibold text-gray-500'>Quantity: {item.quantity}</p>
@@ -167,11 +168,12 @@ const Orders = () => {
                     {itemDetails && (
                       <p className='font-semibold text-gray-500'>{itemDetails}</p>
                     )}
-                    <p className='mt-1 font-sem font-medium'>Date: <span className='text-gray-400'>{new Date(item.date).toDateString()}</span></p>
-                    <p className='mt-1 font-sem font-medium'>Payment Method: <span className='text-gray-400'>{item.paymentMethod}</span></p>
+                    <p className='mt-1 font-sem font-medium'>Date: <span className='text-gray-500'>{new Date(item.date).toDateString()}</span></p>
+                    <p className='mt-1 font-sem font-medium'>Payment Method: <span className='text-gray-500'>{item.paymentMethod}</span></p>
+                    <p className='mt-1 font-sem text-green-600 font-semibold'>Order ID: {item.orderDisplayId || "N/A"}</p>
                     {item.trackingId && isDelivered && (
-                      <p className='mt-1 font-medium text-blue-600'>
-                        Tracking ID: <span className='text-blue-500'>{item.trackingId}</span>
+                      <p className='mt-1 font-semibold text-blue-600'>
+                        Tracking ID: {item.trackingId}
                       </p>
                     )}
                   </div>

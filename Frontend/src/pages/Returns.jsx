@@ -17,11 +17,12 @@ const ReturnRestrictionInfo = () => {
           </svg>
         </div>
         <div className="ml-3">
-          <p className="text-sm text-blue-800 font-medium">Return Request Limits</p>
-          <ul className="mt-1 text-sm text-blue-700 list-disc list-inside">
+          <p className="text-xl text-blue-800 font-medium">Return Request Limits</p>
+          <ul className="mt-1 text-lg text-blue-700 list-disc list-inside">
             <li>Maximum of 4 return requests per order per day</li>
             <li>6-hour waiting period between return requests for the same order</li>
             <li>Only delivered orders with tracking IDs within 7 days are eligible</li>
+            <li>The delivery charge is non-refundable</li>
           </ul>
         </div>
       </div>
