@@ -86,7 +86,6 @@ const ReturnRequests = ({ token }) => {
 
 	const toggleExpand = (returnId) => {
 		setExpandedReturn(expandedReturn === returnId ? null : returnId);
-		// Close media preview if open
 		setMediaPreview(null);
 	};
 
@@ -123,191 +122,209 @@ const ReturnRequests = ({ token }) => {
 		<div className="p-6">
 			<h1 className="text-2xl font-bold mb-6">Return Requests</h1>
 
+			{/* Table to display return requests */}
 			<div className="bg-white rounded-lg shadow overflow-hidden">
-				<table className="min-w-full divide-y divide-gray-500">
-					<thead className="bg-gray-50">
-						<tr>
-							<th className="px-6 py-3 text-left text-lg font-bold text-black uppercase tracking-wider">Return ID</th>
-							<th className="px-6 py-3 text-left text-lg font-bold text-black uppercase tracking-wider">Date</th>
-							<th className="px-6 py-3 text-left text-lg font-bold text-black uppercase tracking-wider">Customer</th>
-							<th className="px-6 py-3 text-left text-lg font-bold text-black uppercase tracking-wider">Items</th>
-							<th className="px-6 py-3 text-left text-lg font-bold text-black uppercase tracking-wider">Amount</th>
-							<th className="px-6 py-3 text-left text-lg font-bold text-black uppercase tracking-wider">Media</th>
-							<th className="px-6 py-3 text-left text-lg font-bold text-black uppercase tracking-wider">Status</th>
-							<th className="px-6 py-3 text-left text-lg font-bold text-black uppercase tracking-wider">Actions</th>
-						</tr>
-					</thead>
-					<tbody className="bg-white divide-y divide-gray-200">
-						{returns.length === 0 ? (
+				<div className="overflow-x-auto">
+					<table className="min-w-full divide-y divide-gray-500">
+						<thead className="bg-gray-50">
 							<tr>
-								<td colSpan="8" className="px-6 py-4 text-center text-gray-500">
-									No return requests found
-								</td>
+								<th className="px-4 py-3 text-left text-sm font-bold text-black uppercase tracking-wider">Return ID</th>
+								<th className="px-4 py-3 text-left text-sm font-bold text-black uppercase tracking-wider">Date</th>
+								<th className="px-4 py-3 text-left text-sm font-bold text-black uppercase tracking-wider hidden md:table-cell">Customer</th>
+								<th className="px-4 py-3 text-left text-sm font-bold text-black uppercase tracking-wider hidden sm:table-cell">Items</th>
+								<th className="px-4 py-3 text-left text-sm font-bold text-black uppercase tracking-wider hidden md:table-cell">Amount</th>
+								<th className="px-4 py-3 text-left text-sm font-bold text-black uppercase tracking-wider hidden sm:table-cell">Media</th>
+								<th className="px-4 py-3 text-left text-sm font-bold text-black uppercase tracking-wider">Status</th>
+								<th className="px-4 py-3 text-left text-sm font-bold text-black uppercase tracking-wider">Actions</th>
 							</tr>
-						) : (
-							returns.map(returnItem => (
-								<React.Fragment key={returnItem._id}>
-									<tr className="bg-green-100 hover:bg-white hover:cursor-pointer hover:text-black">
-										<td className="px-6 py-4 whitespace-nowrap">{returnItem.returnId}</td>
-										<td className="px-6 py-4 whitespace-nowrap">
-											{format(new Date(returnItem.requestedDate), 'dd MMM yyyy')}
-										</td>
-										<td className="px-6 py-4 whitespace-nowrap">{returnItem.userName}</td>
-										<td className="px-6 py-4 whitespace-nowrap">{returnItem.items.length}</td>
-										<td className="px-6 py-4 whitespace-nowrap">Rs. {returnItem.refundAmount}</td>
-										<td className="px-6 py-4 whitespace-nowrap">
-											{returnItem.media && returnItem.media.length > 0 ? (
-												<div className="flex items-center">
-													{returnItem.media.some(m => m.type === 'image') && (
-														<FaImage className="text-blue-600 mr-2" />
-													)}
-													{returnItem.media.some(m => m.type === 'video') && (
-														<FaVideo className="text-red-600" />
-													)}
-												</div>
-											) : (
-												<span className="text-gray-400">None</span>
-											)}
-										</td>
-										<td className="px-6 py-4 whitespace-nowrap">
-											<span className={`px-2 py-1 rounded text-xs font-semibold ${getStatusClass(returnItem.status)}`}>
-												{returnItem.status}
-											</span>
-										</td>
-										<td className="px-6 py-4 whitespace-nowrap">
-											<button
-												onClick={() => toggleExpand(returnItem._id)}
-												className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm"
-											>
-												{expandedReturn === returnItem._id ? 'Hide Details' : 'View Details'}
-											</button>
-										</td>
-									</tr>
+						</thead>
+						<tbody className="bg-white divide-y divide-gray-200">
+							{returns.length === 0 ? (
+								<tr>
+									<td colSpan="8" className="px-4 py-4 text-center text-gray-500">
+										No return requests found
+									</td>
+								</tr>
+							) : (
+								returns.map(returnItem => (
+									<React.Fragment key={returnItem._id}>
+										<tr className="bg-green-100 hover:bg-white hover:cursor-pointer hover:text-black">
+											<td className="px-4 py-3 whitespace-nowrap text-sm">{returnItem.returnId}</td>
+											<td className="px-4 py-3 whitespace-nowrap text-sm">
+												{format(new Date(returnItem.requestedDate), 'dd MMM yyyy')}
+											</td>
+											<td className="px-4 py-3 whitespace-nowrap text-sm hidden md:table-cell">{returnItem.userName}</td>
+											<td className="px-4 py-3 whitespace-nowrap text-sm hidden sm:table-cell">{returnItem.items.length}</td>
+											<td className="px-4 py-3 whitespace-nowrap text-sm hidden md:table-cell">Rs. {returnItem.refundAmount}</td>
+											<td className="px-4 py-3 whitespace-nowrap text-sm hidden sm:table-cell">
+												{returnItem.media && returnItem.media.length > 0 ? (
+													<div className="flex items-center">
+														{returnItem.media.some(m => m.type === 'image') && (
+															<FaImage className="text-blue-600 mr-2" />
+														)}
+														{returnItem.media.some(m => m.type === 'video') && (
+															<FaVideo className="text-red-600" />
+														)}
+													</div>
+												) : (
+													<span className="text-gray-400">None</span>
+												)}
+											</td>
+											<td className="px-4 py-3 whitespace-nowrap text-sm">
+												<span className={`px-2 py-1 rounded text-xs font-semibold ${getStatusClass(returnItem.status)}`}>
+													{returnItem.status}
+												</span>
+											</td>
+											<td className="px-4 py-3 whitespace-nowrap text-sm">
+												<button
+													onClick={() => toggleExpand(returnItem._id)}
+													className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-xs sm:text-sm"
+												>
+													{expandedReturn === returnItem._id ? 'Hide' : 'View'}
+												</button>
+											</td>
+										</tr>
 
-									{expandedReturn === returnItem._id && (
-										<tr>
-											<td colSpan="8" className="px-6 py-4">
-												<div className="bg-gray-50 p-4 rounded">
-													<h3 className="font-semibold mb-2">Return Items</h3>
-													<table className="min-w-full divide-y divide-gray-200 mb-4">
-														<thead className="bg-gray-100">
-															<tr>
-																<th className="px-4 py-2 text-left text-xs font-bold">Product</th>
-																<th className="px-4 py-2 text-left text-xs font-bold">Details</th>
-																<th className="px-4 py-2 text-left text-xs font-bold">Quantity</th>
-																<th className="px-4 py-2 text-left text-xs font-bold">Reason</th>
-																<th className="px-4 py-2 text-left text-xs font-bold">Condition</th>
-															</tr>
-														</thead>
-														<tbody>
-															{returnItem.items.map((item, index) => (
-																<tr key={index} className="bg-white">
-																	<td className="px-4 py-2">{item.name}</td>
-																	<td className="px-4 py-2">
-																		{item.size && (
-																			<>
-																				<b>Size:</b> {item.size.split('_')[0]}{' '}
-																				{item.size.includes('_') && (
-																					<><b>Color:</b> {item.size.split('_')[1]}</>
-																				)}
-																			</>
-																		)}
-																	</td>
-																	<td className="px-4 py-2">{item.quantity}</td>
-																	<td className="px-4 py-2">{item.reason}</td>
-																	<td className="px-4 py-2">{item.condition}</td>
-																</tr>
-															))}
-														</tbody>
-													</table>
-
-													{/* Media Section */}
-													{returnItem.media && returnItem.media.length > 0 && (
-														<div className="mb-6">
-															<h3 className="font-semibold mb-2">Media Attachments</h3>
-															<div className="grid grid-cols-6 gap-4">
-																{returnItem.media.map((media, index) => (
-																	<div
-																		key={index}
-																		className="relative border rounded-lg overflow-hidden cursor-pointer"
-																		onClick={() => openMediaPreview(media)}
-																	>
-																		{media.type === 'image' ? (
-																			<img
-																				src={media.url}
-																				alt={`Return media ${index}`}
-																				className="w-full h-24 object-cover"
-																			/>
-																		) : (
-																			<div className="w-full h-24 bg-gray-900 flex items-center justify-center relative">
-																				<FaPlayCircle className="text-white text-4xl" />
-																				<div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-60 text-white text-xs p-1">
-																					Video
-																				</div>
-																			</div>
-																		)}
-																	</div>
-																))}
-															</div>
-														</div>
-													)}
-
-													<div className="bg-white p-4 rounded border">
-														<h3 className="font-semibold mb-2">Update Status</h3>
-														<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-															<div>
-																<label className="block text-sm font-medium text-gray-700 mb-1">
-																	Status:
-																</label>
-																<select
-																	value={statusInputs[returnItem._id] || returnItem.status}
-																	onChange={(e) => handleStatusInput(returnItem._id, e.target.value)}
-																	className="w-full p-2 border rounded"
-																>
-																	<option value="Requested">Requested</option>
-																	<option value="Approved">Approved</option>
-																	<option value="In Transit">In Transit</option>
-																	<option value="Received">Received</option>
-																	<option value="Inspected">Inspected</option>
-																	<option value="Completed">Completed</option>
-																	<option value="Rejected">Rejected</option>
-																</select>
-															</div>
-
-															{(statusInputs[returnItem._id] === 'Approved' || returnItem.status === 'Approved') && (
-																<div>
-																	<label className="block text-sm font-medium text-gray-700 mb-1">
-																		Return Tracking ID (Optional):
-																	</label>
-																	<input
-																		type="text"
-																		value={trackingInputs[returnItem._id] || returnItem.returnTrackingId || ''}
-																		onChange={(e) => handleTrackingInput(returnItem._id, e.target.value)}
-																		placeholder="Enter tracking ID"
-																		className="w-full p-2 border rounded"
-																	/>
-																</div>
-															)}
-
-															<div className="flex items-end">
-																<button
-																	onClick={() => handleStatusChange(returnItem._id)}
-																	className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded"
-																>
-																	Update
-																</button>
-															</div>
-														</div>
+										{/* Mobile-only: Additional information row */}
+										<tr className="md:hidden">
+											<td colSpan="8" className="px-4 py-2 bg-green-50">
+												<div className="text-xs">
+													<div><span className="font-semibold">Customer:</span> {returnItem.userName}</div>
+													<div className="flex justify-between">
+														<span><span className="font-semibold">Items:</span> {returnItem.items.length}</span>
+														<span><span className="font-semibold">Amount:</span> Rs. {returnItem.refundAmount}</span>
 													</div>
 												</div>
 											</td>
 										</tr>
-									)}
-								</React.Fragment>
-							))
-						)}
-					</tbody>
-				</table>
+
+										{expandedReturn === returnItem._id && (
+											<tr>
+												<td colSpan="8" className="px-4 py-4">
+													<div className="bg-gray-50 p-4 rounded">
+														<h3 className="font-semibold mb-2">Return Items</h3>
+														<div className="overflow-x-auto">
+															<table className="min-w-full divide-y divide-gray-200 mb-4">
+																<thead className="bg-gray-100">
+																	<tr>
+																		<th className="px-2 py-2 text-left text-xs font-bold">Product</th>
+																		<th className="px-2 py-2 text-left text-xs font-bold hidden sm:table-cell">Details</th>
+																		<th className="px-2 py-2 text-left text-xs font-bold hidden sm:table-cell">Quantity</th>
+																		<th className="px-2 py-2 text-left text-xs font-bold">Reason</th>
+																		<th className="px-2 py-2 text-left text-xs font-bold">Condition</th>
+																	</tr>
+																</thead>
+																<tbody>
+																	{returnItem.items.map((item, index) => (
+																		<tr key={index} className="bg-white">
+																			<td className="px-2 py-2 text-sm">{item.name}</td>
+																			<td className="px-2 py-2 text-sm hidden sm:table-cell">
+																				{item.size && (
+																					<>
+																						<b>Size:</b> {item.size.split('_')[0]}{' '}
+																						{item.size.includes('_') && (
+																							<><b>Color:</b> {item.size.split('_')[1]}</>
+																						)}
+																					</>
+																				)}
+																			</td>
+																			<td className="px-2 py-2 text-sm hidden sm:table-cell">{item.quantity}</td>
+																			<td className="px-2 py-2 text-sm">{item.reason}</td>
+																			<td className="px-2 py-2 text-sm">{item.condition}</td>
+																		</tr>
+																	))}
+																</tbody>
+															</table>
+														</div>
+
+														{/* Media Section */}
+														{returnItem.media && returnItem.media.length > 0 && (
+															<div className="mb-6">
+																<h3 className="font-semibold mb-2">Media Attachments</h3>
+																<div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-4">
+																	{returnItem.media.map((media, index) => (
+																		<div
+																			key={index}
+																			className="relative border rounded-lg overflow-hidden cursor-pointer"
+																			onClick={() => openMediaPreview(media)}
+																		>
+																			{media.type === 'image' ? (
+																				<img
+																					src={media.url}
+																					alt={`Return media ${index}`}
+																					className="w-full h-20 sm:h-24 object-cover"
+																				/>
+																			) : (
+																				<div className="w-full h-20 sm:h-24 bg-gray-900 flex items-center justify-center relative">
+																					<FaPlayCircle className="text-white text-3xl sm:text-4xl" />
+																					<div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-60 text-white text-xs p-1">
+																						Video
+																					</div>
+																				</div>
+																			)}
+																		</div>
+																	))}
+																</div>
+															</div>
+														)}
+
+														<div className="bg-white p-3 sm:p-4 rounded border">
+															<h3 className="font-semibold mb-2">Update Status</h3>
+															<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
+																<div>
+																	<label className="block text-sm font-medium text-gray-700 mb-1">
+																		Status:
+																	</label>
+																	<select
+																		value={statusInputs[returnItem._id] || returnItem.status}
+																		onChange={(e) => handleStatusInput(returnItem._id, e.target.value)}
+																		className="w-full p-2 border rounded"
+																	>
+																		<option value="Requested">Requested</option>
+																		<option value="Approved">Approved</option>
+																		<option value="In Transit">In Transit</option>
+																		<option value="Received">Received</option>
+																		<option value="Inspected">Inspected</option>
+																		<option value="Completed">Completed</option>
+																		<option value="Rejected">Rejected</option>
+																	</select>
+																</div>
+
+																{(statusInputs[returnItem._id] === 'Approved' || returnItem.status === 'Approved') && (
+																	<div>
+																		<label className="block text-sm font-medium text-gray-700 mb-1">
+																			Return Tracking ID:
+																		</label>
+																		<input
+																			type="text"
+																			value={trackingInputs[returnItem._id] || returnItem.returnTrackingId || ''}
+																			onChange={(e) => handleTrackingInput(returnItem._id, e.target.value)}
+																			placeholder="Enter tracking ID"
+																			className="w-full p-2 border rounded"
+																		/>
+																	</div>
+																)}
+
+																<div className="flex items-end">
+																	<button
+																		onClick={() => handleStatusChange(returnItem._id)}
+																		className="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded"
+																	>
+																		Update
+																	</button>
+																</div>
+															</div>
+														</div>
+													</div>
+												</td>
+											</tr>
+										)}
+									</React.Fragment>
+								))
+							)}
+						</tbody>
+					</table>
+				</div>
 			</div>
 
 			{/* Media Preview Modal */}
