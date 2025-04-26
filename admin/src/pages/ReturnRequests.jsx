@@ -4,12 +4,14 @@ import { toast } from 'react-toastify';
 import { format } from 'date-fns';
 import { backendUrl } from '../App';
 import WebSocketService from '../services/WebSocketService';
+import { FaImage, FaVideo, FaPlayCircle } from 'react-icons/fa';
 
 const ReturnRequests = ({ token }) => {
 	const [returns, setReturns] = useState([]);
 	const [expandedReturn, setExpandedReturn] = useState(null);
 	const [statusInputs, setStatusInputs] = useState({});
 	const [trackingInputs, setTrackingInputs] = useState({});
+	const [mediaPreview, setMediaPreview] = useState(null);
 
 	useEffect(() => {
 		if (token) {
@@ -76,6 +78,16 @@ const ReturnRequests = ({ token }) => {
 
 	const toggleExpand = (returnId) => {
 		setExpandedReturn(expandedReturn === returnId ? null : returnId);
+		// Close media preview if open
+		setMediaPreview(null);
+	};
+
+	const openMediaPreview = (media) => {
+		setMediaPreview(media);
+	};
+
+	const closeMediaPreview = () => {
+		setMediaPreview(null);
 	};
 
 	const handleStatusInput = (returnId, value) => {
@@ -112,6 +124,7 @@ const ReturnRequests = ({ token }) => {
 							<th className="px-6 py-3 text-left text-lg font-bold text-black uppercase tracking-wider">Customer</th>
 							<th className="px-6 py-3 text-left text-lg font-bold text-black uppercase tracking-wider">Items</th>
 							<th className="px-6 py-3 text-left text-lg font-bold text-black uppercase tracking-wider">Amount</th>
+							<th className="px-6 py-3 text-left text-lg font-bold text-black uppercase tracking-wider">Media</th>
 							<th className="px-6 py-3 text-left text-lg font-bold text-black uppercase tracking-wider">Status</th>
 							<th className="px-6 py-3 text-left text-lg font-bold text-black uppercase tracking-wider">Actions</th>
 						</tr>
@@ -119,7 +132,7 @@ const ReturnRequests = ({ token }) => {
 					<tbody className="bg-white divide-y divide-gray-200">
 						{returns.length === 0 ? (
 							<tr>
-								<td colSpan="7" className="px-6 py-4 text-center text-gray-500">
+								<td colSpan="8" className="px-6 py-4 text-center text-gray-500">
 									No return requests found
 								</td>
 							</tr>
@@ -134,6 +147,20 @@ const ReturnRequests = ({ token }) => {
 										<td className="px-6 py-4 whitespace-nowrap">{returnItem.userName}</td>
 										<td className="px-6 py-4 whitespace-nowrap">{returnItem.items.length}</td>
 										<td className="px-6 py-4 whitespace-nowrap">Rs. {returnItem.refundAmount}</td>
+										<td className="px-6 py-4 whitespace-nowrap">
+											{returnItem.media && returnItem.media.length > 0 ? (
+												<div className="flex items-center">
+													{returnItem.media.some(m => m.type === 'image') && (
+														<FaImage className="text-blue-600 mr-2" />
+													)}
+													{returnItem.media.some(m => m.type === 'video') && (
+														<FaVideo className="text-red-600" />
+													)}
+												</div>
+											) : (
+												<span className="text-gray-400">None</span>
+											)}
+										</td>
 										<td className="px-6 py-4 whitespace-nowrap">
 											<span className={`px-2 py-1 rounded text-xs font-semibold ${getStatusClass(returnItem.status)}`}>
 												{returnItem.status}
@@ -151,7 +178,7 @@ const ReturnRequests = ({ token }) => {
 
 									{expandedReturn === returnItem._id && (
 										<tr>
-											<td colSpan="7" className="px-6 py-4">
+											<td colSpan="8" className="px-6 py-4">
 												<div className="bg-gray-50 p-4 rounded">
 													<h3 className="font-semibold mb-2">Return Items</h3>
 													<table className="min-w-full divide-y divide-gray-200 mb-4">
@@ -169,7 +196,14 @@ const ReturnRequests = ({ token }) => {
 																<tr key={index} className="bg-white">
 																	<td className="px-4 py-2">{item.name}</td>
 																	<td className="px-4 py-2">
-																		<b>Size:</b> {item.size.split('_')[0]} <b>Color:</b> {item.size.split('_')[1]}
+																		{item.size && (
+																			<>
+																				<b>Size:</b> {item.size.split('_')[0]}{' '}
+																				{item.size.includes('_') && (
+																					<><b>Color:</b> {item.size.split('_')[1]}</>
+																				)}
+																			</>
+																		)}
 																	</td>
 																	<td className="px-4 py-2">{item.quantity}</td>
 																	<td className="px-4 py-2">{item.reason}</td>
@@ -178,6 +212,37 @@ const ReturnRequests = ({ token }) => {
 															))}
 														</tbody>
 													</table>
+
+													{/* Media Section */}
+													{returnItem.media && returnItem.media.length > 0 && (
+														<div className="mb-6">
+															<h3 className="font-semibold mb-2">Media Attachments</h3>
+															<div className="grid grid-cols-6 gap-4">
+																{returnItem.media.map((media, index) => (
+																	<div
+																		key={index}
+																		className="relative border rounded-lg overflow-hidden cursor-pointer"
+																		onClick={() => openMediaPreview(media)}
+																	>
+																		{media.type === 'image' ? (
+																			<img
+																				src={media.url}
+																				alt={`Return media ${index}`}
+																				className="w-full h-24 object-cover"
+																			/>
+																		) : (
+																			<div className="w-full h-24 bg-gray-900 flex items-center justify-center relative">
+																				<FaPlayCircle className="text-white text-4xl" />
+																				<div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-60 text-white text-xs p-1">
+																					Video
+																				</div>
+																			</div>
+																		)}
+																	</div>
+																))}
+															</div>
+														</div>
+													)}
 
 													<div className="bg-white p-4 rounded border">
 														<h3 className="font-semibold mb-2">Update Status</h3>
@@ -236,6 +301,46 @@ const ReturnRequests = ({ token }) => {
 					</tbody>
 				</table>
 			</div>
+
+			{/* Media Preview Modal */}
+			{mediaPreview && (
+				<div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50" onClick={closeMediaPreview}>
+					<div className="bg-white p-4 rounded-lg max-w-4xl w-full" onClick={e => e.stopPropagation()}>
+						<div className="flex justify-between items-center mb-4">
+							<h3 className="text-lg font-semibold">
+								{mediaPreview.type === 'image' ? 'Image Preview' : 'Video Preview'}
+							</h3>
+							<button
+								onClick={closeMediaPreview}
+								className="text-gray-500 hover:text-gray-700"
+							>
+								<svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+									<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+								</svg>
+							</button>
+						</div>
+
+						<div className="flex justify-center">
+							{mediaPreview.type === 'image' ? (
+								<img
+									src={mediaPreview.url}
+									alt="Return Item"
+									className="max-h-[70vh] max-w-full object-contain"
+								/>
+							) : (
+								<video
+									src={mediaPreview.url}
+									controls
+									autoPlay
+									className="max-h-[70vh] max-w-full"
+								>
+									Your browser does not support the video tag.
+								</video>
+							)}
+						</div>
+					</div>
+				</div>
+			)}
 		</div>
 	);
 };

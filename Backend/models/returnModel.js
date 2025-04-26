@@ -14,6 +14,11 @@ const returnSchema = new mongoose.Schema({
         reason: { type: String, required: true },
         condition: { type: String, required: true }
     }],
+    media: [{
+        url: { type: String, required: true },
+        type: { type: String, required: true, enum: ['image', 'video'] },
+        publicId: { type: String, required: true }
+    }],
     status: {
         type: String,
         required: true,

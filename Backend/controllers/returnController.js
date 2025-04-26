@@ -4,6 +4,8 @@ import userModel from '../models/userModel.js';
 import { broadcast } from '../server.js';
 import nodemailer from 'nodemailer';
 import generateOrderId from '../utils/generateOrderId.js';
+import { v2 as cloudinary } from 'cloudinary';
+import fs from 'fs';
 
 // Create return request
 const createReturnRequest = async (req, res) => {
@@ -38,7 +40,10 @@ const createReturnRequest = async (req, res) => {
         let refundAmount = 0;
         const returnItems = [];
 
-        for (const item of items) {
+        // Parse items JSON if it's a string
+        const parsedItems = typeof items === 'string' ? JSON.parse(items) : items;
+
+        for (const item of parsedItems) {
             // Find item in original order
             const originalItem = originalOrder.items.find(oi =>
                 oi.productId === item.productId &&
@@ -75,12 +80,41 @@ const createReturnRequest = async (req, res) => {
         // Generate return ID
         const returnId = await generateOrderId({ items: returnItems, prefix: 'RET' });
 
+        // Handle media files upload to Cloudinary
+        const mediaUploads = [];
+
+        if (req.files && req.files.length > 0) {
+            for (const file of req.files) {
+                try {
+                    const resourceType = file.mimetype.startsWith('image/') ? 'image' : 'video';
+
+                    // Upload the file to Cloudinary
+                    const result = await cloudinary.uploader.upload(file.path, {
+                        folder: 'return_media',
+                        resource_type: resourceType
+                    });
+
+                    mediaUploads.push({
+                        url: result.secure_url,
+                        type: resourceType,
+                        publicId: result.public_id
+                    });
+
+                    fs.unlinkSync(file.path);
+
+                } catch (uploadError) {
+                    console.error('Error uploading to Cloudinary:', uploadError);
+                }
+            }
+        }
+
         // Create return record
         const returnData = {
             returnId: returnId,
             originalOrderId: orderId,
             userId,
             items: returnItems,
+            media: mediaUploads, // Add media uploads
             status: 'Requested',
             refundAmount,
             refundMethod: originalOrder.paymentMethod === 'Stripe' ? 'Original Payment Method' : 'Store Credit',
@@ -105,19 +139,6 @@ const createReturnRequest = async (req, res) => {
             return: newReturn
         });
 
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ success: false, message: error.message });
-    }
-};
-
-// Get user returns
-const getUserReturns = async (req, res) => {
-    try {
-        const userId = req.user.id;
-        const returns = await returnModel.find({ userId }).sort({ requestedDate: -1 });
-
-        res.json({ success: true, returns });
     } catch (error) {
         console.error(error);
         res.status(500).json({ success: false, message: error.message });
@@ -166,6 +187,24 @@ const sendReturnRequestEmail = async (userId, returnData, originalOrder) => {
             `;
         });
 
+        // Add media files info to email if present
+        let mediaHtml = '';
+        if (returnData.media && returnData.media.length > 0) {
+            const imageCount = returnData.media.filter(m => m.type === 'image').length;
+            const videoCount = returnData.media.filter(m => m.type === 'video').length;
+
+            if (imageCount > 0 || videoCount > 0) {
+                mediaHtml = `
+                <p>
+                    <strong>Media Attachments:</strong> 
+                    ${imageCount > 0 ? `${imageCount} image${imageCount !== 1 ? 's' : ''}` : ''}
+                    ${imageCount > 0 && videoCount > 0 ? ' and ' : ''}
+                    ${videoCount > 0 ? `${videoCount} video${videoCount !== 1 ? 's' : ''}` : ''}
+                </p>
+                `;
+            }
+        }
+
         const mailOptions = {
             from: process.env.EMAIL_USER,
             to: user.email,
@@ -188,6 +227,7 @@ const sendReturnRequestEmail = async (userId, returnData, originalOrder) => {
                     <p><b>Original Order ID:</b> ${originalOrder.orderId}</p>
                     <p><b>Date Requested:</b> ${new Date(returnData.requestedDate).toLocaleDateString()}</p>
                     <p><b>Status:</b> ${returnData.status}</p>
+                    ${mediaHtml}
                 </div>
                 
                 <div style="margin-bottom: 20px;">
@@ -223,6 +263,19 @@ const sendReturnRequestEmail = async (userId, returnData, originalOrder) => {
         await transporter.sendMail(mailOptions);
     } catch (error) {
         console.error('Error sending return confirmation email:', error);
+    }
+};
+
+// Get user returns
+const getUserReturns = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const returns = await returnModel.find({ userId }).sort({ requestedDate: -1 });
+
+        res.json({ success: true, returns });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: error.message });
     }
 };
 
@@ -282,13 +335,7 @@ const updateReturnStatus = async (req, res) => {
             // Process the refund based on refundMethod
             if (returnRequest.refundMethod === 'Original Payment Method') {
                 console.log(`Processing refund of ${returnRequest.refundAmount} to original payment method`);
-                
-                // Example Stripe integration would be:
-                const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-                await stripe.refunds.create({
-                  payment_intent: originalOrder.paymentIntentId,
-                  amount: Math.round(returnRequest.refundAmount * 100)
-                });
+                // Implement actual refund logic here
             } else if (returnRequest.refundMethod === 'Store Credit') {
                 // Add store credit to user account
                 const user = await userModel.findById(returnRequest.userId);
@@ -299,9 +346,6 @@ const updateReturnStatus = async (req, res) => {
                     console.log(`Added ${returnRequest.refundAmount} store credit to user ${user.name}`);
                 }
             }
-            
-            // Record refund date
-            returnRequest.refundProcessedDate = Date.now();
         }
 
         await returnRequest.save();
