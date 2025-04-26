@@ -29,9 +29,9 @@ const Returns = () => {
       });
 
       if (response.data.success) {
-        // Only show orders that are delivered and within 7 days
+        // Only show orders that are delivered, within 7 days, and have a tracking ID
         const eligibleOrders = response.data.orders.filter(order => {
-          if (order.status !== 'Delivered') return false;
+          if (order.status !== 'Delivered' || !order.trackingId) return false;
 
           const orderDate = new Date(order.date);
           const currentDate = new Date();
@@ -407,19 +407,46 @@ const Returns = () => {
           <div>
             <p className="mb-4">Select an eligible order to return items from:</p>
             {orders.length === 0 ? (
-              <p className="text-gray-500">No eligible orders found. Only delivered orders within 7 days are eligible for return.</p>
+              <p className="text-gray-500">No eligible orders found. Only delivered orders with tracking IDs within 7 days are eligible for return.</p>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {orders.map(order => (
                   <div
                     key={order._id}
-                    className="border p-4 rounded cursor-pointer hover:bg-gray-50"
+                    className="border p-4 rounded cursor-pointer hover:bg-gray-50 transition duration-200"
                     onClick={() => handleOrderSelect(order)}
                   >
-                    <p className="font-semibold">Order ID: {order.orderId}</p>
-                    <p>Date: {format(new Date(order.date), 'dd MMM yyyy')}</p>
-                    <p>Items: {order.items.length}</p>
-                    <p>Total: Rs. {order.amount}</p>
+                    <div className="flex items-start">
+                      {/* Display product images as thumbnails */}
+                      <div className="flex-shrink-0 mr-4">
+                        <div className="flex space-x-1">
+                          {order.items.slice(0, 3).map((item, idx) => (
+                            <img
+                              key={idx}
+                              src={item.images && item.images[0]}
+                              alt={item.name}
+                              className="w-50 h-50 object-cover rounded"
+                            />
+                          ))}
+                          {order.items.length > 3 && (
+                            <div className="w-12 h-12 bg-gray-200 rounded flex items-center justify-center text-xs font-medium">
+                              +{order.items.length - 3}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Order details */}
+                      <div className="flex-grow">
+                        <p className="font-semibold">Order ID: {order.orderId}</p>
+                        <p>Date: {format(new Date(order.date), 'dd MMM yyyy')}</p>
+                        <p>Items: {order.items.length}</p>
+                        <p>Total: Rs. {order.amount}</p>
+                        <p className="text-sm text-gray-600 mt-1">
+                          <span className="font-medium">Tracking ID:</span> {order.trackingId}
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>
