@@ -15,6 +15,7 @@ import Navbar from './components/Navbar'
 import SignUpLoginNavbar from './components/SigupLoginNavbar'
 import Footer from './components/Footer'
 import SearchBar from './components/SearchBar'
+import Returns from './pages/Returns'
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Verify from './pages/Verify'
@@ -42,6 +43,7 @@ const App = () => {
         <Route path='/orders' element={<Orders />} />
         <Route path='/verify' element={<Verify />} />
         <Route path='/profile' element={<Profile />} />
+        <Route path='/returns' element={<Returns />} />
       </Routes>
       {!isAuthPage && <Footer />}
     </div>

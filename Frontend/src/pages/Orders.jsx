@@ -4,11 +4,23 @@ import Title from '../components/Title';
 import axios from 'axios';
 import { toast } from 'react-toastify'
 import WebSocketService from '../services/WebSocketService';
-import {assets} from '../assets/assets';
+import { assets } from '../assets/assets';
+import { useNavigate } from 'react-router-dom';
 
 const Orders = () => {
   const { backendUrl, token, currency } = useContext(ShopContext);
   const [orderData, setOrderData] = useState([])
+  const navigate = useNavigate();
+
+  const isReturnEligible = (item) => {
+    if (item.status !== 'Delivered') return false;
+
+    // Check if within 7 days
+    const orderDate = new Date(item.date);
+    const currentDate = new Date();
+    const daysDifference = Math.floor((currentDate - orderDate) / (1000 * 60 * 60 * 24));
+    return daysDifference <= 7;
+  };
 
   const loadOrderData = async () => {
     try {
@@ -174,11 +186,20 @@ const Orders = () => {
                     className={`border px-4 py-2 text-sm font-medium 
                       ${isDelivered && item.trackingId
                         ? 'bg-blue-600 text-white hover:bg-blue- hover:text-black'
-                      : 'bg-green-600 text-white hover:bg-white hover:text-black'} 
+                        : 'bg-green-600 text-white hover:bg-white hover:text-black'} 
                       transition-all duration-200 rounded-sm`}
                   >
                     {isDelivered && item.trackingId ? 'Track Package' : 'Track Order'}
                   </button>
+
+                  {isReturnEligible(item) && isDelivered && item.trackingId && (
+                    <button
+                      onClick={() => navigate('/returns')}
+                      className="border px-4 py-2 text-sm font-medium bg-yellow-500 text-white hover:bg-yellow-600 transition-all duration-200 rounded-sm"
+                    >
+                      Return Item
+                    </button>
+                  )}
                 </div>
               </div>
             )
