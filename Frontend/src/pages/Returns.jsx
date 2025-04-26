@@ -5,6 +5,29 @@ import axios from 'axios';
 import { toast } from 'react-toastify';
 import { format } from 'date-fns';
 import { FaImage, FaVideo, FaFileUpload, FaTrash } from 'react-icons/fa';
+import WebSocketService from '../services/WebSocketService';
+
+const ReturnRestrictionInfo = () => {
+  return (
+    <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6 rounded">
+      <div className="flex">
+        <div className="flex-shrink-0">
+          <svg className="h-5 w-5 text-blue-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2h-1V9a1 1 0 00-1-1z" clipRule="evenodd" />
+          </svg>
+        </div>
+        <div className="ml-3">
+          <p className="text-sm text-blue-800 font-medium">Return Request Limits</p>
+          <ul className="mt-1 text-sm text-blue-700 list-disc list-inside">
+            <li>Maximum of 4 return requests per order per day</li>
+            <li>6-hour waiting period between return requests for the same order</li>
+            <li>Only delivered orders with tracking IDs within 7 days are eligible</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const Returns = () => {
   const { backendUrl, token } = useContext(ShopContext);
@@ -17,10 +40,32 @@ const Returns = () => {
 
   useEffect(() => {
     if (token) {
-      fetchOrders();
-      fetchReturns();
+      // Fetch returns first, then orders
+      const loadData = async () => {
+        await fetchReturns();
+        await fetchOrders();
+      };
+
+      loadData();
+
+      // Setup WebSocket connection for real-time updates
+      const handleReturnStatusUpdate = (data) => {
+        // Check if this update is for one of this user's returns
+        if (returns.some(ret => ret._id === data.return._id)) {
+          toast.info(`Return #${data.return.returnId} status updated to ${data.return.status}`);
+          fetchReturns(); // Refresh the return data
+        }
+      };
+
+      WebSocketService.connect(() => {
+        WebSocketService.on('returnStatusUpdate', handleReturnStatusUpdate);
+      });
+
+      return () => {
+        WebSocketService.off('returnStatusUpdate', handleReturnStatusUpdate);
+      };
     }
-  }, [token]);
+  }, [token, returns]);
 
   const fetchOrders = async () => {
     try {
@@ -29,24 +74,67 @@ const Returns = () => {
       });
 
       if (response.data.success) {
-        // Only show orders that are delivered, within 7 days, and have a tracking ID
-        const eligibleOrders = response.data.orders.filter(order => {
-          if (order.status !== 'Delivered' || !order.trackingId) return false;
+        // Get all delivered orders with tracking IDs
+        const deliveredOrders = response.data.orders.filter(order =>
+          order.status === 'Delivered' && order.trackingId
+        );
 
+        // Add eligibility information to each order
+        const ordersWithEligibility = deliveredOrders.map(order => {
           const orderDate = new Date(order.date);
           const currentDate = new Date();
           const daysDifference = Math.floor((currentDate - orderDate) / (1000 * 60 * 60 * 24));
-          return daysDifference <= 7;
+
+          // Check if this order has return requests
+          const orderReturns = returns.filter(r => r.originalOrderId === order.orderId);
+
+          // Check daily limit (max 4 per day)
+          const today = new Date().setHours(0, 0, 0, 0);
+          const todayRequests = orderReturns.filter(r => {
+            const requestDate = new Date(r.requestedDate).setHours(0, 0, 0, 0);
+            return requestDate === today;
+          }).length;
+
+          // Check 6-hour cooldown
+          const sixHoursAgo = Date.now() - (6 * 60 * 60 * 1000);
+          const hasRecentRequest = orderReturns.some(r => r.requestedDate > sixHoursAgo);
+
+          // Get the most recent request time
+          const mostRecentRequest = orderReturns.length > 0 ?
+            Math.max(...orderReturns.map(r => r.requestedDate)) : null;
+
+          // Calculate when the order will become eligible again
+          const nextEligibleTime = mostRecentRequest ?
+            new Date(mostRecentRequest + (6 * 60 * 60 * 1000)) : null;
+
+          return {
+            ...order,
+            isEligible: daysDifference <= 7 && !hasRecentRequest && todayRequests < 4,
+            ineligibilityReason: daysDifference > 7
+              ? "Order is more than 7 days old"
+              : hasRecentRequest
+                ? `Cooldown period: Available after ${nextEligibleTime?.toLocaleTimeString()}`
+                : todayRequests >= 4
+                  ? "Daily limit reached (4 returns per day)"
+                  : null,
+            nextEligibleTime
+          };
         });
 
-        setOrders(eligibleOrders);
+        // Sort orders - eligible ones first
+        ordersWithEligibility.sort((a, b) => {
+          if (a.isEligible && !b.isEligible) return -1;
+          if (!a.isEligible && b.isEligible) return 1;
+          return new Date(b.date) - new Date(a.date); // Most recent first
+        });
+
+        setOrders(ordersWithEligibility);
       }
     } catch (error) {
       console.error('Error fetching orders:', error);
       toast.error('Failed to load orders');
     }
   };
-
   const fetchReturns = async () => {
     try {
       const response = await axios.get(`${backendUrl}/api/returns/user`, {
@@ -197,7 +285,8 @@ const Returns = () => {
         setSelectedOrder(null);
         setItemsToReturn([]);
         setMediaFiles([]);
-        fetchReturns();
+        await fetchReturns();  // Fetch returns first
+        await fetchOrders();   // Then refresh orders with updated eligibility
       }
     } catch (error) {
       console.error('Error submitting return:', error);
@@ -359,7 +448,7 @@ const Returns = () => {
                   <div>
                     <h3 className="font-semibold">{returnItem.returnId}</h3>
                     <p className="text-sm text-gray-500">
-                      {format(new Date(returnItem.requestedDate), 'dd MMM yyyy')}
+                      {format(new Date(returnItem.requestedDate), 'dd MMM yyyy, h:mm a')}
                     </p>
                   </div>
                   <div>
@@ -402,6 +491,8 @@ const Returns = () => {
       <div className="bg-white p-6 rounded-lg shadow">
         <h2 className="text-xl font-semibold mb-4">Start a New Return</h2>
 
+        <ReturnRestrictionInfo />
+
         {/* Step 1: Select Order */}
         {!selectedOrder ? (
           <div>
@@ -413,8 +504,11 @@ const Returns = () => {
                 {orders.map(order => (
                   <div
                     key={order._id}
-                    className="border p-4 rounded cursor-pointer hover:bg-gray-50 transition duration-200"
-                    onClick={() => handleOrderSelect(order)}
+                    className={`border p-4 rounded ${order.isEligible
+                        ? "cursor-pointer hover:bg-gray-50 transition duration-200"
+                        : "opacity-70 bg-yellow-100"
+                      }`}
+                    onClick={() => order.isEligible && handleOrderSelect(order)}
                   >
                     <div className="flex items-start">
                       {/* Display product images as thumbnails */}
@@ -425,7 +519,7 @@ const Returns = () => {
                               key={idx}
                               src={item.images && item.images[0]}
                               alt={item.name}
-                              className="w-50 h-50 object-cover rounded"
+                              className="w-25 h-25 object-cover rounded"
                             />
                           ))}
                           {order.items.length > 3 && (
@@ -438,13 +532,20 @@ const Returns = () => {
 
                       {/* Order details */}
                       <div className="flex-grow">
-                        <p className="font-semibold">Order ID: {order.orderId}</p>
-                        <p>Date: {format(new Date(order.date), 'dd MMM yyyy')}</p>
+                        <h2 className="font-semibold">Order ID: {order.orderId}</h2>
+                        <p>Date: {format(new Date(order.date), 'dd MMM yyyy, h:mm a')}</p>
                         <p>Items: {order.items.length}</p>
                         <p>Total: Rs. {order.amount}</p>
                         <p className="text-sm text-gray-600 mt-1">
                           <span className="font-medium">Tracking ID:</span> {order.trackingId}
                         </p>
+
+                        {/* Show reason why not eligible */}
+                        {!order.isEligible && (
+                          <p className="mt-2 text-xs text-red-600 font-bold">
+                            {order.ineligibilityReason}
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>
