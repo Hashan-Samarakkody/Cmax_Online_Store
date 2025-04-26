@@ -23,7 +23,7 @@ const ReturnRequests = ({ token }) => {
 				toast.info('New return request received');
 			};
 
-			// Add this new handler for return status changes
+			//Handler for return status changes
 			const handleReturnStatusUpdate = (data) => {
 				fetchReturns();
 				toast.info(`Return #${data.return.returnId} status updated to ${data.return.status}`);
@@ -31,12 +31,12 @@ const ReturnRequests = ({ token }) => {
 
 			WebSocketService.connect(() => {
 				WebSocketService.on('newReturnRequest', handleNewReturnRequest);
-				WebSocketService.on('returnStatusUpdate', handleReturnStatusUpdate); // Add this line
+				WebSocketService.on('returnStatusUpdate', handleReturnStatusUpdate);
 			});
 
 			return () => {
 				WebSocketService.off('newReturnRequest', handleNewReturnRequest);
-				WebSocketService.off('returnStatusUpdate', handleReturnStatusUpdate); // Add this line
+				WebSocketService.off('returnStatusUpdate', handleReturnStatusUpdate);
 			};
 		}
 	}, [token]);
