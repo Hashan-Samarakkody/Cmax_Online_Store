@@ -173,8 +173,8 @@ const Orders = () => {
                     onClick={() => trackOrder(item)}
                     className={`border px-4 py-2 text-sm font-medium 
                       ${isDelivered && item.trackingId
-                        ? 'bg-blue-500 text-white hover:bg-blue-600'
-                        : 'hover:bg-black hover:text-white'} 
+                        ? 'bg-blue-600 text-white hover:bg-blue- hover:text-black'
+                      : 'bg-green-600 text-white hover:bg-white hover:text-black'} 
                       transition-all duration-200 rounded-sm`}
                   >
                     {isDelivered && item.trackingId ? 'Track Package' : 'Track Order'}
