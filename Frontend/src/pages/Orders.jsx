@@ -24,6 +24,8 @@ const Orders = () => {
             item['payment'] = order.payment
             item['paymentMethod'] = order.paymentMethod
             item['date'] = order.date
+            item['trackingId'] = order.trackingId
+            item['orderId'] = order._id
             allOrdersItems.push(item)
           })
         })
@@ -32,6 +34,18 @@ const Orders = () => {
     } catch (error) {
       console.log(error)
       toast.error(error.message)
+    }
+  }
+
+  // Track order function
+  const trackOrder = (item) => {
+    if (item.status === 'Delivered' && item.trackingId) {
+      // Open tracking website in a new tab
+      window.open(`https://koombiyodelivery.lk/Track/track_id`, '_blank');
+    } else {
+      // For non-delivered items or without tracking, just refresh
+      loadOrderData();
+      toast.info(`Order status: ${item.status}`);
     }
   }
 
@@ -54,15 +68,26 @@ const Orders = () => {
         toast.info('New order has been added!')
       }
 
-      // Subscribe to newOrder events
+      // Handle order status updates
+      const handleStatusUpdate = (data) => {
+        console.log('Order status update received:', data);
+        // Only update if this update is for the current user
+        loadOrderData();
+        toast.info(`Order status updated: ${data.status}`);
+      }
+
+      // Subscribe to events
       WebSocketService.on('newOrder', handleNewOrder)
+      WebSocketService.on('orderStatusUpdate', handleStatusUpdate)
 
       // Cleanup on unmount
       return () => {
         WebSocketService.off('newOrder', handleNewOrder)
+        WebSocketService.off('orderStatusUpdate', handleStatusUpdate)
       }
     }
   }, [token])
+
 
   // Helper function to render additional details
   const renderItemDetails = (item) => {
@@ -115,6 +140,7 @@ const Orders = () => {
           orderData.map((item, index) => {
             // Get additional details
             const itemDetails = renderItemDetails(item);
+            const isDelivered = item.status === 'Delivered';
 
             return (
               <div key={index} className='py-4 border-t border-b text-gray-700 flex flex-col md:flex-row md:items-center md:justify-between gap-4'>
@@ -131,14 +157,28 @@ const Orders = () => {
                     )}
                     <p className='mt-1 font-sem font-medium'>Date: <span className='text-gray-400'>{new Date(item.date).toDateString()}</span></p>
                     <p className='mt-1 font-sem font-medium'>Payment Method: <span className='text-gray-400'>{item.paymentMethod}</span></p>
+                    {item.trackingId && isDelivered && (
+                      <p className='mt-1 font-medium text-blue-600'>
+                        Tracking ID: <span className='text-blue-500'>{item.trackingId}</span>
+                      </p>
+                    )}
                   </div>
                 </div>
                 <div className='md:w-1/2 flex justify-between'>
                   <div className='flex item-center gap-2'>
-                    <p className='min-w-2 h-2 rounded-full bg-green-500'></p>
+                    <p className={`min-w-2 h-2 rounded-full ${isDelivered ? 'bg-blue-500' : 'bg-green-500'}`}></p>
                     <p className='text-sm md:text-base'>{item.status}</p>
                   </div>
-                  <button onClick={loadOrderData} className='border px-4 py-2 text-sm font-medium hover:bg-black hover:text-white transition-all duration-200 rounded-sm'>Track Order</button>
+                  <button
+                    onClick={() => trackOrder(item)}
+                    className={`border px-4 py-2 text-sm font-medium 
+                      ${isDelivered && item.trackingId
+                        ? 'bg-blue-600 text-white hover:bg-blue- hover:text-black'
+                      : 'bg-green-600 text-white hover:bg-white hover:text-black'} 
+                      transition-all duration-200 rounded-sm`}
+                  >
+                    {isDelivered && item.trackingId ? 'Track Package' : 'Track Order'}
+                  </button>
                 </div>
               </div>
             )

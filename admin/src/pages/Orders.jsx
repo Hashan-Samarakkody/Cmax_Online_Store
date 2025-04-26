@@ -9,6 +9,7 @@ const Orders = ({ token }) => {
   const [orders, setOrders] = useState([]);
   const [filteredOrders, setFilteredOrders] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [trackingInputs, setTrackingInputs] = useState({});
   const [searchCriteria, setSearchCriteria] = useState({
     orderId: true,
     customerName: false,
@@ -97,14 +98,41 @@ const Orders = ({ token }) => {
 
   const statusHandler = async (event, orderId) => {
     try {
-      const response = await axios.post(backendUrl + '/api/order/status', { orderId, status: event.target.value }, { headers: { token } });
+      const newStatus = event.target.value;
+      let trackingId = null;
+
+      // If status is "Delivered", get tracking ID if exists
+      if (newStatus === "Delivered") {
+        trackingId = trackingInputs[orderId] || null;
+      }
+
+      const response = await axios.post(
+        backendUrl + '/api/order/status',
+        {
+          orderId,
+          status: newStatus,
+          trackingId
+        },
+        { headers: { token } }
+      );
+
       if (response.data.success) {
+        // Clear tracking input after successful update
+        if (newStatus === "Delivered" && trackingId) {
+          setTrackingInputs(prev => ({ ...prev, [orderId]: '' }));
+        }
         await fetchAllOrders();
+        toast.success(`Order status updated to ${newStatus}`);
       }
     } catch (error) {
       console.log(error);
-      toast.error(response.data.message);
+      toast.error(error.response?.data?.message || "Failed to update status");
     }
+  };
+
+  // Handle change in tracking ID inputs
+  const handleTrackingInput = (orderId, value) => {
+    setTrackingInputs(prev => ({ ...prev, [orderId]: value }));
   };
 
   useEffect(() => {
@@ -333,6 +361,30 @@ const Orders = ({ token }) => {
                     <option value="Out for Delivery">Out for Delivery</option>
                     <option value="Delivered">Delivered</option>
                   </select>
+
+                  {/* Show tracking ID input only when status is or will be "Delivered" */}
+                  {(order.status === "Delivered" || order.status === "Out for Delivery") && (
+                    <div className="mt-2">
+                      <input
+                        type="text"
+                        placeholder="Tracking ID"
+                        value={trackingInputs[order._id] || ''}
+                        onChange={(e) => handleTrackingInput(order._id, e.target.value)}
+                        className="p-2 border border-gray-300 rounded w-full text-sm"
+                      />
+                      {order.trackingId && (
+                        <p className="text-xs mt-1 text-green-600">Current tracking: {order.trackingId}</p>
+                      )}
+                      {order.status === "Delivered" && (
+                        <button
+                          onClick={() => statusHandler({ target: { value: "Delivered" } }, order._id)}
+                          className="bg-blue-500 hover:bg-blue-600 text-white mt-1 py-1 px-2 rounded text-xs"
+                        >
+                          Update Tracking
+                        </button>
+                      )}
+                    </div>
+                  )}
 
                   {/* Generate Label section with label type selection */}
                   {(order.status !== "Delivered" && order.status !== "Out for Delivery") && (
