@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { toast } from 'react-toastify';
-import { format } from 'date-fns';
 import { backendUrl } from '../App';
 import WebSocketService from '../services/WebSocketService';
+import { format } from 'date-fns';
+import { toast } from 'react-toastify';
 import { FaImage, FaVideo, FaPlayCircle } from 'react-icons/fa';
 
 const ReturnRequests = ({ token }) => {
@@ -12,6 +12,8 @@ const ReturnRequests = ({ token }) => {
 	const [statusInputs, setStatusInputs] = useState({});
 	const [trackingInputs, setTrackingInputs] = useState({});
 	const [mediaPreview, setMediaPreview] = useState(null);
+	const [orderDetails, setOrderDetails] = useState({});
+	const [isLoadingOrder, setIsLoadingOrder] = useState(false);
 
 	useEffect(() => {
 		if (token) {
@@ -56,6 +58,33 @@ const ReturnRequests = ({ token }) => {
 		}
 	};
 
+	// Fetch original order details
+	const fetchOrderDetails = async (orderId) => {
+		// If we already have fetched this order, don't fetch again
+		if (orderDetails[orderId]) return;
+
+		setIsLoadingOrder(true);
+		try {
+			const response = await axios.get(`${backendUrl}/api/order/details/${orderId}`, {
+				headers: { token }
+			});
+
+			if (response.data.success) {
+				setOrderDetails(prev => ({
+					...prev,
+					[orderId]: response.data.order
+				}));
+			} else {
+				toast.error('Failed to load order details');
+			}
+		} catch (error) {
+			console.error('Error fetching order details:', error);
+			toast.error('Failed to load order details');
+		} finally {
+			setIsLoadingOrder(false);
+		}
+	};
+
 	const handleStatusChange = async (returnId) => {
 		const newStatus = statusInputs[returnId];
 		const trackingId = trackingInputs[returnId];
@@ -84,9 +113,18 @@ const ReturnRequests = ({ token }) => {
 		}
 	};
 
-	const toggleExpand = (returnId) => {
-		setExpandedReturn(expandedReturn === returnId ? null : returnId);
-		setMediaPreview(null);
+	const toggleExpand = (returnId, orderId) => {
+		if (expandedReturn === returnId) {
+			setExpandedReturn(null);
+			setMediaPreview(null);
+		} else {
+			setExpandedReturn(returnId);
+			setMediaPreview(null);
+			// Fetch the original order details when expanding
+			if (orderId) {
+				fetchOrderDetails(orderId);
+			}
+		}
 	};
 
 	const openMediaPreview = (media) => {
@@ -116,6 +154,115 @@ const ReturnRequests = ({ token }) => {
 			case 'Rejected': return 'bg-red-100 text-red-800';
 			default: return 'bg-gray-100';
 		}
+	};
+
+	// Format date for display
+	const formatDate = (timestamp) => {
+		return new Date(timestamp).toLocaleDateString('en-US', {
+			year: 'numeric',
+			month: 'short',
+			day: 'numeric'
+		});
+	};
+
+	// Render the original order details
+	const renderOrderDetails = (orderId) => {
+		const order = orderDetails[orderId];
+
+		if (!order) {
+			return (
+				<div className="flex justify-center items-center p-4">
+					{isLoadingOrder ? (
+						<div className="flex items-center">
+							<svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+								<circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+								<path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+							</svg>
+							<span>Loading order details...</span>
+						</div>
+					) : (
+						<span className="text-red-500">Order details not available</span>
+					)}
+				</div>
+			);
+		}
+
+		return (
+			<div className="bg-gray-50 p-4 rounded-lg border border-gray-300 mt-4">
+				<h3 className="font-semibold text-lg mb-3 text-blue-700 border-b pb-2">
+					Original Order Details
+				</h3>
+
+				<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+					<div>
+						<h4 className="font-medium text-gray-700 mb-2">Basic Information</h4>
+						<div className="bg-white p-3 rounded shadow-sm">
+							<p><span className="font-medium">Order ID:</span> {order.orderId}</p>
+							<p><span className="font-medium">Order Date:</span> {formatDate(order.date)}</p>
+							<p><span className="font-medium">Status:</span> {order.status}</p>
+							<p><span className="font-medium">Payment Method:</span> {order.paymentMethod}</p>
+							<p><span className="font-medium">Payment Status:</span> {order.payment ? 'Paid' : 'Pending'}</p>
+							{order.trackingId && (
+								<p><span className="font-medium">Tracking ID:</span> {order.trackingId}</p>
+							)}
+						</div>
+					</div>
+
+					<div>
+						<h4 className="font-medium text-gray-700 mb-2">Shipping Address</h4>
+						<div className="bg-white p-3 rounded shadow-sm">
+							<p>{order.address.firstName} {order.address.lastName}</p>
+							<p>{order.address.street}</p>
+							<p>{order.address.city}, {order.address.state} {order.address.postalCode}</p>
+							<p>{order.address.phoneNumber}</p>
+						</div>
+					</div>
+				</div>
+
+				<h4 className="font-medium text-gray-700 mt-4 mb-2">Items Ordered</h4>
+				<div className="overflow-x-auto">
+					<table className="min-w-full divide-y divide-gray-200">
+						<thead className="bg-gray-100">
+							<tr>
+								<th className="px-3 py-2 text-left text-xm font-bold text-gray-500 uppercase">Product</th>
+								<th className="px-3 py-2 text-left text-xm font-bold text-gray-500 uppercase">Details</th>
+								<th className="px-3 py-2 text-center text-xm font-bold text-gray-500 uppercase">Quantity</th>
+								<th className="px-3 py-2 text-right text-xm font-bold text-gray-500 uppercase">Price</th>
+								<th className="px-3 py-2 text-right text-xm font-bold text-gray-500 uppercase">Total</th>
+							</tr>
+						</thead>
+						<tbody className="bg-white divide-y divide-gray-200">
+							{order.items.map((item, idx) => (
+								<tr key={idx} className="hover:bg-gray-50">
+									<td className="px-3 py-2 whitespace-nowrap text-sm">{item.name}</td>
+									<td className="px-3 py-2 whitespace-nowrap text-sm">
+										{item.size && (
+											<>
+												<b>Size:</b> {item.size.split('_')[0]}{' '}
+												{item.size.includes('_') && (
+													<><b>Color:</b> {item.size.split('_')[1]}</>
+												)}
+											</>
+										)}
+									</td>
+									<td className="px-3 py-2 whitespace-nowrap text-sm text-center">{item.quantity}</td>
+									<td className="px-3 py-2 whitespace-nowrap text-sm text-right">Rs. {item.price.toFixed(2)}</td>
+									<td className="px-3 py-2 whitespace-nowrap text-sm text-right">Rs. {(item.price * item.quantity).toFixed(2)}</td>
+								</tr>
+							))}
+							<tr className="bg-gray-50">
+								<td colSpan="4" className="px-3 py-2 whitespace-nowrap text-sm text-right font-medium">Delivery Charge:</td>
+								<td className="px-3 py-2 whitespace-nowrap text-sm text-right">Rs. 30.00</td>
+							</tr>
+							<tr className="bg-gray-50 font-bold">
+								<td colSpan="4" className="px-3 py-2 whitespace-nowrap text-right">Total:</td>
+								<td className="px-3 py-2 whitespace-nowrap text-right">Rs. {(order.amount).toFixed(2)}</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
+		);
 	};
 
 	return (
@@ -177,7 +324,7 @@ const ReturnRequests = ({ token }) => {
 											</td>
 											<td className="px-4 py-3 whitespace-nowrap text-sm">
 												<button
-													onClick={() => toggleExpand(returnItem._id)}
+													onClick={() => toggleExpand(returnItem._id, returnItem.originalOrderId)}
 													className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-xs sm:text-sm"
 												>
 													{expandedReturn === returnItem._id ? 'Hide' : 'View'}
@@ -202,41 +349,6 @@ const ReturnRequests = ({ token }) => {
 											<tr>
 												<td colSpan="8" className="px-4 py-4">
 													<div className="bg-gray-50 p-4 rounded">
-														<h3 className="font-semibold mb-2">Return Items</h3>
-														<div className="overflow-x-auto">
-															<table className="min-w-full divide-y divide-gray-200 mb-4">
-																<thead className="bg-gray-100">
-																	<tr>
-																		<th className="px-2 py-2 text-left text-xs font-bold">Product</th>
-																		<th className="px-2 py-2 text-left text-xs font-bold hidden sm:table-cell">Details</th>
-																		<th className="px-2 py-2 text-left text-xs font-bold hidden sm:table-cell">Quantity</th>
-																		<th className="px-2 py-2 text-left text-xs font-bold">Reason</th>
-																		<th className="px-2 py-2 text-left text-xs font-bold">Condition</th>
-																	</tr>
-																</thead>
-																<tbody>
-																	{returnItem.items.map((item, index) => (
-																		<tr key={index} className="bg-white">
-																			<td className="px-2 py-2 text-sm">{item.name}</td>
-																			<td className="px-2 py-2 text-sm hidden sm:table-cell">
-																				{item.size && (
-																					<>
-																						<b>Size:</b> {item.size.split('_')[0]}{' '}
-																						{item.size.includes('_') && (
-																							<><b>Color:</b> {item.size.split('_')[1]}</>
-																						)}
-																					</>
-																				)}
-																			</td>
-																			<td className="px-2 py-2 text-sm hidden sm:table-cell">{item.quantity}</td>
-																			<td className="px-2 py-2 text-sm">{item.reason}</td>
-																			<td className="px-2 py-2 text-sm">{item.condition}</td>
-																		</tr>
-																	))}
-																</tbody>
-															</table>
-														</div>
-
 														{/* Media Section */}
 														{returnItem.media && returnItem.media.length > 0 && (
 															<div className="mb-6">
@@ -268,7 +380,10 @@ const ReturnRequests = ({ token }) => {
 															</div>
 														)}
 
-														<div className="bg-white p-3 sm:p-4 rounded border">
+														{/* Original Order Section */}
+														{returnItem.originalOrderId && renderOrderDetails(returnItem.originalOrderId)}
+
+														<div className="bg-white p-3 sm:p-4 rounded border mt-4">
 															<h3 className="font-semibold mb-2">Update Status</h3>
 															<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
 																<div>
