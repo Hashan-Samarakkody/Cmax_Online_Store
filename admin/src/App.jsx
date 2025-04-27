@@ -12,6 +12,7 @@ import Profile from './pages/Profile'
 import AdminManagement from './pages/AdminManagement'
 import SalesReport from './pages/SalesReport'
 import Orders from './pages/Orders'
+import ReturnRequests from './pages/ReturnRequests'
 import { useState } from 'react'
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css'
@@ -62,6 +63,7 @@ const App = () => {
             <Route path='/admin-management' element={<AdminManagement token={token} />} />
             <Route path='/login' element={<Navigate to="/" replace />} />
             <Route path='/signup' element={<AdminSignup />} />
+            <Route path='/return-requests' element={<ReturnRequests token={token} />} />
             <Route path='*' element={<Navigate to="/" replace />} />
           </Routes>
         </div>

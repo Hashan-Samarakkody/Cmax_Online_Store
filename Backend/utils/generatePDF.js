@@ -72,8 +72,6 @@ export const generateOrderPDF = async (req, res) => {
                         quantity: 0
                     };
                 }
-
-                // Add this item's quantity to the grouped total
                 groupedItems[itemKey].quantity += item.quantity;
             });
 
@@ -87,7 +85,6 @@ export const generateOrderPDF = async (req, res) => {
                 hour12: true
             });
 
-            // Add this order's grouped items to the user's orders
             userOrderGroups[userName].push({
                 orderId: order.orderId,
                 orderTime: orderTime,

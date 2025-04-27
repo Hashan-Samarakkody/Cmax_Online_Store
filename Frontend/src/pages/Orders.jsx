@@ -4,11 +4,23 @@ import Title from '../components/Title';
 import axios from 'axios';
 import { toast } from 'react-toastify'
 import WebSocketService from '../services/WebSocketService';
-import {assets} from '../assets/assets';
+import { assets } from '../assets/assets';
+import { useNavigate } from 'react-router-dom';
 
 const Orders = () => {
   const { backendUrl, token, currency } = useContext(ShopContext);
   const [orderData, setOrderData] = useState([])
+  const navigate = useNavigate();
+
+  const isReturnEligible = (item) => {
+    if (item.status !== 'Delivered') return false;
+
+    // Check if within 7 days
+    const orderDate = new Date(item.date);
+    const currentDate = new Date();
+    const daysDifference = Math.floor((currentDate - orderDate) / (1000 * 60 * 60 * 24));
+    return daysDifference <= 7;
+  };
 
   const loadOrderData = async () => {
     try {
@@ -26,6 +38,7 @@ const Orders = () => {
             item['date'] = order.date
             item['trackingId'] = order.trackingId
             item['orderId'] = order._id
+            item['orderDisplayId'] = order.orderId
             allOrdersItems.push(item)
           })
         })
@@ -147,7 +160,7 @@ const Orders = () => {
                 <div className='flex items-start gap-6 text-sm'>
                   <img className='w-16 sm:w-20 rounded-lg' src={item.images[0]} alt="" />
                   <div>
-                    <p className='sm:text-base font-bold'>{item.name}</p>
+                    <p className='sm:text-base font-bold'>Item Name: {item.name}</p>
                     <div className='flex items-center gap-3 mt-1 text-base text-gray-700'>
                       <p className='font-semibold text-gray-500'>{currency}{item.price}</p>
                       <p className='font-semibold text-gray-500'>Quantity: {item.quantity}</p>
@@ -155,11 +168,12 @@ const Orders = () => {
                     {itemDetails && (
                       <p className='font-semibold text-gray-500'>{itemDetails}</p>
                     )}
-                    <p className='mt-1 font-sem font-medium'>Date: <span className='text-gray-400'>{new Date(item.date).toDateString()}</span></p>
-                    <p className='mt-1 font-sem font-medium'>Payment Method: <span className='text-gray-400'>{item.paymentMethod}</span></p>
+                    <p className='mt-1 font-sem font-medium'>Date: <span className='text-gray-500'>{new Date(item.date).toDateString()}</span></p>
+                    <p className='mt-1 font-sem font-medium'>Payment Method: <span className='text-gray-500'>{item.paymentMethod}</span></p>
+                    <p className='mt-1 font-sem text-green-600 font-semibold'>Order ID: {item.orderDisplayId || "N/A"}</p>
                     {item.trackingId && isDelivered && (
-                      <p className='mt-1 font-medium text-blue-600'>
-                        Tracking ID: <span className='text-blue-500'>{item.trackingId}</span>
+                      <p className='mt-1 font-semibold text-blue-600'>
+                        Tracking ID: {item.trackingId}
                       </p>
                     )}
                   </div>
@@ -174,11 +188,20 @@ const Orders = () => {
                     className={`border px-4 py-2 text-sm font-medium 
                       ${isDelivered && item.trackingId
                         ? 'bg-blue-600 text-white hover:bg-blue- hover:text-black'
-                      : 'bg-green-600 text-white hover:bg-white hover:text-black'} 
+                        : 'bg-green-600 text-white hover:bg-white hover:text-black'} 
                       transition-all duration-200 rounded-sm`}
                   >
                     {isDelivered && item.trackingId ? 'Track Package' : 'Track Order'}
                   </button>
+
+                  {isReturnEligible(item) && isDelivered && item.trackingId && (
+                    <button
+                      onClick={() => navigate('/returns')}
+                      className="border px-4 py-2 text-sm font-medium bg-yellow-500 text-white hover:bg-yellow-600 transition-all duration-200 rounded-sm"
+                    >
+                      Return Item
+                    </button>
+                  )}
                 </div>
               </div>
             )

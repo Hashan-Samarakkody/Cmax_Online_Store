@@ -1,0 +1,619 @@
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
+import { backendUrl } from '../App';
+import WebSocketService from '../services/WebSocketService';
+import { format } from 'date-fns';
+import { toast } from 'react-toastify';
+import { FaImage, FaVideo, FaPlayCircle } from 'react-icons/fa';
+
+const ReturnRequests = ({ token }) => {
+	const [returns, setReturns] = useState([]);
+	const [expandedReturn, setExpandedReturn] = useState(null);
+	const [statusInputs, setStatusInputs] = useState({});
+	const [trackingInputs, setTrackingInputs] = useState({});
+	const [mediaPreview, setMediaPreview] = useState(null);
+	const [orderDetails, setOrderDetails] = useState({});
+	const [isLoadingOrder, setIsLoadingOrder] = useState(false);
+
+	useEffect(() => {
+		if (token) {
+			fetchReturns();
+
+			// WebSocket setup
+			const handleNewReturnRequest = (data) => {
+				fetchReturns();
+				toast.info('New return request received');
+			};
+
+			//Handler for return status changes
+			const handleReturnStatusUpdate = (data) => {
+				fetchReturns();
+				toast.info(`Return #${data.return.returnId} status updated to ${data.return.status}`);
+			};
+
+			WebSocketService.connect(() => {
+				WebSocketService.on('newReturnRequest', handleNewReturnRequest);
+				WebSocketService.on('returnStatusUpdate', handleReturnStatusUpdate);
+			});
+
+			return () => {
+				WebSocketService.off('newReturnRequest', handleNewReturnRequest);
+				WebSocketService.off('returnStatusUpdate', handleReturnStatusUpdate);
+			};
+		}
+	}, [token]);
+
+	const fetchReturns = async () => {
+		try {
+			const response = await axios.get(`${backendUrl}/api/returns/admin`, {
+				headers: { token }
+			});
+
+			if (response.data.success) {
+				setReturns(response.data.returns);
+			}
+		} catch (error) {
+			console.error('Error fetching returns:', error);
+			toast.error('Failed to load return requests');
+		}
+	};
+
+	// Fetch original order details
+	const fetchOrderDetails = async (orderId) => {
+		// If we already have fetched this order, don't fetch again
+		if (orderDetails[orderId]) return;
+
+		setIsLoadingOrder(true);
+		try {
+			const response = await axios.get(`${backendUrl}/api/order/details/${orderId}`, {
+				headers: { token }
+			});
+
+			if (response.data.success) {
+				setOrderDetails(prev => ({
+					...prev,
+					[orderId]: response.data.order
+				}));
+			} else {
+				toast.error('Failed to load order details');
+			}
+		} catch (error) {
+			console.error('Error fetching order details:', error);
+			toast.error('Failed to load order details');
+		} finally {
+			setIsLoadingOrder(false);
+		}
+	};
+
+	const handleStatusChange = async (returnId) => {
+		const newStatus = statusInputs[returnId];
+		const trackingId = trackingInputs[returnId];
+
+		if (!newStatus) {
+			toast.error('Please select a status');
+			return;
+		}
+
+		try {
+			const response = await axios.post(`${backendUrl}/api/returns/update-status`, {
+				returnId,
+				status: newStatus,
+				trackingId: trackingId || null
+			}, {
+				headers: { token }
+			});
+
+			if (response.data.success) {
+				// Improved toast notification with more details
+				toast.success(
+					<div>
+						<strong>Status Updated Successfully</strong>
+						<div>Return #{returnId} is now <span className="font-semibold">{newStatus}</span></div>
+						{trackingId && <div>Tracking ID: {trackingId}</div>}
+					</div>,
+					{
+						autoClose: 5000, // Give admin more time to read the notification
+						position: "top-right"
+					}
+				);
+				fetchReturns();
+			}
+		} catch (error) {
+			console.error('Error updating return status:', error);
+			toast.error(error.response?.data?.message || 'Failed to update status');
+		}
+	};
+	const toggleExpand = (returnId, orderId) => {
+		if (expandedReturn === returnId) {
+			setExpandedReturn(null);
+			setMediaPreview(null);
+		} else {
+			setExpandedReturn(returnId);
+			setMediaPreview(null);
+			// Fetch the original order details when expanding
+			if (orderId) {
+				fetchOrderDetails(orderId);
+			}
+		}
+	};
+
+	const openMediaPreview = (media) => {
+		setMediaPreview(media);
+	};
+
+	const closeMediaPreview = () => {
+		setMediaPreview(null);
+	};
+
+	const handleStatusInput = (returnId, value) => {
+		setStatusInputs(prev => ({ ...prev, [returnId]: value }));
+	};
+
+	const handleTrackingInput = (returnId, value) => {
+		setTrackingInputs(prev => ({ ...prev, [returnId]: value }));
+	};
+
+	const getStatusClass = (status) => {
+		switch (status) {
+			case 'Requested': return 'bg-yellow-100 text-yellow-800';
+			case 'Approved': return 'bg-blue-100 text-blue-800';
+			case 'In Transit': return 'bg-purple-100 text-purple-800';
+			case 'Received': return 'bg-indigo-100 text-indigo-800';
+			case 'Inspected': return 'bg-orange-100 text-orange-800';
+			case 'Completed': return 'bg-green-100 text-green-800';
+			case 'Rejected': return 'bg-red-100 text-red-800';
+			default: return 'bg-gray-100';
+		}
+	};
+
+	// Format date for display
+	const formatDate = (timestamp) => {
+		return new Date(timestamp).toLocaleDateString('en-US', {
+			year: 'numeric',
+			month: 'short',
+			day: 'numeric'
+		});
+	};
+
+	// Render the original order details
+	const renderOrderDetails = (orderId) => {
+		const order = orderDetails[orderId];
+
+		if (!order) {
+			return (
+				<div className="flex justify-center items-center p-4">
+					{isLoadingOrder ? (
+						<div className="flex items-center">
+							<svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+								<circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+								<path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+							</svg>
+							<span>Loading order details...</span>
+						</div>
+					) : (
+						<span className="text-red-500">Order details not available</span>
+					)}
+				</div>
+			);
+		}
+
+		return (
+			<div className="bg-green-50 p-4 rounded-lg border border-gray-300 mt-4">
+				<h3 className="font-bold text-lg mb-3 text-blue-700 border-b pb-2">
+					Original Order Details
+				</h3>
+
+				<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+					<div>
+						<h4 className="font-semibold text-green-600 mb-2">Basic Information</h4>
+						<div className="bg-white p-3 rounded shadow-sm">
+							<p><span className="font-semibold">Order ID:</span> {order.orderId}</p>
+							<p><span className="font-semibold">Order Date:</span> {formatDate(order.date)}</p>
+							<p><span className="font-semibold">Status:</span> {order.status}</p>
+							<p><span className="font-semibold">Payment Method:</span> {order.paymentMethod}</p>
+							<p><span className="font-semibold">Payment Status:</span> {order.payment ? 'Paid' : 'Pending'}</p>
+							{order.trackingId && (
+								<p><span className="font-semibold">Tracking ID:</span> {order.trackingId}</p>
+							)}
+						</div>
+					</div>
+
+					<div>
+						<h4 className="font-semibold text-green-600 mb-2">Shipping Address</h4>
+						<div className="bg-white p-3 rounded shadow-sm">
+							<p><span className="font-semibold">Name:</span> {order.address.firstName} {order.address.lastName}</p>
+							<p><span className="font-semibold">Address:</span> {order.address.street}, {order.address.city}, {order.address.state} {order.address.postalCode}</p>
+							<p><span className="font-semibold">Phone:</span> {order.address.phoneNumber}</p>
+						</div>
+					</div>
+				</div>
+
+				<h4 className="font-bold text-gray-700 mt-4 mb-2">Items Ordered</h4>
+				<div className="overflow-x-auto">
+					<table className="min-w-full divide-y divide-gray-200">
+						<thead className="bg-gray-100">
+							<tr>
+								<th className="px-3 py-2 text-left text-sm font-bold text-gray-500 uppercase">Product</th>
+								<th className="px-3 py-2 text-left text-sm font-bold text-gray-500 uppercase">Details</th>
+								<th className="px-3 py-2 text-center text-sm font-bold text-gray-500 uppercase">Quantity</th>
+								<th className="px-3 py-2 text-right text-sm font-bold text-gray-500 uppercase">Price</th>
+								<th className="px-3 py-2 text-right text-sm font-bold text-gray-500 uppercase">Total</th>
+							</tr>
+						</thead>
+						<tbody className="bg-white divide-y divide-gray-200">
+							{order.items.map((item, idx) => (
+								<tr key={idx} className="hover:bg-gray-50">
+									<td className="px-3 py-2 whitespace-nowrap text-xm">{item.name}</td>
+									<td className="px-3 py-2 whitespace-nowrap text-xm">
+										{item.size && (
+											<>
+												<i>Size:</i> {item.size.split('_')[0]}{' '}
+												{item.size.includes('_') && (
+													<><i>Color:</i> {item.size.split('_')[1]}</>
+												)}
+											</>
+										)}
+									</td>
+									<td className="px-3 py-2 whitespace-nowrap text-xm text-center">{item.quantity}</td>
+									<td className="px-3 py-2 whitespace-nowrap text-xm text-right">Rs. {item.price.toFixed(2)}</td>
+									<td className="px-3 py-2 whitespace-nowrap text-xm text-right">Rs. {(item.price * item.quantity).toFixed(2)}</td>
+								</tr>
+							))}
+							<tr className="bg-gray-50">
+								<td colSpan="4" className="px-3 py-2 whitespace-nowrap text-xm text-right font-medium">Delivery Charge:</td>
+								<td className="px-3 py-2 whitespace-nowrap text-xm text-right">Rs. 30.00</td>
+							</tr>
+							<tr className="bg-gray-50 font-bold">
+								<td colSpan="4" className="px-3 py-2 whitespace-nowrap text-right">Total:</td>
+								<td className="px-3 py-2 whitespace-nowrap text-right">Rs. {(order.amount).toFixed(2)}</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
+		);
+	};
+
+	return (
+		<div className="p-6">
+			<h1 className="text-2xl font-bold mb-6">Return Requests</h1>
+
+			{/* Table to display return requests */}
+			<div className="bg-white rounded-lg shadow overflow-hidden">
+				<div className="overflow-x-auto">
+					<table className="min-w-full divide-y divide-gray-500">
+						<thead className="bg-gray-50">
+							<tr>
+								<th className="px-4 py-3 text-left text-sm font-bold text-black uppercase tracking-wider">Return ID</th>
+								<th className="px-4 py-3 text-left text-sm font-bold text-black uppercase tracking-wider">Date and Time</th>
+								<th className="px-4 py-3 text-left text-sm font-bold text-black uppercase tracking-wider hidden md:table-cell">Customer</th>
+								<th className="px-4 py-3 text-left text-sm font-bold text-black uppercase tracking-wider hidden sm:table-cell">Items</th>
+								<th className="px-4 py-3 text-left text-sm font-bold text-black uppercase tracking-wider hidden md:table-cell">Amount</th>
+								<th className="px-4 py-3 text-left text-sm font-bold text-black uppercase tracking-wider hidden sm:table-cell">Media</th>
+								<th className="px-4 py-3 text-left text-sm font-bold text-black uppercase tracking-wider">Status</th>
+								<th className="px-4 py-3 text-left text-sm font-bold text-black uppercase tracking-wider">Actions</th>
+							</tr>
+						</thead>
+						<tbody className="bg-white divide-y divide-gray-200">
+							{returns.length === 0 ? (
+								<tr>
+									<td colSpan="8" className="px-4 py-4 text-center text-gray-500">
+										No return requests found
+									</td>
+								</tr>
+							) : (
+								returns.map(returnItem => (
+									<React.Fragment key={returnItem._id}>
+										<tr className="bg-pink-50 hover:bg-white hover:cursor-pointer hover:text-black">
+											<td className="px-4 py-3 whitespace-nowrap text-sm">{returnItem.returnId}</td>
+											<td className="px-4 py-3 whitespace-nowrap text-sm">
+												{format(new Date(returnItem.requestedDate), 'dd MMM yyyy hh:mm a')}
+											</td>
+											<td className="px-4 py-3 whitespace-nowrap text-sm hidden md:table-cell">{returnItem.userName}</td>
+											<td className="px-4 py-3 whitespace-nowrap text-sm hidden sm:table-cell">{returnItem.items.length}</td>
+											<td className="px-4 py-3 whitespace-nowrap text-sm hidden md:table-cell">Rs. {returnItem.refundAmount}</td>
+											<td className="px-4 py-3 whitespace-nowrap text-sm hidden sm:table-cell">
+												{returnItem.media && returnItem.media.length > 0 ? (
+													<div className="flex items-center">
+														{returnItem.media.some(m => m.type === 'image') && (
+															<FaImage className="text-blue-600 mr-2" />
+														)}
+														{returnItem.media.some(m => m.type === 'video') && (
+															<FaVideo className="text-red-600" />
+														)}
+													</div>
+												) : (
+													<span className="text-gray-400">None</span>
+												)}
+											</td>
+											<td className="px-4 py-3 whitespace-nowrap text-sm">
+												<span className={`px-2 py-1 rounded text-xs font-semibold ${getStatusClass(returnItem.status)}`}>
+													{returnItem.status}
+												</span>
+											</td>
+											<td className="px-4 py-3 whitespace-nowrap text-sm">
+												<button
+													onClick={() => toggleExpand(returnItem._id, returnItem.originalOrderId)}
+													className="'text-black border border-gray-800 hover:bg-black hover:text-white px-3 py-1 rounded text-xs sm:text-sm "
+												>
+													{expandedReturn === returnItem._id ? 'Hide' : 'View'}
+												</button>
+											</td>
+										</tr>
+
+										{/* Mobile-only: Additional information row */}
+										<tr className="md:hidden">
+											<td colSpan="8" className="px-4 py-2 bg-green-50">
+												<div className="text-xs">
+													<div><span className="font-semibold">Customer:</span> {returnItem.userName}</div>
+													<div className="flex justify-between">
+														<span><span className="font-semibold">Items:</span> {returnItem.items.length}</span>
+														<span><span className="font-semibold">Amount:</span> Rs. {returnItem.refundAmount}</span>
+													</div>
+												</div>
+											</td>
+										</tr>
+
+										{expandedReturn === returnItem._id && (
+											<tr>
+												<td colSpan="8" className="px-4 py-4">
+
+													<div className="mb-6">
+														<h3 className="font-semibold text-blue-700 mb-2 border-b pb-2">Return Items</h3>
+														<div className="grid grid-cols-1 gap-4">
+															{Array.isArray(returnItem.items) && returnItem.items.map((item, idx) => {
+																// Find the corresponding item in the original order to get the image
+																const originalOrder = orderDetails[returnItem.originalOrderId];
+																const originalItem = originalOrder?.items.find(oi =>
+																	oi.productId === item.productId &&
+																	oi.size === item.size
+																);
+
+																return (
+																	<div key={idx} className="bg-white p-4 rounded-lg border border-gray-200">
+																		<div className="flex flex-col md:flex-row">
+																			{/* Product image */}
+																			<div className="w-30 h-30 mr-4 flex-shrink-0 mb-4 md:mb-0">
+																				{originalItem && originalItem.images && originalItem.images.length > 0 ? (
+																					<img
+																						src={originalItem.images[0]}
+																						alt={item.name}
+																						className="w-full h-full object-cover rounded-md"
+																					/>
+																				) : (
+																					<div className="w-full h-full bg-gray-200 rounded-md flex items-center justify-center">
+																						<span className="text-gray-400 text-xs">No image</span>
+																					</div>
+																				)}
+																			</div>
+
+																			{/* Product details */}
+																			<div className="flex-grow">
+																				<h4 className="font-semibold text-lg mb-2">{item.name}</h4>
+
+																				<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+																					<div>
+																						<p className="text-sm">
+																							<span className="font-medium">Size:</span> {item.size.split('_')[0]}
+																						</p>
+																						<p className="text-sm">
+																							<span className="font-medium">Color:</span> {item.size.split('_')[1]}
+																						</p>
+																						<p className="text-sm">
+																							<span className="font-medium">Quantity:</span> {item.quantity}
+																						</p>
+																						<p className="text-sm">
+																							<span className="font-medium">Price:</span> Rs. {item.price}
+																						</p>
+																					</div>
+
+																					<div className="bg-gray-50 p-3 rounded-md">
+																						<p className="text-sm">
+																							<span className="font-medium">Return Reason:</span> {item.reason}
+																						</p>
+																						<p className="text-sm">
+																							<span className="font-medium">Condition:</span> {item.condition}
+																						</p>
+
+																						{/* Display custom reason if present */}
+																						{item.customReason && (
+																							<div className="mt-2">
+																								<p className="text-sm font-medium text-red-600">Custom Reason:</p>
+																								<div className="bg-yellow-50 p-2 border-l-4 border-red-400 text-sm text-justify mt-1 max-h-32 overflow-y-auto">
+																									{item.customReason}
+																								</div>
+																							</div>
+																						)}
+																					</div>
+																				</div>
+																			</div>
+																		</div>
+																	</div>
+																);
+															})}
+														</div>
+													</div>
+
+													<div className="bg-gray-50 p-4 rounded">
+														{/* Media Section */}
+														{returnItem.media && returnItem.media.length > 0 && (
+															<div className="mb-6">
+																<h3 className="font-semibold mb-2">Media Attachments</h3>
+
+																{/* Group media by item if they have itemIndex property */}
+																{returnItem.items.some(item =>
+																	returnItem.media.some(m => m.itemIndex === returnItem.items.indexOf(item))
+																) ? (
+																	// Display media grouped by item
+																	returnItem.items.map((item, itemIdx) => {
+																		const itemMedia = returnItem.media.filter(m => m.itemIndex === itemIdx);
+																		if (itemMedia.length === 0) return null;
+
+																		return (
+																			<div key={itemIdx} className="mb-4">
+																				<h4 className="text-sm font-medium mb-2">
+																					Media for {item.name} ({item.size.split('_')[0]}, {item.size.split('_')[1]})
+																				</h4>
+																				<div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-4">
+																					{itemMedia.map((media, index) => (
+																						<div
+																							key={index}
+																							className="relative border rounded-lg overflow-hidden cursor-pointer"
+																							onClick={() => openMediaPreview(media)}
+																						>
+																							{media.type === 'image' ? (
+																								<img
+																									src={media.url}
+																									alt={`Return media ${index}`}
+																									className="w-full h-20 sm:h-24 object-cover"
+																								/>
+																							) : (
+																								<div className="w-full h-20 sm:h-24 bg-gray-900 flex items-center justify-center relative">
+																									<FaPlayCircle className="text-white text-3xl sm:text-4xl" />
+																									<div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-60 text-white text-xs p-1">
+																										Video
+																									</div>
+																								</div>
+																							)}
+																						</div>
+																					))}
+																				</div>
+																			</div>
+																		);
+																	})
+																) : (
+																	// Display all media together (legacy format)
+																	<div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-4">
+																		{returnItem.media.map((media, index) => (
+																			<div
+																				key={index}
+																				className="relative border rounded-lg overflow-hidden cursor-pointer"
+																				onClick={() => openMediaPreview(media)}
+																			>
+																				{media.type === 'image' ? (
+																					<img
+																						src={media.url}
+																						alt={`Return media ${index}`}
+																						className="w-full h-20 sm:h-24 object-cover"
+																					/>
+																				) : (
+																					<div className="w-full h-20 sm:h-24 bg-gray-900 flex items-center justify-center relative">
+																						<FaPlayCircle className="text-white text-3xl sm:text-4xl" />
+																						<div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-60 text-white text-xs p-1">
+																							Video
+																						</div>
+																					</div>
+																				)}
+																			</div>
+																		))}
+																	</div>
+																)}
+															</div>
+														)}
+
+														{/* Original Order Section */}
+														{returnItem.originalOrderId && renderOrderDetails(returnItem.originalOrderId)}
+
+														<div className="bg-white p-3 sm:p-4 rounded border mt-4">
+															<h3 className="font-semibold mb-2">Update Status</h3>
+															<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
+																<div>
+																	<label className="block text-sm font-medium text-gray-700 mb-1">
+																		Status:
+																	</label>
+																	<select
+																		value={statusInputs[returnItem._id] || returnItem.status}
+																		onChange={(e) => handleStatusInput(returnItem._id, e.target.value)}
+																		className="w-full p-2 border rounded"
+																	>
+																		<option value="Requested">Requested</option>
+																		<option value="Approved">Approved</option>
+																		<option value="In Transit">In Transit</option>
+																		<option value="Received">Received</option>
+																		<option value="Inspected">Inspected</option>
+																		<option value="Completed">Completed</option>
+																		<option value="Rejected">Rejected</option>
+																	</select>
+																</div>
+
+																{(statusInputs[returnItem._id] === 'Approved' || returnItem.status === 'Approved') && (
+																	<div>
+																		<label className="block text-sm font-medium text-gray-700 mb-1">
+																			Return Tracking ID:
+																		</label>
+																		<input
+																			type="text"
+																			value={trackingInputs[returnItem._id] || returnItem.returnTrackingId || ''}
+																			onChange={(e) => handleTrackingInput(returnItem._id, e.target.value)}
+																			placeholder="Enter tracking ID"
+																			className="w-full p-2 border rounded"
+																		/>
+																	</div>
+																)}
+
+																<div className="flex items-end">
+																	<button
+																		onClick={() => handleStatusChange(returnItem._id)}
+																		className="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded"
+																	>
+																		Update
+																	</button>
+																</div>
+															</div>
+														</div>
+													</div>
+												</td>
+											</tr>
+										)}
+									</React.Fragment>
+								))
+							)}
+						</tbody>
+					</table>
+				</div>
+			</div>
+
+			{/* Media Preview Modal */}
+			{mediaPreview && (
+				<div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50" onClick={closeMediaPreview}>
+					<div className="bg-white p-4 rounded-lg max-w-4xl w-full" onClick={e => e.stopPropagation()}>
+						<div className="flex justify-between items-center mb-4">
+							<h3 className="text-lg font-semibold">
+								{mediaPreview.type === 'image' ? 'Image Preview' : 'Video Preview'}
+							</h3>
+							<button
+								onClick={closeMediaPreview}
+								className="text-gray-500 hover:text-gray-700"
+							>
+								<svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+									<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+								</svg>
+							</button>
+						</div>
+
+						<div className="flex justify-center">
+							{mediaPreview.type === 'image' ? (
+								<img
+									src={mediaPreview.url}
+									alt="Return Item"
+									className="max-h-[70vh] max-w-full object-contain"
+								/>
+							) : (
+								<video
+									src={mediaPreview.url}
+									controls
+									autoPlay
+									className="max-h-[70vh] max-w-full"
+								>
+									Your browser does not support the video tag.
+								</video>
+							)}
+						</div>
+					</div>
+				</div>
+			)}
+		</div>
+	);
+};
+
+export default ReturnRequests;

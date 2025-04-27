@@ -438,4 +438,33 @@ const updateStatus = async (req, res) => {
     }
 };
 
-export { placeOrder, placeOrderStripe, allOrders, userOrders, updateStatus, verifyStripe }
+// Get order details by orderId
+const getOrderDetails = async (req, res) => {
+    try {
+        const { orderId } = req.params;
+
+        // Find the order by orderId (not MongoDB _id)
+        const order = await orderModel.findOne({ orderId });
+
+        if (!order) {
+            return res.status(404).json({
+                success: false,
+                message: 'Order not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            order
+        });
+    } catch (error) {
+        console.error('Error fetching order details:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Failed to retrieve order details'
+        });
+    }
+};
+
+
+export { placeOrder, placeOrderStripe, allOrders, userOrders, updateStatus, verifyStripe, getOrderDetails }

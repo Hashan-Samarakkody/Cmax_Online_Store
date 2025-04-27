@@ -31,7 +31,7 @@ const Profile = ({ token, setToken }) => {
 
     const [showLogoutModal, setShowLogoutModal] = useState(false);
 
-    // Add this function to handle actual logout
+    // Function to handle actual logout
     const handleLogout = () => {
         setToken('');
         navigate('/login');
