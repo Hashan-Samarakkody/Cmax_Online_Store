@@ -189,70 +189,69 @@ const ReturnRequests = ({ token }) => {
 
 		return (
 			<div className="bg-gray-50 p-4 rounded-lg border border-gray-300 mt-4">
-				<h3 className="font-semibold text-lg mb-3 text-blue-700 border-b pb-2">
+				<h3 className="font-bold text-lg mb-3 text-blue-700 border-b pb-2">
 					Original Order Details
 				</h3>
 
 				<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 					<div>
-						<h4 className="font-medium text-gray-700 mb-2">Basic Information</h4>
+						<h4 className="font-semibold text-green-600 mb-2">Basic Information</h4>
 						<div className="bg-white p-3 rounded shadow-sm">
-							<p><span className="font-medium">Order ID:</span> {order.orderId}</p>
-							<p><span className="font-medium">Order Date:</span> {formatDate(order.date)}</p>
-							<p><span className="font-medium">Status:</span> {order.status}</p>
-							<p><span className="font-medium">Payment Method:</span> {order.paymentMethod}</p>
-							<p><span className="font-medium">Payment Status:</span> {order.payment ? 'Paid' : 'Pending'}</p>
+							<p><span className="font-semibold">Order ID:</span> {order.orderId}</p>
+							<p><span className="font-semibold">Order Date:</span> {formatDate(order.date)}</p>
+							<p><span className="font-semibold">Status:</span> {order.status}</p>
+							<p><span className="font-semibold">Payment Method:</span> {order.paymentMethod}</p>
+							<p><span className="font-semibold">Payment Status:</span> {order.payment ? 'Paid' : 'Pending'}</p>
 							{order.trackingId && (
-								<p><span className="font-medium">Tracking ID:</span> {order.trackingId}</p>
+								<p><span className="font-semibold">Tracking ID:</span> {order.trackingId}</p>
 							)}
 						</div>
 					</div>
 
 					<div>
-						<h4 className="font-medium text-gray-700 mb-2">Shipping Address</h4>
+						<h4 className="font-semibold text-green-600 mb-2">Shipping Address</h4>
 						<div className="bg-white p-3 rounded shadow-sm">
-							<p>{order.address.firstName} {order.address.lastName}</p>
-							<p>{order.address.street}</p>
-							<p>{order.address.city}, {order.address.state} {order.address.postalCode}</p>
-							<p>{order.address.phoneNumber}</p>
+							<p><span className="font-semibold">Name:</span> {order.address.firstName} {order.address.lastName}</p>
+							<p><span className="font-semibold">Address:</span> {order.address.street}, {order.address.city}, {order.address.state} {order.address.postalCode}</p>
+							<p><span className="font-semibold">Phone:</span> {order.address.phoneNumber}</p>
 						</div>
 					</div>
 				</div>
 
-				<h4 className="font-medium text-gray-700 mt-4 mb-2">Items Ordered</h4>
+				<h4 className="font-bold text-gray-700 mt-4 mb-2">Items Ordered</h4>
 				<div className="overflow-x-auto">
 					<table className="min-w-full divide-y divide-gray-200">
 						<thead className="bg-gray-100">
 							<tr>
-								<th className="px-3 py-2 text-left text-xm font-bold text-gray-500 uppercase">Product</th>
-								<th className="px-3 py-2 text-left text-xm font-bold text-gray-500 uppercase">Details</th>
-								<th className="px-3 py-2 text-center text-xm font-bold text-gray-500 uppercase">Quantity</th>
-								<th className="px-3 py-2 text-right text-xm font-bold text-gray-500 uppercase">Price</th>
-								<th className="px-3 py-2 text-right text-xm font-bold text-gray-500 uppercase">Total</th>
+								<th className="px-3 py-2 text-left text-sm font-bold text-gray-500 uppercase">Product</th>
+								<th className="px-3 py-2 text-left text-sm font-bold text-gray-500 uppercase">Details</th>
+								<th className="px-3 py-2 text-center text-sm font-bold text-gray-500 uppercase">Quantity</th>
+								<th className="px-3 py-2 text-right text-sm font-bold text-gray-500 uppercase">Price</th>
+								<th className="px-3 py-2 text-right text-sm font-bold text-gray-500 uppercase">Total</th>
 							</tr>
 						</thead>
 						<tbody className="bg-white divide-y divide-gray-200">
 							{order.items.map((item, idx) => (
 								<tr key={idx} className="hover:bg-gray-50">
-									<td className="px-3 py-2 whitespace-nowrap text-sm">{item.name}</td>
-									<td className="px-3 py-2 whitespace-nowrap text-sm">
+									<td className="px-3 py-2 whitespace-nowrap text-xm">{item.name}</td>
+									<td className="px-3 py-2 whitespace-nowrap text-xm">
 										{item.size && (
 											<>
-												<b>Size:</b> {item.size.split('_')[0]}{' '}
+												<i>Size:</i> {item.size.split('_')[0]}{' '}
 												{item.size.includes('_') && (
-													<><b>Color:</b> {item.size.split('_')[1]}</>
+													<><i>Color:</i> {item.size.split('_')[1]}</>
 												)}
 											</>
 										)}
 									</td>
-									<td className="px-3 py-2 whitespace-nowrap text-sm text-center">{item.quantity}</td>
-									<td className="px-3 py-2 whitespace-nowrap text-sm text-right">Rs. {item.price.toFixed(2)}</td>
-									<td className="px-3 py-2 whitespace-nowrap text-sm text-right">Rs. {(item.price * item.quantity).toFixed(2)}</td>
+									<td className="px-3 py-2 whitespace-nowrap text-xm text-center">{item.quantity}</td>
+									<td className="px-3 py-2 whitespace-nowrap text-xm text-right">Rs. {item.price.toFixed(2)}</td>
+									<td className="px-3 py-2 whitespace-nowrap text-xm text-right">Rs. {(item.price * item.quantity).toFixed(2)}</td>
 								</tr>
 							))}
 							<tr className="bg-gray-50">
-								<td colSpan="4" className="px-3 py-2 whitespace-nowrap text-sm text-right font-medium">Delivery Charge:</td>
-								<td className="px-3 py-2 whitespace-nowrap text-sm text-right">Rs. 30.00</td>
+								<td colSpan="4" className="px-3 py-2 whitespace-nowrap text-xm text-right font-medium">Delivery Charge:</td>
+								<td className="px-3 py-2 whitespace-nowrap text-xm text-right">Rs. 30.00</td>
 							</tr>
 							<tr className="bg-gray-50 font-bold">
 								<td colSpan="4" className="px-3 py-2 whitespace-nowrap text-right">Total:</td>
