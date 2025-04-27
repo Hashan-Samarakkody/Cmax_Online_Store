@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState, useMemo } from 'react';
 import { ShopContext } from '../context/ShopContext';
 import Title from '../components/Title';
 import axios from 'axios';
@@ -38,6 +38,30 @@ const Returns = () => {
   const [itemsToReturn, setItemsToReturn] = useState([]);
   const [mediaFiles, setMediaFiles] = useState([]);
   const [isUploading, setIsUploading] = useState(false);
+  const [mediaObjectUrls, setMediaObjectUrls] = useState({});
+  const [showReturnHistory, setShowReturnHistory] = useState(false);
+
+  // Use useMemo to create and manage object URLs
+  useMemo(() => {
+    // Create object URLs for new files
+    const newUrls = {};
+    mediaFiles.forEach((file, index) => {
+      if (!mediaObjectUrls[index]) {
+        newUrls[index] = URL.createObjectURL(file);
+      }
+    });
+
+    if (Object.keys(newUrls).length > 0) {
+      setMediaObjectUrls(prev => ({ ...prev, ...newUrls }));
+    }
+
+    // Cleanup function to revoke URLs when component unmounts
+    return () => {
+      Object.values(mediaObjectUrls).forEach(url => {
+        URL.revokeObjectURL(url);
+      });
+    };
+  }, [mediaFiles]);
 
   useEffect(() => {
     if (token) {
@@ -239,6 +263,16 @@ const Returns = () => {
     const newFiles = [...mediaFiles];
     newFiles.splice(index, 1);
     setMediaFiles(newFiles);
+
+    // Revoke and remove the URL
+    if (mediaObjectUrls[index]) {
+      URL.revokeObjectURL(mediaObjectUrls[index]);
+      setMediaObjectUrls(prev => {
+        const newUrls = { ...prev };
+        delete newUrls[index];
+        return newUrls;
+      });
+    }
   };
 
   const submitReturn = async () => {
@@ -247,6 +281,15 @@ const Returns = () => {
       const invalidItem = itemsToReturn.find(item => !item.reason);
       if (invalidItem) {
         toast.error(`Please provide a reason for returning ${invalidItem.name}`);
+        return;
+      }
+      
+      if (invalidItem) {
+        if (!invalidItem.reason) {
+          toast.error(`Please provide a reason for returning ${invalidItem.name}`);
+        } else if (invalidItem.reason === 'Other' && !invalidItem.customReason) {
+          toast.error(`Please specify the return reason for ${invalidItem.name}`);
+        }
         return;
       }
 
@@ -282,12 +325,14 @@ const Returns = () => {
 
       if (response.data.success) {
         toast.success('Return request submitted successfully');
-        // Reset form and refresh data
         setSelectedOrder(null);
         setItemsToReturn([]);
         setMediaFiles([]);
-        await fetchReturns();  // Fetch returns first
-        await fetchOrders();   // Then refresh orders with updated eligibility
+        await fetchReturns();  
+        await fetchOrders();  
+
+        // Show return history after successful submission
+        setShowReturnHistory(true);
       }
     } catch (error) {
       console.error('Error submitting return:', error);
@@ -334,15 +379,17 @@ const Returns = () => {
             <div key={index} className="relative border rounded-lg overflow-hidden">
               {file.type.startsWith('image/') ? (
                 <img
-                  src={URL.createObjectURL(file)}
+                  src={mediaObjectUrls[index] || ''}
                   alt={`Preview ${index}`}
                   className="w-full h-32 object-cover"
                 />
               ) : (
                 <video
-                  src={URL.createObjectURL(file)}
+                  src={mediaObjectUrls[index] || ''}
                   className="w-full h-32 object-cover"
                   controls
+                  playsInline 
+                  preload="metadata" 
                 />
               )}
               <button
@@ -381,30 +428,67 @@ const Returns = () => {
   };
 
   const renderReturnDetails = (returnItem) => {
+    // Find the matching order for this return item
+    const matchingOrder = orders.find(order => order.orderId === returnItem.originalOrderId);
+
     return (
-      <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-        <h3 className="font-medium mb-2">Return #{returnItem.returnId}</h3>
+      <div className="mt-4 p-4 bg-gray-100 rounded-lg">
+        <div className="flex flex-col md:flex-row justify-between">
+          <div className="flex-1">
+            <p className="text-sm mb-2">
+              <span className="font-medium">Status: </span>
+              <span className={`px-2 py-1 rounded text-xs font-semibold ${getReturnStatusClass(returnItem.status)}`}>
+                {returnItem.status}
+              </span>
+            </p>
 
-        <p className="text-sm mb-2">
-          <span className="font-medium">Status: </span>
-          <span className={`px-2 py-1 rounded text-xs font-semibold ${getReturnStatusClass(returnItem.status)}`}>
-            {returnItem.status}
-          </span>
-        </p>
+            <p className="text-sm mb-1">
+              <span className="font-medium">Requested Date: </span>
+              {format(new Date(returnItem.requestedDate), 'dd MMM yyyy')}
+            </p>
 
-        <p className="text-sm mb-1">
-          <span className="font-medium">Requested Date: </span>
-          {format(new Date(returnItem.requestedDate), 'dd MMM yyyy')}
-        </p>
+            <p>
+              <span className="font-medium">Items: </span>
+              {returnItem.items.length >= 1 ? returnItem.items.length : 'No items'}
+            </p>
 
-        <p className="text-sm mb-3">
-          <span className="font-medium">Refund Amount: </span>
-          Rs. {returnItem.refundAmount}
-        </p>
+            {returnItem.items.map((item, index) => (
+              <span key={index} className="block text-sm">
+                <p className='font-medium'>Product Name: <span className='font-normal'>{item.name}</span></p>
+                <p className="font-medium">Size: <span className="font-normal">{item.size.split('_')[0]}</span></p>
+                <p className="font-medium">Color: <span className="font-normal">{item.size.split('_')[1].charAt(0).toUpperCase() + item.size.split('_')[1].slice(1)}</span></p>
+              </span>
+            ))}
+
+            <p className="text-sm mb-3">
+              <span className="font-medium">Refund Amount: </span>
+              Rs. {returnItem.refundAmount}
+            </p>
+          </div>
+
+          <div className="ml-4 flex-shrink-0">
+            <div className="flex space-x-2">
+              {/* Increased image size and spacing */}
+              {matchingOrder && matchingOrder.items.slice(0, 3).map((item, idx) => (
+                <img
+                  key={idx}
+                  src={item.images && item.images[0]}
+                  alt={item.name}
+                  className="w-40 h-40 object-cover rounded-md"
+                />
+              ))}
+              {matchingOrder && matchingOrder.items.length > 3 && (
+                <div className="w-16 h-16 bg-gray-200 rounded-md flex items-center justify-center text-sm font-medium shadow-sm">
+                  +{matchingOrder.items.length - 3}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
 
         {returnItem.media && returnItem.media.length > 0 && (
           <div className="mt-4">
-            <h4 className="font-medium mb-2">Media Attachments</h4>
+            <h4 className="font-medium text-sm mb-2">Media Attachments</h4>
             <div className="grid grid-cols-3 gap-2">
               {returnItem.media.map((media, index) => (
                 <div key={index} className="border rounded overflow-hidden">
@@ -432,6 +516,7 @@ const Returns = () => {
     );
   };
 
+
   return (
     <div className="pt-16 pb-10">
       <div className="text-2xl mb-8">
@@ -444,29 +529,26 @@ const Returns = () => {
           <h2 className="text-xl font-semibold mb-4">Return History</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {returns.map(returnItem => (
-              <div key={returnItem._id} className="border rounded-lg p-4 hover:shadow-md">
-                <div className="flex justify-between">
+              <div key={returnItem._id} className="border rounded-lg p-4 hover:shadow-md transition duration-200">
+                <div className="flex justify-between items-center mb-3">
                   <div>
-                    <h3 className="font-semibold">{returnItem.returnId}</h3>
+                    <h3 className="font-semibold text-lg">Return ID: {returnItem.returnId}</h3>
                     <p className="text-sm text-gray-500">
                       {format(new Date(returnItem.requestedDate), 'dd MMM yyyy, h:mm a')}
                     </p>
                   </div>
-                  <div>
-                    <span className={`px-2 py-1 rounded text-xs font-semibold ${getReturnStatusClass(returnItem.status)}`}>
-                      {returnItem.status}
+                  <div className="flex flex-col items-end">
+                    <span className="text-xs bg-gray-200 px-2 py-1 rounded">
+                      Order ID: {returnItem.originalOrderId}
                     </span>
                   </div>
                 </div>
 
-                <div className="flex items-center mt-2">
-                  <div>
-                    <p className="text-sm">{returnItem.items.length} items</p>
-                    <p className="text-sm font-medium">Rs. {returnItem.refundAmount}</p>
-                  </div>
+                <div className="flex items-center mt-2 justify-between">
 
                   {returnItem.media && returnItem.media.length > 0 && (
-                    <div className="ml-auto flex">
+                    <div className="flex items-center">
+                      <span className="text-xs mr-1">Media:</span>
                       {returnItem.media.some(m => m.type === 'image') && (
                         <div className="mr-2 text-green-600">
                           <FaImage />
@@ -566,61 +648,106 @@ const Returns = () => {
               </button>
             </div>
 
-            {/* Step 2: Select Items */}
-            <p className="font-medium mb-2">Select items to return:</p>
-            <div className="border rounded-lg overflow-hidden mb-6">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Details</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {selectedOrder.items.length === 0 ? (
-                    <tr>
-                      <td colSpan="5" className="px-6 py-4 text-center text-gray-500">
-                        No items found in this order
-                      </td>
-                    </tr>
-                  ) : (
-                    selectedOrder.items.map((item, index) => (
-                      <tr key={index} className={`hover:bg-gray-50 ${isItemSelected(item) ? 'bg-blue-50' : ''}`}>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            {item.images && item.images[0] && (
-                              <img src={item.images[0]} alt={item.name} className="w-12 h-12 object-cover mr-4" />
-                            )}
-                            <span>{item.name}</span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {item.size && item.size !== 'undefined' && <span>Size: {item.size} </span>}
-                          {item.color && item.color !== 'undefined' && <span>Color: {item.color}</span>}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">Rs. {item.price}</td>
-                        <td className="px-6 py-4 whitespace-nowrap">{item.quantity}</td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <button
-                            onClick={() => handleItemSelect(item)}
-                            className={`px-3 py-1 rounded text-sm font-medium ${isItemSelected(item)
-                              ? 'bg-red-100 text-red-800 hover:bg-red-200'
-                              : 'bg-blue-100 text-blue-800 hover:bg-blue-200'
-                              }`}
-                          >
-                            {isItemSelected(item) ? 'Deselect' : 'Select'}
-                          </button>
-                        </td>
+              {/* Step 2: Select Items */}
+              <p className="font-medium mb-2">Select items to return:</p>
+              <div className="border rounded-lg overflow-hidden mb-6">
+                {/* Large screens - Table layout */}
+                <div className="hidden md:block">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xm font-semibold text-gray-500 uppercase tracking-wider">Image</th>
+                        <th className="px-6 py-3 text-left text-xm font-semibold text-gray-500 uppercase tracking-wider">Name</th>
+                        <th className="px-6 py-3 text-left text-xm font-semibold text-gray-500 uppercase tracking-wider">Size</th>
+                        <th className="px-6 py-3 text-left text-xm font-semibold text-gray-500 uppercase tracking-wider">Color</th>
+                        <th className="px-6 py-3 text-left text-xm font-semibold text-gray-500 uppercase tracking-wider">Price</th>
+                        <th className="px-6 py-3 text-left text-xm font-semibold text-gray-500 uppercase tracking-wider">Quantity</th>
+                        <th className="px-6 py-3 text-left text-xm font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {selectedOrder.items.length === 0 ? (
+                        <tr>
+                          <td colSpan="5" className="px-6 py-4 text-center text-gray-500">
+                            No items found in this order
+                          </td>
+                        </tr>
+                      ) : (
+                        selectedOrder.items.map((item, index) => (
+                          <tr key={index} className={`hover:bg-gray-50 ${isItemSelected(item) ? 'bg-blue-50' : ''}`}>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex items-center">
+                                {item.images && item.images[0] && (
+                                  <img src={item.images[0]} alt={item.name} className="w-15 h-15 object-cover mr-4" />
+                                )}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">{item.name}</td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              {item.size && item.size !== 'undefined' && <span>{item.size.split('_')[0]}</span>}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              {item.size && item.size !== 'undefined' && <span>{item.size.split('_')[1].charAt(0).toUpperCase()+item.size.split('_')[1].slice(1)}</span>}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">Rs. {item.price}</td>
+                            <td className="px-6 py-4 whitespace-nowrap">{item.quantity}</td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <button
+                                onClick={() => handleItemSelect(item)}
+                                className={`px-4 py-2 rounded text-sm font-medium ${isItemSelected(item)
+                                  ? 'bg-red-100 text-red-800 hover:bg-red-200'
+                                  : 'bg-blue-100 text-blue-800 hover:bg-blue-200'
+                                  }`}
+                              >
+                                {isItemSelected(item) ? 'Deselect' : 'Select'}
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
 
+                {/* Mobile view - Card layout */}
+                <div className="md:hidden">
+                  {selectedOrder.items.length === 0 ? (
+                    <p className="p-4 text-center text-gray-500">No items found in this order</p>
+                  ) : (
+                    <div className="divide-y divide-gray-200">
+                      {selectedOrder.items.map((item, index) => (
+                        <div key={index} className={`p-4 ${isItemSelected(item) ? 'bg-blue-50' : ''}`}>
+                          <div className="flex items-start space-x-3">
+                            {item.images && item.images[0] && (
+                              <img src={item.images[0]} alt={item.name} className="w-16 h-16 object-cover rounded" />
+                            )}
+                            <div className="flex-1">
+                              <h3 className="font-medium mb-1">Product Name: {item.name}</h3>
+                              <div className="text-sm text-gray-400 space-y-1">
+                                {item.size && item.size !== 'undefined' && <p className='font-semibold'>Size: {item.size && item.size !== 'undefined' && <span>{item.size.split('_')[0]}</span>}</p>}
+                                {item.size && item.size !== 'undefined' && <p className='font-semibold'>Color: {item.size.split('_')[1].charAt(0).toUpperCase() + item.size.split('_')[1].slice(1)}</p>}
+                                <p className='font-semibold'>Price: Rs. {item.price}</p>
+                                <p className='font-semibold'>Quantity: {item.quantity}</p>
+                              </div>
+                            </div>
+                            <div>
+                              <button
+                                onClick={() => handleItemSelect(item)}
+                                className={`px-3 py-1 rounded text-sm font-medium ${isItemSelected(item)
+                                  ? 'bg-red-100 text-red-800 hover:bg-red-200'
+                                  : 'bg-blue-100 text-blue-800 hover:bg-blue-200'
+                                  }`}
+                              >
+                                {isItemSelected(item) ? 'Deselect' : 'Select'}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
             {/* Step 3: Provide Return Details */}
             {itemsToReturn.length > 0 && (
               <div>
@@ -649,6 +776,24 @@ const Returns = () => {
                           <option value="Other">Other</option>
                         </select>
                       </div>
+
+                      {/* Add text field for custom reason when "Other" is selected */}
+                      {item.reason === 'Other' && (
+                        <div className="mt-2">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Please specify:
+                          </label>
+                          <input
+                            type="text"
+                            value={item.customReason || ''}
+                            onChange={(e) => updateItemReturn(item.productId, item.size, item.color, 'customReason', e.target.value)}
+                            className="w-full p-2 border rounded focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="Please describe your reason for return"
+                            required
+                          />
+                        </div>
+                      )}
+
                       <div className="mt-2">
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Product condition:

@@ -1,6 +1,7 @@
 import returnModel from '../models/returnModel.js';
 import orderModel from '../models/orderModel.js';
 import userModel from '../models/userModel.js';
+import adminModel from '../models/adminModel.js';
 import { broadcast } from '../server.js';
 import nodemailer from 'nodemailer';
 import generateOrderId from '../utils/generateOrderId.js';
@@ -24,7 +25,7 @@ const createReturnRequest = async (req, res) => {
             return res.status(403).json({ success: false, message: 'Unauthorized to return this order' });
         }
 
-        // Verify order is eligible for return (e.g. within 7 days)
+        // Verify order is eligible for return (Within 7 days)
         const orderDate = new Date(originalOrder.date);
         const currentDate = new Date();
         const daysDifference = Math.floor((currentDate - orderDate) / (1000 * 60 * 60 * 24));
@@ -124,8 +125,11 @@ const createReturnRequest = async (req, res) => {
         const newReturn = new returnModel(returnData);
         await newReturn.save();
 
-        // Send email notification
+        // Send email notification to user
         await sendReturnRequestEmail(userId, newReturn, originalOrder);
+
+        // Send email notification to admins
+        await sendAdminNotificationEmail(newReturn, originalOrder);
 
         // Broadcast to admin
         broadcast({
@@ -142,6 +146,137 @@ const createReturnRequest = async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// Helper function to send email notification to admins
+const sendAdminNotificationEmail = async (returnData, originalOrder) => {
+    try {
+        // Get admins with permissions to manage orders
+        const admins = await adminModel.find({
+            'permissions.manageOrders': true,
+            active: true
+        });
+
+        if (!admins || admins.length === 0) return;
+
+        const user = await userModel.findById(returnData.userId);
+        if (!user) return;
+
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS
+            }
+        });
+
+        // Format return items
+        let itemsHtml = '';
+        returnData.items.forEach(item => {
+            const itemDetails = [];
+            if (item.size) {
+                const [size, color] = item.size.split('_');
+                itemDetails.push(`Size: ${size}`);
+                if (color) itemDetails.push(`Color: ${color}`);
+            }
+
+            let reasonDisplay = item.reason;
+            if (item.reason === 'Other' && item.customReason) {
+                reasonDisplay = `Other: ${item.customReason}`;
+            }
+
+            itemsHtml += `
+            <tr>
+                <td style="padding: 10px; border-bottom: 1px solid #eee;">
+                    ${item.name}
+                </td>
+                <td style="padding: 10px; border-bottom: 1px solid #eee;">
+                    ${itemDetails.join(', ') || 'N/A'}
+                </td>
+                <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">
+                    ${item.quantity}
+                </td>
+                <td style="padding: 10px; border-bottom: 1px solid #eee;">
+                    ${reasonDisplay}
+                </td>
+            </tr>
+        `;
+        });
+
+        // Add media files info to email if present
+        let mediaHtml = '';
+        if (returnData.media && returnData.media.length > 0) {
+            const imageCount = returnData.media.filter(m => m.type === 'image').length;
+            const videoCount = returnData.media.filter(m => m.type === 'video').length;
+
+            if (imageCount > 0 || videoCount > 0) {
+                mediaHtml = `
+                <p>
+                    <strong>Media Attachments:</strong> 
+                    ${imageCount > 0 ? `${imageCount} image${imageCount !== 1 ? 's' : ''}` : ''}
+                    ${imageCount > 0 && videoCount > 0 ? ' and ' : ''}
+                    ${videoCount > 0 ? `${videoCount} video${videoCount !== 1 ? 's' : ''}` : ''}
+                </p>
+                `;
+            }
+        }
+
+        // Send email to each admin
+        for (const admin of admins) {
+            const mailOptions = {
+                from: process.env.EMAIL_USER,
+                to: admin.email,
+                subject: `New Return Request #${returnData.returnId} - Action Required`,
+                html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px; background: linear-gradient(to right, #f5f7fa, #eef2f7);">
+                    <div style="text-align: center; margin-bottom: 20px;">
+                        <h1 style="color: #3366cc;">Cmax Online Store</h1>
+                        <h2 style="margin-top: 10px;">New Return Request</h2>
+                    </div>
+                    
+                    <div style="background-color: #ffffff; padding: 20px; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                        <h3 style="color: #333333; margin-top: 0;">Return Request Details</h3>
+                        <p><b>Return ID:</b> ${returnData.returnId}</p>
+                        <p><b>Original Order ID:</b> ${originalOrder.orderId}</p>
+                        <p><b>Date Requested:</b> ${new Date(returnData.requestedDate).toLocaleDateString()}</p>
+                        <p><b>Customer:</b> ${user.name} (${user.email})</p>
+                        <p><b>Refund Amount:</b> Rs. ${returnData.refundAmount}</p>
+                        <p><b>Refund Method:</b> ${returnData.refundMethod}</p>
+                        ${mediaHtml}
+                    </div>
+                    
+                    <div style="margin-top: 20px;">
+                        <h3 style="color: #333333; margin-bottom: 10px;">Items to Return</h3>
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <tr style="background-color: #f8f9fa;">
+                                <th style="padding: 10px; text-align: left;">Product</th>
+                                <th style="padding: 10px; text-align: left;">Details</th>
+                                <th style="padding: 10px; text-align: center;">Quantity</th>
+                                <th style="padding: 10px; text-align: left;">Reason</th>
+                            </tr>
+                            ${itemsHtml}
+                        </table>
+                    </div>
+                    
+                    <div style="margin-top: 20px; background-color: #f8f9fa; padding: 15px; border-radius: 5px;">
+                        <h3 style="color: #333333; margin-top: 0;">Action Required</h3>
+                        <p>Please review this return request and take appropriate action in the admin panel.</p>
+
+                    </div>
+                    
+                    <div style="text-align: center; margin-top: 20px; color: #888888; font-size: 14px;">
+                        <p>Cmax Online Store © ${new Date().getFullYear()}</p>
+                        <p>This is an automated email. Please do not reply.</p>
+                    </div>
+                </div>
+                `
+            };
+
+            await transporter.sendMail(mailOptions);
+        }
+    } catch (error) {
+        console.error('Error sending admin notification email:', error);
     }
 };
 
@@ -169,22 +304,27 @@ const sendReturnRequestEmail = async (userId, returnData, originalOrder) => {
                 if (color) itemDetails.push(`Color: ${color}`);
             }
 
+            let reasonDisplay = item.reason;
+            if (item.reason === 'Other' && item.customReason) {
+                reasonDisplay = `Other: ${item.customReason}`;
+            }
+
             itemsHtml += `
-                <tr>
-                    <td style="padding: 10px; border-bottom: 1px solid #eee;">
-                        ${item.name}
-                    </td>
-                    <td style="padding: 10px; border-bottom: 1px solid #eee;">
-                        ${itemDetails.join(', ') || 'N/A'}
-                    </td>
-                    <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">
-                        ${item.quantity}
-                    </td>
-                    <td style="padding: 10px; border-bottom: 1px solid #eee;">
-                        ${item.reason}
-                    </td>
-                </tr>
-            `;
+        <tr>
+            <td style="padding: 10px; border-bottom: 1px solid #eee;">
+                ${item.name}
+            </td>
+            <td style="padding: 10px; border-bottom: 1px solid #eee;">
+                ${itemDetails.join(', ') || 'N/A'}
+            </td>
+            <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">
+                ${item.quantity}
+            </td>
+            <td style="padding: 10px; border-bottom: 1px solid #eee;">
+                ${reasonDisplay}
+            </td>
+        </tr>
+    `;
         });
 
         // Add media files info to email if present

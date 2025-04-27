@@ -104,7 +104,18 @@ const ReturnRequests = ({ token }) => {
 			});
 
 			if (response.data.success) {
-				toast.success(`Return status updated to ${newStatus}`);
+				// Improved toast notification with more details
+				toast.success(
+					<div>
+						<strong>Status Updated Successfully</strong>
+						<div>Return #{returnId} is now <span className="font-semibold">{newStatus}</span></div>
+						{trackingId && <div>Tracking ID: {trackingId}</div>}
+					</div>,
+					{
+						autoClose: 5000, // Give admin more time to read the notification
+						position: "top-right"
+					}
+				);
 				fetchReturns();
 			}
 		} catch (error) {
@@ -112,7 +123,6 @@ const ReturnRequests = ({ token }) => {
 			toast.error(error.response?.data?.message || 'Failed to update status');
 		}
 	};
-
 	const toggleExpand = (returnId, orderId) => {
 		if (expandedReturn === returnId) {
 			setExpandedReturn(null);
@@ -188,7 +198,7 @@ const ReturnRequests = ({ token }) => {
 		}
 
 		return (
-			<div className="bg-gray-50 p-4 rounded-lg border border-gray-300 mt-4">
+			<div className="bg-green-50 p-4 rounded-lg border border-gray-300 mt-4">
 				<h3 className="font-bold text-lg mb-3 text-blue-700 border-b pb-2">
 					Original Order Details
 				</h3>
@@ -278,6 +288,9 @@ const ReturnRequests = ({ token }) => {
 								<th className="px-4 py-3 text-left text-sm font-bold text-black uppercase tracking-wider">Date</th>
 								<th className="px-4 py-3 text-left text-sm font-bold text-black uppercase tracking-wider hidden md:table-cell">Customer</th>
 								<th className="px-4 py-3 text-left text-sm font-bold text-black uppercase tracking-wider hidden sm:table-cell">Items</th>
+
+								<th className="px-4 py-3 text-left text-sm font-bold text-black uppercase tracking-wider hidden sm:table-cell">Return Reason</th>
+								<th className="px-4 py-3 text-left text-sm font-bold text-black uppercase tracking-wider hidden sm:table-cell">Condition</th>
 								<th className="px-4 py-3 text-left text-sm font-bold text-black uppercase tracking-wider hidden md:table-cell">Amount</th>
 								<th className="px-4 py-3 text-left text-sm font-bold text-black uppercase tracking-wider hidden sm:table-cell">Media</th>
 								<th className="px-4 py-3 text-left text-sm font-bold text-black uppercase tracking-wider">Status</th>
@@ -294,13 +307,38 @@ const ReturnRequests = ({ token }) => {
 							) : (
 								returns.map(returnItem => (
 									<React.Fragment key={returnItem._id}>
-										<tr className="bg-green-100 hover:bg-white hover:cursor-pointer hover:text-black">
+										<tr className="bg-pink-50 hover:bg-white hover:cursor-pointer hover:text-black">
 											<td className="px-4 py-3 whitespace-nowrap text-sm">{returnItem.returnId}</td>
 											<td className="px-4 py-3 whitespace-nowrap text-sm">
 												{format(new Date(returnItem.requestedDate), 'dd MMM yyyy')}
 											</td>
 											<td className="px-4 py-3 whitespace-nowrap text-sm hidden md:table-cell">{returnItem.userName}</td>
 											<td className="px-4 py-3 whitespace-nowrap text-sm hidden sm:table-cell">{returnItem.items.length}</td>
+											<td className="px-3 py-2 text-xm">
+												<span className="font-medium">
+													{Array.isArray(returnItem.items) && returnItem.items.length > 0
+														? returnItem.items[0].reason
+														: "N/A"}
+												</span>
+												{Array.isArray(returnItem.items) &&
+													returnItem.items.length > 0 &&
+													returnItem.items[0].customReason && (
+														<div className="flex items-center mt-1 text-xs">
+															<span className="text-blue-600 font-medium cursor-pointer flex items-center"
+																title="Click to view in details">
+																Has custom description
+																<svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+																	<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+																</svg>
+															</span>
+														</div>
+													)}
+											</td>
+											<td className="px-4 py-3 whitespace-nowrap text-sm hidden sm:table-cell">
+												{Array.isArray(returnItem.items) && returnItem.items.length > 0
+													? returnItem.items[0].condition
+													: "N/A"}
+											</td>
 											<td className="px-4 py-3 whitespace-nowrap text-sm hidden md:table-cell">Rs. {returnItem.refundAmount}</td>
 											<td className="px-4 py-3 whitespace-nowrap text-sm hidden sm:table-cell">
 												{returnItem.media && returnItem.media.length > 0 ? (
@@ -324,7 +362,7 @@ const ReturnRequests = ({ token }) => {
 											<td className="px-4 py-3 whitespace-nowrap text-sm">
 												<button
 													onClick={() => toggleExpand(returnItem._id, returnItem.originalOrderId)}
-													className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-xs sm:text-sm"
+													className="'text-black border border-gray-800 hover:bg-black hover:text-white px-3 py-1 rounded text-xs sm:text-sm "
 												>
 													{expandedReturn === returnItem._id ? 'Hide' : 'View'}
 												</button>
@@ -347,6 +385,53 @@ const ReturnRequests = ({ token }) => {
 										{expandedReturn === returnItem._id && (
 											<tr>
 												<td colSpan="8" className="px-4 py-4">
+
+													<div className="mb-6">
+														<h3 className="font-semibold text-blue-700 mb-2 border-b pb-2">Return Items</h3>
+														<div className="grid grid-cols-1 gap-4">
+															{Array.isArray(returnItem.items) && returnItem.items.map((item, idx) => {
+																// Find the corresponding item in the original order to get the image
+																const originalOrder = orderDetails[returnItem.originalOrderId];
+																const originalItem = originalOrder?.items.find(oi =>
+																	oi.productId === item.productId &&
+																	oi.size === item.size
+																);
+
+																return (
+																	<div key={idx} className="bg-white p-4 rounded-lg border border-gray-200 flex">
+																		<div className="w-30 h-30 mr-4 flex-shrink-0">
+																			{originalItem && originalItem.images && originalItem.images.length > 0 ? (
+																				<img
+																					src={originalItem.images[0]}
+																					alt={item.name}
+																					className="w-full h-full object-cover rounded-md"
+																				/>
+																			) : (
+																				<div className="w-full h-full bg-gray-200 rounded-md flex items-center justify-center">
+																					<span className="text-gray-400 text-xs">No image</span>
+																				</div>
+																			)}
+																		</div>
+																		<div className="flex-grow">
+																			{/* Add this section for custom reason if present */}
+																			{Array.isArray(returnItem.items) &&
+																				returnItem.items.length > 0 &&
+																				returnItem.items[0].customReason && (
+																					<div className="mb-4 bg-white p-4 rounded-lg border border-gray-200">
+																						<h3 className="font-semibold text-red-500 mb-2">Custom Return Reason</h3>
+																						<div className="bg-yellow-50 p-3 border-l-4 border-red-400 text-sm text-justify">
+																							{returnItem.items[0].customReason}
+																						</div>
+																					</div>
+																				)}
+
+																		</div>
+																	</div>
+																);
+															})}
+														</div>
+													</div>
+
 													<div className="bg-gray-50 p-4 rounded">
 														{/* Media Section */}
 														{returnItem.media && returnItem.media.length > 0 && (

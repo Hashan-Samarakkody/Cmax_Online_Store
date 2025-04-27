@@ -12,6 +12,7 @@ const returnSchema = new mongoose.Schema({
         size: { type: String },
         color: { type: String },
         reason: { type: String, required: true },
+        customReason: { type: String },
         condition: { type: String, required: true }
     }],
     media: [{
