@@ -12,12 +12,15 @@ const returnSchema = new mongoose.Schema({
         size: { type: String },
         color: { type: String },
         reason: { type: String, required: true },
+        customReason: { type: String },
         condition: { type: String, required: true }
     }],
     media: [{
         url: { type: String, required: true },
         type: { type: String, required: true, enum: ['image', 'video'] },
-        publicId: { type: String, required: true }
+        publicId: { type: String, required: true },
+        itemIndex: { type: Number }, 
+        description: { type: String } 
     }],
     status: {
         type: String,
