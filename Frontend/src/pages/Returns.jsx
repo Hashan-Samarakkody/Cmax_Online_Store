@@ -40,6 +40,7 @@ const Returns = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [mediaObjectUrls, setMediaObjectUrls] = useState({});
   const [showReturnHistory, setShowReturnHistory] = useState(false);
+  const [mediaItemAssociations, setMediaItemAssociations] = useState({});
 
   // Use useMemo to create and manage object URLs
   useMemo(() => {
@@ -283,13 +284,12 @@ const Returns = () => {
         toast.error(`Please provide a reason for returning ${invalidItem.name}`);
         return;
       }
-      
-      if (invalidItem) {
-        if (!invalidItem.reason) {
-          toast.error(`Please provide a reason for returning ${invalidItem.name}`);
-        } else if (invalidItem.reason === 'Other' && !invalidItem.customReason) {
-          toast.error(`Please specify the return reason for ${invalidItem.name}`);
-        }
+
+      const itemWithOtherReasonNoCustomReason = itemsToReturn.find(
+        item => item.reason === 'Other' && !item.customReason
+      );
+      if (itemWithOtherReasonNoCustomReason) {
+        toast.error(`Please specify the return reason for ${itemWithOtherReasonNoCustomReason.name}`);
         return;
       }
 
@@ -307,9 +307,13 @@ const Returns = () => {
       formData.append('orderId', selectedOrder.orderId);
       formData.append('items', JSON.stringify(itemsToReturn));
 
-      // Add media files
-      mediaFiles.forEach(file => {
+      // Add media files with their item associations
+      mediaFiles.forEach((file, index) => {
         formData.append('media', file);
+        // Add metadata about which item this media belongs to
+        const itemIndex = mediaItemAssociations[index] !== undefined ?
+          parseInt(mediaItemAssociations[index]) : null;
+        formData.append('mediaItemIndex', itemIndex !== null ? itemIndex : -1); // -1 means "all items"
       });
 
       const response = await axios.post(
@@ -328,8 +332,9 @@ const Returns = () => {
         setSelectedOrder(null);
         setItemsToReturn([]);
         setMediaFiles([]);
-        await fetchReturns();  
-        await fetchOrders();  
+        setMediaItemAssociations({});
+        await fetchReturns();
+        await fetchOrders();
 
         // Show return history after successful submission
         setShowReturnHistory(true);
@@ -374,32 +379,65 @@ const Returns = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4">
           {mediaFiles.map((file, index) => (
-            <div key={index} className="relative border rounded-lg overflow-hidden">
-              {file.type.startsWith('image/') ? (
-                <img
-                  src={mediaObjectUrls[index] || ''}
-                  alt={`Preview ${index}`}
-                  className="w-full h-32 object-cover"
-                />
-              ) : (
-                <video
-                  src={mediaObjectUrls[index] || ''}
-                  className="w-full h-32 object-cover"
-                  controls
-                  playsInline 
-                  preload="metadata" 
-                />
-              )}
-              <button
-                onClick={() => removeFile(index)}
-                className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full"
-              >
-                <FaTrash size={12} />
-              </button>
-              <div className="p-1 bg-gray-100 text-xs truncate">
-                {file.name}
+            <div key={index} className="border rounded-lg overflow-hidden p-2">
+              <div className="flex items-start">
+                {/* Media preview */}
+                <div className="w-20 h-20 mr-4">
+                  {file.type.startsWith('image/') ? (
+                    <img
+                      src={mediaObjectUrls[index] || ''}
+                      alt={`Preview ${index}`}
+                      className="w-full h-full object-cover rounded"
+                    />
+                  ) : (
+                    <video
+                      src={mediaObjectUrls[index] || ''}
+                      className="w-full h-full object-cover rounded"
+                      controls
+                      playsInline
+                      preload="metadata"
+                    />
+                  )}
+                </div>
+
+                {/* Media details and item association */}
+                <div className="flex-grow">
+                  <div className="flex justify-between">
+                    <div className="text-xs truncate mb-2 max-w-xs">{file.name}</div>
+                    <button
+                      onClick={() => removeFile(index)}
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      <FaTrash size={14} />
+                    </button>
+                  </div>
+
+                  {/* Associate media with item */}
+                  <div>
+                    <label className="block text-xs text-gray-700 mb-1">
+                      This media is for:
+                    </label>
+                    <select
+                      value={mediaItemAssociations[index] || ''}
+                      onChange={(e) => {
+                        setMediaItemAssociations(prev => ({
+                          ...prev,
+                          [index]: e.target.value
+                        }));
+                      }}
+                      className="w-full text-sm p-1 border rounded"
+                    >
+                      <option value="">All items (general)</option>
+                      {itemsToReturn.map((item, idx) => (
+                        <option key={idx} value={idx}>
+                          {item.name} - {item.size.split('_')[0]}, {item.size.split('_')[1]}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
               </div>
             </div>
           ))}
@@ -422,11 +460,11 @@ const Returns = () => {
         <div className="mt-2 text-xs text-gray-500">
           <p>• Maximum 4 images (up to 5MB each)</p>
           <p>• Maximum 2 videos (up to 20MB each)</p>
+          <p>• Select which item each media belongs to, or leave as "All items" for general evidence</p>
         </div>
       </div>
     );
   };
-
   const renderReturnDetails = (returnItem) => {
     // Find the matching order for this return item
     const matchingOrder = orders.find(order => order.orderId === returnItem.originalOrderId);
@@ -452,13 +490,37 @@ const Returns = () => {
               {returnItem.items.length >= 1 ? returnItem.items.length : 'No items'}
             </p>
 
-            {returnItem.items.map((item, index) => (
-              <span key={index} className="block text-sm">
-                <p className='font-medium'>Product Name: <span className='font-normal'>{item.name}</span></p>
-                <p className="font-medium">Size: <span className="font-normal">{item.size.split('_')[0]}</span></p>
-                <p className="font-medium">Color: <span className="font-normal">{item.size.split('_')[1].charAt(0).toUpperCase() + item.size.split('_')[1].slice(1)}</span></p>
-              </span>
-            ))}
+            {returnItem.items.length > 0 && (
+              <div className="mt-2">
+                <h4 className="font-medium text-sm mb-2">Items to be returned:</h4>
+                <ul className="list-disc list-inside">
+                  {returnItem.items.map((item, index) => (
+                    <li key={index} className="text-sm mb-1">
+                      <span className="font-medium">Product Name: {item.name}</span> Size: {item.size.split('_')[0]} Color: {item.size.split('_')[1].charAt(0).toUpperCase()+ item.size.split('_')[1].slice(1)} (Quantity: {item.quantity})
+                    <br />
+                      {item.reason && (
+                        <span className="ml-1 text-gray-700">
+                          <span className="font-medium">Reason:</span> {item.reason}
+                        </span>
+                      )}
+                      <br />
+                      {item.customReason && (
+                        <span className="ml-1 text-gray-700 text-justify">
+                          <span className="font-medium">Custom Reason:</span> {item.customReason}
+                          <br />
+                        </span>
+                      )}
+
+                      {item.condition && (
+                        <span className="ml-1 text-gray-700">
+                          <span className="font-medium">Condition:</span> {item.condition}
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             <p className="text-sm mb-3">
               <span className="font-medium">Refund Amount: </span>
@@ -474,11 +536,11 @@ const Returns = () => {
                   key={idx}
                   src={item.images && item.images[0]}
                   alt={item.name}
-                  className="w-40 h-40 object-cover rounded-md"
+                  className="w-30 h-30 object-cover rounded-md"
                 />
               ))}
               {matchingOrder && matchingOrder.items.length > 3 && (
-                <div className="w-16 h-16 bg-gray-200 rounded-md flex items-center justify-center text-sm font-medium shadow-sm">
+                <div className="w-30 h-16 bg-gray-200 rounded-md flex items-center justify-center text-sm font-medium shadow-sm">
                   +{matchingOrder.items.length - 3}
                 </div>
               )}
@@ -489,23 +551,39 @@ const Returns = () => {
         {returnItem.media && returnItem.media.length > 0 && (
           <div className="mt-4">
             <h4 className="font-medium text-sm mb-2">Media Attachments</h4>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
               {returnItem.media.map((media, index) => (
-                <div key={index} className="border rounded overflow-hidden">
+                <div key={index} className="border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200">
                   {media.type === 'image' ? (
-                    <a href={media.url} target="_blank" rel="noopener noreferrer">
+                    <a
+                      href={media.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block relative"
+                    >
                       <img
                         src={media.url}
-                        alt={`Return media ${index}`}
-                        className="w-full h-24 object-cover"
+                        alt={`Return media ${index + 1}`}
+                        className="w-full h-32 object-cover"
                       />
+                      <div className="absolute bottom-0 right-0 bg-black bg-opacity-60 text-white text-xs px-1.5 py-0.5 m-1 rounded">
+                        <FaImage className="inline mr-1" size={10} />
+                        Image
+                      </div>
                     </a>
                   ) : (
-                    <video
-                      src={media.url}
-                      className="w-full h-24 object-cover"
-                      controls
-                    />
+                    <div className="relative">
+                      <video
+                        src={media.url}
+                        className="w-full h-32 object-cover"
+                        controls
+                        preload="metadata"
+                      />
+                      <div className="absolute bottom-0 right-0 bg-black bg-opacity-60 text-white text-xs px-1.5 py-0.5 m-1 rounded">
+                        <FaVideo className="inline mr-1" size={10} />
+                        Video
+                      </div>
+                    </div>
                   )}
                 </div>
               ))}

@@ -83,9 +83,12 @@ const createReturnRequest = async (req, res) => {
 
         // Handle media files upload to Cloudinary
         const mediaUploads = [];
+        const mediaItemIndices = req.body.mediaItemIndex ?
+            (Array.isArray(req.body.mediaItemIndex) ? req.body.mediaItemIndex : [req.body.mediaItemIndex]) : [];
 
         if (req.files && req.files.length > 0) {
-            for (const file of req.files) {
+            for (let i = 0; i < req.files.length; i++) {
+                const file = req.files[i];
                 try {
                     const resourceType = file.mimetype.startsWith('image/') ? 'image' : 'video';
 
@@ -95,10 +98,15 @@ const createReturnRequest = async (req, res) => {
                         resource_type: resourceType
                     });
 
+                    // Get the item index for this media file
+                    const itemIndex = mediaItemIndices[i] ?
+                        (mediaItemIndices[i] === "-1" ? null : parseInt(mediaItemIndices[i])) : null;
+
                     mediaUploads.push({
                         url: result.secure_url,
                         type: resourceType,
-                        publicId: result.public_id
+                        publicId: result.public_id,
+                        itemIndex: itemIndex // Store which item this media is for (null = all items)
                     });
 
                     fs.unlinkSync(file.path);

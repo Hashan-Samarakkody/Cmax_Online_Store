@@ -18,7 +18,9 @@ const returnSchema = new mongoose.Schema({
     media: [{
         url: { type: String, required: true },
         type: { type: String, required: true, enum: ['image', 'video'] },
-        publicId: { type: String, required: true }
+        publicId: { type: String, required: true },
+        itemIndex: { type: Number }, 
+        description: { type: String } 
     }],
     status: {
         type: String,

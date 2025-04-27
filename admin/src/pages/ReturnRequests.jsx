@@ -285,12 +285,9 @@ const ReturnRequests = ({ token }) => {
 						<thead className="bg-gray-50">
 							<tr>
 								<th className="px-4 py-3 text-left text-sm font-bold text-black uppercase tracking-wider">Return ID</th>
-								<th className="px-4 py-3 text-left text-sm font-bold text-black uppercase tracking-wider">Date</th>
+								<th className="px-4 py-3 text-left text-sm font-bold text-black uppercase tracking-wider">Date and Time</th>
 								<th className="px-4 py-3 text-left text-sm font-bold text-black uppercase tracking-wider hidden md:table-cell">Customer</th>
 								<th className="px-4 py-3 text-left text-sm font-bold text-black uppercase tracking-wider hidden sm:table-cell">Items</th>
-
-								<th className="px-4 py-3 text-left text-sm font-bold text-black uppercase tracking-wider hidden sm:table-cell">Return Reason</th>
-								<th className="px-4 py-3 text-left text-sm font-bold text-black uppercase tracking-wider hidden sm:table-cell">Condition</th>
 								<th className="px-4 py-3 text-left text-sm font-bold text-black uppercase tracking-wider hidden md:table-cell">Amount</th>
 								<th className="px-4 py-3 text-left text-sm font-bold text-black uppercase tracking-wider hidden sm:table-cell">Media</th>
 								<th className="px-4 py-3 text-left text-sm font-bold text-black uppercase tracking-wider">Status</th>
@@ -310,35 +307,10 @@ const ReturnRequests = ({ token }) => {
 										<tr className="bg-pink-50 hover:bg-white hover:cursor-pointer hover:text-black">
 											<td className="px-4 py-3 whitespace-nowrap text-sm">{returnItem.returnId}</td>
 											<td className="px-4 py-3 whitespace-nowrap text-sm">
-												{format(new Date(returnItem.requestedDate), 'dd MMM yyyy')}
+												{format(new Date(returnItem.requestedDate), 'dd MMM yyyy hh:mm a')}
 											</td>
 											<td className="px-4 py-3 whitespace-nowrap text-sm hidden md:table-cell">{returnItem.userName}</td>
 											<td className="px-4 py-3 whitespace-nowrap text-sm hidden sm:table-cell">{returnItem.items.length}</td>
-											<td className="px-3 py-2 text-xm">
-												<span className="font-medium">
-													{Array.isArray(returnItem.items) && returnItem.items.length > 0
-														? returnItem.items[0].reason
-														: "N/A"}
-												</span>
-												{Array.isArray(returnItem.items) &&
-													returnItem.items.length > 0 &&
-													returnItem.items[0].customReason && (
-														<div className="flex items-center mt-1 text-xs">
-															<span className="text-blue-600 font-medium cursor-pointer flex items-center"
-																title="Click to view in details">
-																Has custom description
-																<svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-																	<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-																</svg>
-															</span>
-														</div>
-													)}
-											</td>
-											<td className="px-4 py-3 whitespace-nowrap text-sm hidden sm:table-cell">
-												{Array.isArray(returnItem.items) && returnItem.items.length > 0
-													? returnItem.items[0].condition
-													: "N/A"}
-											</td>
 											<td className="px-4 py-3 whitespace-nowrap text-sm hidden md:table-cell">Rs. {returnItem.refundAmount}</td>
 											<td className="px-4 py-3 whitespace-nowrap text-sm hidden sm:table-cell">
 												{returnItem.media && returnItem.media.length > 0 ? (
@@ -398,33 +370,63 @@ const ReturnRequests = ({ token }) => {
 																);
 
 																return (
-																	<div key={idx} className="bg-white p-4 rounded-lg border border-gray-200 flex">
-																		<div className="w-30 h-30 mr-4 flex-shrink-0">
-																			{originalItem && originalItem.images && originalItem.images.length > 0 ? (
-																				<img
-																					src={originalItem.images[0]}
-																					alt={item.name}
-																					className="w-full h-full object-cover rounded-md"
-																				/>
-																			) : (
-																				<div className="w-full h-full bg-gray-200 rounded-md flex items-center justify-center">
-																					<span className="text-gray-400 text-xs">No image</span>
-																				</div>
-																			)}
-																		</div>
-																		<div className="flex-grow">
-																			{/* Add this section for custom reason if present */}
-																			{Array.isArray(returnItem.items) &&
-																				returnItem.items.length > 0 &&
-																				returnItem.items[0].customReason && (
-																					<div className="mb-4 bg-white p-4 rounded-lg border border-gray-200">
-																						<h3 className="font-semibold text-red-500 mb-2">Custom Return Reason</h3>
-																						<div className="bg-yellow-50 p-3 border-l-4 border-red-400 text-sm text-justify">
-																							{returnItem.items[0].customReason}
-																						</div>
+																	<div key={idx} className="bg-white p-4 rounded-lg border border-gray-200">
+																		<div className="flex flex-col md:flex-row">
+																			{/* Product image */}
+																			<div className="w-30 h-30 mr-4 flex-shrink-0 mb-4 md:mb-0">
+																				{originalItem && originalItem.images && originalItem.images.length > 0 ? (
+																					<img
+																						src={originalItem.images[0]}
+																						alt={item.name}
+																						className="w-full h-full object-cover rounded-md"
+																					/>
+																				) : (
+																					<div className="w-full h-full bg-gray-200 rounded-md flex items-center justify-center">
+																						<span className="text-gray-400 text-xs">No image</span>
 																					</div>
 																				)}
+																			</div>
 
+																			{/* Product details */}
+																			<div className="flex-grow">
+																				<h4 className="font-semibold text-lg mb-2">{item.name}</h4>
+
+																				<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+																					<div>
+																						<p className="text-sm">
+																							<span className="font-medium">Size:</span> {item.size.split('_')[0]}
+																						</p>
+																						<p className="text-sm">
+																							<span className="font-medium">Color:</span> {item.size.split('_')[1]}
+																						</p>
+																						<p className="text-sm">
+																							<span className="font-medium">Quantity:</span> {item.quantity}
+																						</p>
+																						<p className="text-sm">
+																							<span className="font-medium">Price:</span> Rs. {item.price}
+																						</p>
+																					</div>
+
+																					<div className="bg-gray-50 p-3 rounded-md">
+																						<p className="text-sm">
+																							<span className="font-medium">Return Reason:</span> {item.reason}
+																						</p>
+																						<p className="text-sm">
+																							<span className="font-medium">Condition:</span> {item.condition}
+																						</p>
+
+																						{/* Display custom reason if present */}
+																						{item.customReason && (
+																							<div className="mt-2">
+																								<p className="text-sm font-medium text-red-600">Custom Reason:</p>
+																								<div className="bg-yellow-50 p-2 border-l-4 border-red-400 text-sm text-justify mt-1 max-h-32 overflow-y-auto">
+																									{item.customReason}
+																								</div>
+																							</div>
+																						)}
+																					</div>
+																				</div>
+																			</div>
 																		</div>
 																	</div>
 																);
@@ -437,30 +439,75 @@ const ReturnRequests = ({ token }) => {
 														{returnItem.media && returnItem.media.length > 0 && (
 															<div className="mb-6">
 																<h3 className="font-semibold mb-2">Media Attachments</h3>
-																<div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-4">
-																	{returnItem.media.map((media, index) => (
-																		<div
-																			key={index}
-																			className="relative border rounded-lg overflow-hidden cursor-pointer"
-																			onClick={() => openMediaPreview(media)}
-																		>
-																			{media.type === 'image' ? (
-																				<img
-																					src={media.url}
-																					alt={`Return media ${index}`}
-																					className="w-full h-20 sm:h-24 object-cover"
-																				/>
-																			) : (
-																				<div className="w-full h-20 sm:h-24 bg-gray-900 flex items-center justify-center relative">
-																					<FaPlayCircle className="text-white text-3xl sm:text-4xl" />
-																					<div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-60 text-white text-xs p-1">
-																						Video
-																					</div>
+
+																{/* Group media by item if they have itemIndex property */}
+																{returnItem.items.some(item =>
+																	returnItem.media.some(m => m.itemIndex === returnItem.items.indexOf(item))
+																) ? (
+																	// Display media grouped by item
+																	returnItem.items.map((item, itemIdx) => {
+																		const itemMedia = returnItem.media.filter(m => m.itemIndex === itemIdx);
+																		if (itemMedia.length === 0) return null;
+
+																		return (
+																			<div key={itemIdx} className="mb-4">
+																				<h4 className="text-sm font-medium mb-2">
+																					Media for {item.name} ({item.size.split('_')[0]}, {item.size.split('_')[1]})
+																				</h4>
+																				<div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-4">
+																					{itemMedia.map((media, index) => (
+																						<div
+																							key={index}
+																							className="relative border rounded-lg overflow-hidden cursor-pointer"
+																							onClick={() => openMediaPreview(media)}
+																						>
+																							{media.type === 'image' ? (
+																								<img
+																									src={media.url}
+																									alt={`Return media ${index}`}
+																									className="w-full h-20 sm:h-24 object-cover"
+																								/>
+																							) : (
+																								<div className="w-full h-20 sm:h-24 bg-gray-900 flex items-center justify-center relative">
+																									<FaPlayCircle className="text-white text-3xl sm:text-4xl" />
+																									<div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-60 text-white text-xs p-1">
+																										Video
+																									</div>
+																								</div>
+																							)}
+																						</div>
+																					))}
 																				</div>
-																			)}
-																		</div>
-																	))}
-																</div>
+																			</div>
+																		);
+																	})
+																) : (
+																	// Display all media together (legacy format)
+																	<div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-4">
+																		{returnItem.media.map((media, index) => (
+																			<div
+																				key={index}
+																				className="relative border rounded-lg overflow-hidden cursor-pointer"
+																				onClick={() => openMediaPreview(media)}
+																			>
+																				{media.type === 'image' ? (
+																					<img
+																						src={media.url}
+																						alt={`Return media ${index}`}
+																						className="w-full h-20 sm:h-24 object-cover"
+																					/>
+																				) : (
+																					<div className="w-full h-20 sm:h-24 bg-gray-900 flex items-center justify-center relative">
+																						<FaPlayCircle className="text-white text-3xl sm:text-4xl" />
+																						<div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-60 text-white text-xs p-1">
+																							Video
+																						</div>
+																					</div>
+																				)}
+																			</div>
+																		))}
+																	</div>
+																)}
 															</div>
 														)}
 
