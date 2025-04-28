@@ -54,7 +54,19 @@ const loginUser = async (req, res) => {
 // Route for user registration
 const registerUser = async (req, res) => {
     try {
-        const { name, email, password, username, phoneNumber } = req.body;
+        const {
+            name,
+            email,
+            password,
+            username,
+            phoneNumber,
+            firstName,
+            lastName,
+            street,
+            city,
+            state,
+            postalCode
+        } = req.body;
 
         // Check if user already exists or not
         const userExist = await userModel.findOne({
@@ -104,14 +116,20 @@ const registerUser = async (req, res) => {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        // Create new user
+        // Create new user with address details
         const newUser = new userModel({
             name,
             email,
             username,
             password: hashedPassword,
             phoneNumber,
-            profileImage: profileImageUrl
+            profileImage: profileImageUrl,
+            firstName,
+            lastName,
+            street,
+            city,
+            state,
+            postalCode
         });
 
         // Save user to the database
@@ -333,7 +351,16 @@ const getUserProfile = async (req, res) => {
 const updateUserProfile = async (req, res) => {
     try {
         const userId = req.user.id;
-        const { name, phoneNumber } = req.body;
+        const {
+            name,
+            phoneNumber,
+            firstName,
+            lastName,
+            street,
+            city,
+            state,
+            postalCode
+        } = req.body;
 
         // Get current user data
         const user = await userModel.findById(userId);
@@ -347,40 +374,15 @@ const updateUserProfile = async (req, res) => {
         if (name) updateData.name = name;
         if (phoneNumber !== undefined) updateData.phoneNumber = phoneNumber;
 
-        // Handle profile image upload
-        if (req.file) {
-            try {
-                // Create a data URI from the buffer
-                const dataUri = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+        // Update address information
+        if (firstName !== undefined) updateData.firstName = firstName;
+        if (lastName !== undefined) updateData.lastName = lastName;
+        if (street !== undefined) updateData.street = street;
+        if (city !== undefined) updateData.city = city;
+        if (state !== undefined) updateData.state = state;
+        if (postalCode !== undefined) updateData.postalCode = postalCode;
 
-                // Upload directly to Cloudinary
-                const result = await cloudinary.uploader.upload(dataUri, {
-                    folder: 'user_profiles',
-                    use_filename: true,
-                    unique_filename: true,
-                    overwrite: true,
-                });
-
-                // Set the Cloudinary URL
-                updateData.profileImage = result.secure_url;
-
-                // If user already had a Cloudinary profile image (not the default one), delete it
-                if (user.profileImage && user.profileImage.includes('cloudinary.com') &&
-                    !user.profileImage.includes('default-user')) {
-                    // Extract the public_id from the URL
-                    const publicId = user.profileImage.split('/').pop().split('.')[0];
-                    // Delete the old image
-                    await cloudinary.uploader.destroy(`user_profiles/${publicId}`);
-                }
-            } catch (uploadError) {
-                console.error('Cloudinary upload error:', uploadError);
-                return res.status(500).json({
-                    success: false,
-                    message: "Failed to upload profile image. Please try again."
-                });
-            }
-        }
-
+  
         // Update user in database
         const updatedUser = await userModel.findByIdAndUpdate(
             userId,

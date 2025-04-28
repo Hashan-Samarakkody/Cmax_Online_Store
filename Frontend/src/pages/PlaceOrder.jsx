@@ -17,7 +17,7 @@ const PlaceOrder = () => {
     email: '',
     street: '',
     city: '',
-    state: '', // District is mapped to state
+    state: '', 
     postalCode: '',
     phoneNumber: ''
   });
@@ -35,6 +35,36 @@ const PlaceOrder = () => {
     "Badulla", "Monaragala", "Hambantota", "Matara", "Galle"
   ];
 
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (token) {
+        try {
+          const response = await axios.get(`${backendUrl}/api/user/profile`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+
+          if (response.data.success && response.data.user) {
+            const { user } = response.data;
+            // Set form data with user information
+            setFormData({
+              firstName: user.firstName || '',
+              lastName: user.lastName || '',
+              email: user.email || '',
+              phoneNumber: user.phoneNumber || '',
+              street: user.street || '',
+              city: user.city || '',
+              state: user.state || '',
+              postalCode: user.postalCode || ''
+            });
+          }
+        } catch (error) {
+          console.error('Error fetching user data:', error);
+        }
+      }
+    };
+
+    fetchUserData();
+  }, [token, backendUrl]);
   useEffect(() => {
     function handleClickOutside(event) {
       if (autocompleteRef.current && !autocompleteRef.current.contains(event.target)) {
