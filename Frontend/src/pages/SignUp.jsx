@@ -60,44 +60,13 @@ const SignUp = () => {
 
     // Validate phone number
     const validatePhoneNumber = (phone) => {
-        const phoneRegex = /^[\d\s\+\-\(\)]{7,15}$/;
+        const phoneRegex = /^0\d{9}$/;
         return phoneRegex.test(phone);
     };
 
     // Validate password strength
     const validatePassword = (password) => {
         return password.length >= 8;
-    };
-
-    // Handle image change
-    const handleImageChange = (e) => {
-        const file = e.target.files[0];
-
-        if (!file) return;
-
-        // Check file type
-        if (!file.type.match(/image\/(jpeg|jpg|png|webp)/)) {
-            setErrors({ ...errors, profileImage: 'Please select a valid image file (JPEG, PNG, or WebP)' });
-            return;
-        }
-
-        // Check file size (max 5MB)
-        if (file.size > 5 * 1024 * 1024) {
-            setErrors({ ...errors, profileImage: 'Image size should be less than 5MB' });
-            return;
-        }
-
-        // Clear any previous errors
-        setErrors({ ...errors, profileImage: '' });
-
-        // Set image preview
-        const reader = new FileReader();
-        reader.onload = () => {
-            setProfilePreview(reader.result);
-        };
-        reader.readAsDataURL(file);
-
-        setProfileImage(file);
     };
 
     // Handle input changes with sanitization
@@ -267,6 +236,7 @@ const SignUp = () => {
                                     <input
                                         type="tel"
                                         placeholder="Phone Number"
+                                        pattern="0[0-9]{9}"
                                         className={`w-full p-3 pl-10 rounded-lg border ${errors.phoneNumber ? 'border-red-500' : 'border-gray-300'} bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-500`}
                                         value={phoneNumber}
                                         onChange={(e) => handleInputChange(e, setPhoneNumber, 'phoneNumber')}

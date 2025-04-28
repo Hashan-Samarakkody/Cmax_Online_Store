@@ -124,6 +124,30 @@ const Profile = () => {
   // Handle form input changes
   const handleChange = (e) => {
     const { name, value } = e.target;
+
+    // Add validation for name field - only letters and spaces
+    if (name === 'name') {
+      // Allow only letters and spaces
+      if (!/^[A-Za-z\s]*$/.test(value)) {
+        toast.error('Name can only contain letters and spaces');
+        return;
+      }
+    }
+
+    // Add validation for phone number - must start with 0 and be 10 digits
+    if (name === 'phoneNumber') {
+      // Allow only digits
+      if (!/^\d*$/.test(value)) {
+        toast.error('Phone number can only contain digits');
+        return;
+      }
+
+      // Limit to 10 digits
+      if (value.length > 10) {
+        return;
+      }
+    }
+
     setFormData({ ...formData, [name]: value });
   };
 
@@ -198,6 +222,25 @@ const Profile = () => {
     if (formData.name.length < 2) {
       toast.error('Name must be at least 2 characters');
       return;
+    }
+
+    // Validate name format
+    if (!/^[A-Za-z\s]+$/.test(formData.name)) {
+      toast.error('Name can only contain letters and spaces');
+      return;
+    }
+
+    // Validate phone number if provided
+    if (formData.phoneNumber) {
+      if (formData.phoneNumber.length !== 10) {
+        toast.error('Phone number must be exactly 10 digits');
+        return;
+      }
+
+      if (!formData.phoneNumber.startsWith('0')) {
+        toast.error('Phone number must start with 0');
+        return;
+      }
     }
 
     if (!user) {
@@ -607,7 +650,9 @@ const Profile = () => {
 
               <div className="space-y-5">
                 <div>
-                  <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="name">Full Name</label>
+                  <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="name">
+                    Full Name <span className="text-gray-500 text-xs">(letters and spaces only)</span>
+                  </label>
                   <input
                     type="text"
                     id="name"
@@ -616,18 +661,25 @@ const Profile = () => {
                     onChange={handleChange}
                     className="w-full bg-white border border-blue-200 rounded-lg py-2.5 px-4 text-gray-800 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 shadow-sm"
                     required
+                    pattern="[A-Za-z\s]+"
+                    title="Name can only contain letters and spaces"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="phoneNumber">Phone Number</label>
+                  <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="phoneNumber">
+                    Phone Number <span className="text-gray-500 text-xs">(must start with 0, exactly 10 digits)</span>
+                  </label>
                   <input
-                    type="text"
+                    type="tel"
                     id="phoneNumber"
                     name="phoneNumber"
                     value={formData.phoneNumber}
                     onChange={handleChange}
+                    placeholder="0XXXXXXXXX"
                     className="w-full bg-white border border-blue-200 rounded-lg py-2.5 px-4 text-gray-800 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 shadow-sm"
+                    pattern="0[0-9]{9}"
+                    title="Phone number must start with 0 and contain exactly 10 digits"
                   />
                 </div>
 
