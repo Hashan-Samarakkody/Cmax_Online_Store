@@ -14,28 +14,11 @@ const SignUp = () => {
     // Form fields
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');
-    const [street, setStreet] = useState('');
-    const [city, setCity] = useState('');
-    const [state, setState] = useState('');
-    const [postalCode, setPostalCode] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [username, setUsername] = useState('');
     const [phoneNumber, setPhoneNumber] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [districtInput, setDistrictInput] = useState('');
-    const [showSuggestions, setShowSuggestions] = useState(false);
-    const [filteredDistricts, setFilteredDistricts] = useState([]);
-    const autocompleteRef = useRef(null);
-
-    // Define districts list
-    const districts = [
-        "Jaffna", "Kilinochchi", "Mannar", "Mullaitivu", "Vavuniya",
-        "Puttalam", "Kurunegala", "Gampaha", "Colombo", "Kalutara",
-        "Anuradhapura", "Polonnaruwa", "Matale", "Kandy", "Nuwara Eliya",
-        "Kegalle", "Ratnapura", "Trincomalee", "Batticaloa", "Ampara",
-        "Badulla", "Monaragala", "Hambantota", "Matara", "Galle"
-    ];
 
     // Validation errors
     const [errors, setErrors] = useState({
@@ -44,11 +27,7 @@ const SignUp = () => {
         username: '',
         phoneNumber: '',
         firstName: '',
-        lastName: '',
-        street: '',
-        city: '',
-        state: '',
-        postalCode: ''
+        lastName: ''
     });
 
     // General form error
@@ -97,28 +76,6 @@ const SignUp = () => {
         setErrors({ ...errors, [field]: '' });
     };
 
-    // Add these new handler functions
-    const handleDistrictInputChange = (e) => {
-        const value = e.target.value;
-        const sanitizedValue = sanitizeInput(value);
-
-        setDistrictInput(sanitizedValue);
-        setState(sanitizedValue);
-
-        if (!showSuggestions) {
-            setShowSuggestions(true);
-        }
-    };
-
-    // Handle district selection from suggestions
-    const handleSelectDistrict = (district) => {
-        const sanitizedDistrict = sanitizeInput(district);
-
-        setDistrictInput(sanitizedDistrict);
-        setState(sanitizedDistrict);
-        setShowSuggestions(false);
-    };
-
     // Validate form before submission
     const validateForm = () => {
         const newErrors = {};
@@ -134,11 +91,6 @@ const SignUp = () => {
         const sanitizedEmail = sanitizeInput(email);
         const sanitizedPassword = sanitizeInput(password);
         const sanitizedPhoneNumber = sanitizeInput(phoneNumber);
-        const sanitizedStreet = sanitizeInput(street);
-        const sanitizedCity = sanitizeInput(city);
-        const sanitizedState = sanitizeInput(state);
-        const sanitizedPostalCode = sanitizeInput(postalCode);
-        
 
         // First name and last name validation
         if (!validateName(sanitizedFirstName)) {
@@ -175,27 +127,6 @@ const SignUp = () => {
             isValid = false;
         }
 
-        // Address validation (optional but validate if provided)
-        if (sanitizedStreet && sanitizedStreet.length < 2) {
-            newErrors.street = 'Street address must be at least 2 characters';
-            isValid = false;
-        }
-
-        if (sanitizedCity && sanitizedCity.length < 2) {
-            newErrors.city = 'City must be at least 2 characters';
-            isValid = false;
-        }
-
-        if (sanitizedState && sanitizedState.length < 2) {
-            newErrors.state = 'State/District must be at least 2 characters';
-            isValid = false;
-        }
-
-        if (sanitizedPostalCode && (isNaN(sanitizedPostalCode) || sanitizedPostalCode.length < 4)) {
-            newErrors.postalCode = 'Postal code must be a valid number with at least 4 digits';
-            isValid = false;
-        }
-
         // Password validation
         if (!sanitizedPassword) {
             newErrors.password = 'Password is required';
@@ -221,19 +152,13 @@ const SignUp = () => {
         setIsSubmitting(true);
 
         try {
-            // Create form data for multipart form submission (for image upload)
+            // Create form data for multipart form submission
             const formData = new FormData();
             formData.append('firstName', firstName);
             formData.append('lastName', lastName);
             formData.append('email', email);
             formData.append('password', password);
             formData.append('username', username);
-
-            // Address details
-            if (street) formData.append('street', street);
-            if (city) formData.append('city', city);
-            if (state) formData.append('state', state);
-            if (postalCode) formData.append('postalCode', postalCode);
             if (phoneNumber) formData.append('phoneNumber', phoneNumber);
 
             const response = await axios.post(`${backendUrl}/api/user/register`, formData, {
@@ -260,30 +185,6 @@ const SignUp = () => {
             setIsSubmitting(false);
         }
     };
-
-    // Close dropdown when clicking outside
-    useEffect(() => {
-        function handleClickOutside(event) {
-            if (autocompleteRef.current && !autocompleteRef.current.contains(event.target)) {
-                setShowSuggestions(false);
-            }
-        }
-
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, []);
-
-    // Filter districts based on input
-    useEffect(() => {
-        if (districtInput) {
-            const filtered = districts.filter(
-                district => district.toLowerCase().includes(districtInput.toLowerCase())
-            );
-            setFilteredDistricts(filtered);
-        } else {
-            setFilteredDistricts(districts);
-        }
-    }, [districtInput]);
 
     // Navigate home if already logged in
     useEffect(() => {
@@ -314,10 +215,10 @@ const SignUp = () => {
                                     {formError}
                                 </div>
                             )}
-                            
+
                             <div className="space-y-4">
                                 <div className="flex gap-3">
-                                    <div className="w-1/2 relative" ref={autocompleteRef}>
+                                    <div className="w-1/2 relative">
                                         <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                                             <FiUser className="text-gray-500" />
                                         </div>
@@ -391,94 +292,6 @@ const SignUp = () => {
                                         onChange={(e) => handleInputChange(e, setPhoneNumber, 'phoneNumber')}
                                     />
                                     <ErrorMessage message={errors.phoneNumber} />
-                                </div>
-
-                                {/* Address Fields */}
-                                <div className="relative">
-                                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                                        </svg>
-                                    </div>
-                                    <input
-                                        type="text"
-                                        placeholder="Street Address"
-                                        className={`w-full p-3 pl-10 rounded-lg border ${errors.street ? 'border-red-500' : 'border-gray-300'} bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-500`}
-                                        value={street}
-                                        onChange={(e) => handleInputChange(e, setStreet, 'street')}
-                                    />
-                                    <ErrorMessage message={errors.street} />
-                                </div>
-
-                                <div className="relative">
-                                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                                        </svg>
-                                    </div>
-                                    <input
-                                        type="text"
-                                        placeholder="City"
-                                        className={`w-full p-3 pl-10 rounded-lg border ${errors.city ? 'border-red-500' : 'border-gray-300'} bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-500`}
-                                        value={city}
-                                        onChange={(e) => handleInputChange(e, setCity, 'city')}
-                                    />
-                                    <ErrorMessage message={errors.city} />
-                                </div>
-
-                                <div className="flex gap-3">
-                                    <div className="w-1/2 relative" ref={autocompleteRef}>
-                                        <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                                            </svg>
-                                        </div>
-                                        <input
-                                            type="text"
-                                            placeholder="District"
-                                            className={`w-full p-3 pl-10 rounded-lg border ${errors.state ? 'border-red-500' : 'border-gray-300'} bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-500`}
-                                            value={districtInput}
-                                            onChange={handleDistrictInputChange}
-                                            onFocus={() => setShowSuggestions(true)}
-                                        />
-                                        {showSuggestions && (
-                                            <ul className="absolute z-10 w-full mt-1 max-h-60 overflow-y-auto bg-white border border-gray-300 rounded-md shadow-lg">
-                                                {filteredDistricts.length > 0 ? (
-                                                    filteredDistricts.map((district, index) => (
-                                                        <li
-                                                            key={index}
-                                                            className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                                                            onClick={() => handleSelectDistrict(district)}
-                                                        >
-                                                            {district}
-                                                        </li>
-                                                    ))
-                                                ) : (
-                                                    <li className="px-4 py-2 text-gray-500">No districts found</li>
-                                                )}
-                                            </ul>
-                                        )}
-                                        <ErrorMessage message={errors.state} />
-                                    </div>
-                                </div>
-
-                                <div className="relative">
-                                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-                                        </svg>
-                                    </div>
-                                    <input
-                                        type="text"
-                                        placeholder="Postal Code"
-                                        className={`w-full p-3 pl-10 rounded-lg border ${errors.postalCode ? 'border-red-500' : 'border-gray-300'} bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-500`}
-                                        value={postalCode}
-                                        onChange={(e) => handleInputChange(e, setPostalCode, 'postalCode')}
-                                    />
-                                    <ErrorMessage message={errors.postalCode} />
                                 </div>
 
                                 <div className="relative">

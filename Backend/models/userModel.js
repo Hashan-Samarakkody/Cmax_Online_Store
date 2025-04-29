@@ -11,10 +11,14 @@ const userSchema = new mongoose.Schema({
     },
     firstName: { type: String },
     lastName: { type: String },
-    street: { type: String },
-    city: { type: String },
-    state: { type: String },
-    postalCode: { type: String },
+    addresses: [{
+        _id: { type: mongoose.Schema.Types.ObjectId, auto: true },
+        street: String,
+        city: String,
+        state: String,
+        postalCode: String,
+        isDefault: { type: Boolean, default: false }
+    }],
 
     cartData: { type: Object, default: {} },
     lastLogin: { type: Date },
