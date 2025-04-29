@@ -10,6 +10,9 @@ import DOMPurify from 'dompurify';
 const PlaceOrder = () => {
   const [method, setMethod] = useState('cod');
   const { navigate, backendUrl, token, cartItems, setCartItems, getCartAmount, deliveryCharge, products } = useContext(ShopContext);
+  const [addressOption, setAddressOption] = useState('new'); // 'new', 'default', or 'saved'
+  const [userAddresses, setUserAddresses] = useState([]);
+  const [selectedAddress, setSelectedAddress] = useState(null);
 
   const [formData, setFormData] = useState({
     firstName: '',
@@ -17,7 +20,7 @@ const PlaceOrder = () => {
     email: '',
     street: '',
     city: '',
-    state: '', 
+    state: '',
     postalCode: '',
     phoneNumber: ''
   });
@@ -26,6 +29,7 @@ const PlaceOrder = () => {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [filteredDistricts, setFilteredDistricts] = useState([]);
   const autocompleteRef = useRef(null);
+  const [fieldsDisabled, setFieldsDisabled] = useState(false);
 
   const districts = [
     "Jaffna", "Kilinochchi", "Mannar", "Mullaitivu", "Vavuniya",
@@ -35,27 +39,76 @@ const PlaceOrder = () => {
     "Badulla", "Monaragala", "Hambantota", "Matara", "Galle"
   ];
 
+  const fetchUserProfile = async () => {
+    if (!token) return;
+
+    try {
+      // Get user profile
+      const profileResponse = await axios.get(`${backendUrl}/api/user/profile`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (profileResponse.data.success && profileResponse.data.user) {
+        const { user } = profileResponse.data;
+
+        setFormData(prev => ({
+          ...prev,
+          firstName: user.firstName || '',
+          lastName: user.lastName || '',
+          email: user.email || '',
+          phoneNumber: user.phoneNumber || ''
+        }));
+
+        return user;
+      }
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+      toast.error('Could not load user profile information');
+    }
+    return null;
+  };
+
   useEffect(() => {
     const fetchUserData = async () => {
       if (token) {
         try {
-          const response = await axios.get(`${backendUrl}/api/user/profile`, {
+          // Get user profile
+          const profileResponse = await axios.get(`${backendUrl}/api/user/profile`, {
             headers: { Authorization: `Bearer ${token}` }
           });
 
-          if (response.data.success && response.data.user) {
-            const { user } = response.data;
-            // Set form data with user information
-            setFormData({
+          if (profileResponse.data.success && profileResponse.data.user) {
+            const { user } = profileResponse.data;
+
+            // Get addresses separately if available
+            try {
+              const addressesResponse = await axios.get(`${backendUrl}/api/user/addresses`, {
+                headers: { Authorization: `Bearer ${token}` }
+              });
+
+              if (addressesResponse.data.success) {
+                const addresses = addressesResponse.data.addresses || [];
+                setUserAddresses(addresses);
+
+                // If user has a default address, set it as default option
+                const hasDefaultAddress = addresses.some(addr => addr.isDefault);
+                if (hasDefaultAddress) {
+                  setAddressOption('default');
+                  handleAddressOptionChange('default', addresses);
+                }
+              }
+            } catch (addressError) {
+              console.error('Error fetching user addresses:', addressError);
+              setUserAddresses(user.addresses || []);
+            }
+
+            setFormData(prev => ({
+              ...prev,
               firstName: user.firstName || '',
               lastName: user.lastName || '',
               email: user.email || '',
-              phoneNumber: user.phoneNumber || '',
-              street: user.street || '',
-              city: user.city || '',
-              state: user.state || '',
-              postalCode: user.postalCode || ''
-            });
+              phoneNumber: user.phoneNumber || ''
+            }));
           }
         } catch (error) {
           console.error('Error fetching user data:', error);
@@ -65,6 +118,7 @@ const PlaceOrder = () => {
 
     fetchUserData();
   }, [token, backendUrl]);
+
   useEffect(() => {
     function handleClickOutside(event) {
       if (autocompleteRef.current && !autocompleteRef.current.contains(event.target)) {
@@ -91,9 +145,105 @@ const PlaceOrder = () => {
     if (formData.state) {
       setDistrictInput(formData.state);
     }
-  }, []);
+  }, [formData.state]);
+
+  // Handle address option change
+  const handleAddressOptionChange = async (option, addressList = userAddresses) => {
+    // Early return if clicking on the already selected option
+    if (option === addressOption) return;
+
+    setAddressOption(option);
+
+    switch (option) {
+      case 'new':
+        // Clear form data and enable fields for new address entry
+        setFieldsDisabled(false);
+        setSelectedAddress(null);
+        setFormData(prev => ({
+          ...prev,
+          firstName: '',
+          lastName: '',
+          email: '',
+          street: '',
+          city: '',
+          state: '',
+          postalCode: '',
+          phoneNumber: ''
+        }));
+        setDistrictInput('');
+        setShowSuggestions(false);
+        // Clear all fields
+        const inputs = document.querySelectorAll('input[type="text"], input[type="email"], input[type="number"], input[type="tel"]');
+        inputs.forEach(input => {
+          input.value = '';
+        });
+        break;
+
+      case 'default':
+        // First fetch user profile data
+        await fetchUserProfile(); // This already updates the form with user data
+
+        const defaultAddress = addressList.find(addr => addr.isDefault);
+        if (defaultAddress) {
+          setFieldsDisabled(true);
+          setSelectedAddress(defaultAddress._id);
+          setFormData(prev => ({
+            ...prev,
+            firstName: defaultAddress.firstName || prev.firstName,
+            lastName: defaultAddress.lastName || prev.lastName,
+            email: defaultAddress.email || prev.email,
+            street: defaultAddress.street || '',
+            city: defaultAddress.city || '',
+            state: defaultAddress.state || '',
+            postalCode: defaultAddress.postalCode || '',
+            phoneNumber: defaultAddress.phoneNumber || prev.phoneNumber
+          }));
+          setDistrictInput(defaultAddress.state || '');
+        } else {
+          toast.warning('No default address found');
+          setAddressOption('new');
+          setFieldsDisabled(false);
+        }
+        break;
+
+      case 'saved':
+        setFieldsDisabled(false);
+        setSelectedAddress(null);
+        setFormData(prev => ({
+          ...prev,
+          street: '',
+          city: '',
+          state: '',
+          postalCode: '',
+        }));
+        setDistrictInput('');
+        break;
+
+      default:
+        break;
+    }
+  };
+
+  // Handle saved address selection
+  const handleAddressSelect = (address) => {
+    setSelectedAddress(address._id);
+    setFieldsDisabled(true);
+
+    setFormData(prev => ({
+      ...prev,
+      street: address.street || '',
+      city: address.city || '',
+      state: address.state || '',
+      postalCode: address.postalCode || '',
+    }));
+    setDistrictInput(address.state || '');
+  };
 
   const onChangeHandler = (event) => {
+    if (fieldsDisabled && ['street', 'city', 'state', 'postalCode'].includes(event.target.name)) {
+      return;
+    }
+
     const name = event.target.name;
     const value = event.target.value;
 
@@ -101,6 +251,8 @@ const PlaceOrder = () => {
   };
 
   const handleDistrictInputChange = (e) => {
+    if (fieldsDisabled) return;
+
     const value = e.target.value;
     const sanitizedValue = DOMPurify.sanitize(value.trim());
 
@@ -113,6 +265,8 @@ const PlaceOrder = () => {
   };
 
   const handleSelectDistrict = (district) => {
+    if (fieldsDisabled) return;
+
     const sanitizedDistrict = DOMPurify.sanitize(district);
 
     setDistrictInput(sanitizedDistrict);
@@ -156,15 +310,7 @@ const PlaceOrder = () => {
       return false;
     }
 
-    const validDistricts = [
-      "Jaffna", "Kilinochchi", "Mannar", "Mullaitivu", "Vavuniya",
-      "Puttalam", "Kurunegala", "Gampaha", "Colombo", "Kalutara",
-      "Anuradhapura", "Polonnaruwa", "Matale", "Kandy", "Nuwara Eliya",
-      "Kegalle", "Ratnapura", "Trincomalee", "Batticaloa", "Ampara",
-      "Badulla", "Monaragala", "Hambantota", "Matara", "Galle"
-    ];
-
-    if (!sanitizedData.state || sanitizedData.state.length < 2 || !validDistricts.includes(sanitizedData.state)) {
+    if (!sanitizedData.state || sanitizedData.state.length < 2 || !districts.includes(sanitizedData.state)) {
       toast.error('Please select a valid district.');
       return false;
     }
@@ -241,28 +387,138 @@ const PlaceOrder = () => {
           <Title text1={'DELIVERY'} text2={'INFORMATION'} />
         </div>
 
-        <div className="flex gap-3">
-          <input required onChange={onChangeHandler} name="firstName" value={formData.firstName} type="text" placeholder="First name" className="border border-gray-300 rounded px-3.5 py-1.5 w-full" />
-          <input required onChange={onChangeHandler} name="lastName" value={formData.lastName} type="text" placeholder="Last name" className="border border-gray-300 rounded px-3.5 py-1.5 w-full" />
+        {/* Address selection options - improved UI */}
+        <div className="mb-4 p-4 bg-gray-50 rounded-md border border-gray-200">
+          <p className="font-medium mb-3 text-gray-700">Choose delivery address:</p>
+
+          <div className="flex flex-wrap gap-4 mb-3">
+            <label className="flex items-center cursor-pointer">
+              <input
+                type="radio"
+                checked={addressOption === 'new'}
+                onChange={() => handleAddressOptionChange('new')}
+                className="mr-2 w-4 h-4 accent-blue-500"
+                name="addressOption"
+              />
+              <span className="text-sm">Enter new details</span>
+            </label>
+
+            {userAddresses.some(addr => addr.isDefault) && (
+              <label className="flex items-center cursor-pointer">
+                <input
+                  type="radio"
+                  checked={addressOption === 'default'}
+                  onChange={() => handleAddressOptionChange('default')}
+                  className="mr-2 w-4 h-4 accent-blue-500"
+                  name="addressOption"
+                />
+                <span className="text-sm">Use default Infromation</span>
+              </label>
+            )}
+
+            {userAddresses.length > 0 && (
+              <label className="flex items-center cursor-pointer">
+                <input
+                  type="radio"
+                  checked={addressOption === 'saved'}
+                  onChange={() => handleAddressOptionChange('saved')}
+                  className="mr-2 w-4 h-4 accent-blue-500"
+                  name="addressOption"
+                />
+                <span className="text-sm">Select saved address</span>
+              </label>
+            )}
+          </div>
+
+          {/* Saved addresses dropdown */}
+          {addressOption === 'saved' && userAddresses.length > 0 && (
+            <div className="mt-3 p-2 border border-gray-300 rounded">
+              <p className="text-sm mb-2 text-gray-500">Select an address:</p>
+              <div className="max-h-40 overflow-y-auto">
+                {userAddresses.map((address) => (
+                  <div
+                    key={address._id}
+                    onClick={() => handleAddressSelect(address)}
+                    className={`p-2 cursor-pointer hover:bg-gray-100 rounded ${selectedAddress === address._id ? 'bg-blue-50 border-l-4 border-blue-500' : ''}`}
+                  >
+                    <p className="font-medium">{address.addressName || 'Address'} {address.isDefault && <span className="text-xs text-blue-600">(Default)</span>}</p>
+                    <p className="text-xs text-gray-500">
+                      {address.street}, {address.city}, {address.state}, {address.postalCode}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
-        <input required onChange={onChangeHandler} name="email" value={formData.email} type="email" placeholder="Email Address" className="border border-gray-300 rounded px-3.5 py-1.5 w-full" />
-        <input required onChange={onChangeHandler} name="street" value={formData.street} type="text" placeholder="Street" className="border border-gray-300 rounded px-3.5 py-1.5 w-full" />
+        {/* Form fields with better visual indication of which fields are currently editable */}
+        <div className="flex gap-3">
+          <input
+            required
+            onChange={onChangeHandler}
+            name="firstName"
+            value={formData.firstName}
+            type="text"
+            placeholder="First name"
+            className="border border-gray-300 rounded px-3.5 py-1.5 w-full"
+          />
+          <input
+            required
+            onChange={onChangeHandler}
+            name="lastName"
+            value={formData.lastName}
+            type="text"
+            placeholder="Last name"
+            className="border border-gray-300 rounded px-3.5 py-1.5 w-full"
+          />
+        </div>
+
+        <input
+          required
+          onChange={onChangeHandler}
+          name="email"
+          value={formData.email}
+          type="email"
+          placeholder="Email Address"
+          className="border border-gray-300 rounded px-3.5 py-1.5 w-full"
+        />
+
+        <input
+          required
+          onChange={onChangeHandler}
+          name="street"
+          value={formData.street}
+          type="text"
+          placeholder="Street"
+          className={`border ${fieldsDisabled ? 'bg-gray-100 border-gray-200' : 'border-gray-300'} rounded px-3.5 py-1.5 w-full`}
+          disabled={fieldsDisabled}
+        />
 
         <div className="flex gap-3">
-          <input required onChange={onChangeHandler} name="city" value={formData.city} type="text" placeholder="City" className="border border-gray-300 rounded px-3.5 py-1.5 w-full" />
+          <input
+            required
+            onChange={onChangeHandler}
+            name="city"
+            value={formData.city}
+            type="text"
+            placeholder="City"
+            className={`border ${fieldsDisabled ? 'bg-gray-100 border-gray-200' : 'border-gray-300'} rounded px-3.5 py-1.5 w-full`}
+            disabled={fieldsDisabled}
+          />
 
           <div className="relative w-full" ref={autocompleteRef}>
             <input
               required
               value={districtInput}
               onChange={handleDistrictInputChange}
-              onFocus={() => setShowSuggestions(true)}
+              onFocus={() => !fieldsDisabled && setShowSuggestions(true)}
               type="text"
               placeholder="District"
-              className="border border-gray-300 rounded px-3.5 py-1.5 w-full"
+              className={`border ${fieldsDisabled ? 'bg-gray-100 border-gray-200' : 'border-gray-300'} rounded px-3.5 py-1.5 w-full`}
+              disabled={fieldsDisabled}
             />
-            {showSuggestions && (
+            {showSuggestions && !fieldsDisabled && (
               <ul className="absolute z-10 w-full mt-1 max-h-60 overflow-y-auto bg-white border border-gray-300 rounded-md shadow-lg">
                 {filteredDistricts.length > 0 ? (
                   filteredDistricts.map((district, index) => (
@@ -283,9 +539,29 @@ const PlaceOrder = () => {
         </div>
 
         <div className="flex gap-3">
-          <input required onChange={onChangeHandler} name="postalCode" value={formData.postalCode} type="number" placeholder="Postal Code" className="border border-gray-300 rounded px-3.5 py-1.5 w-full" />
+          <input
+            required
+            onChange={onChangeHandler}
+            name="postalCode"
+            value={formData.postalCode}
+            type="number"
+            placeholder="Postal Code"
+            className={`border ${fieldsDisabled ? 'bg-gray-100 border-gray-200' : 'border-gray-300'} rounded px-3.5 py-1.5 w-full`}
+            disabled={fieldsDisabled}
+          />
         </div>
-        <input required onChange={onChangeHandler} name="phoneNumber" value={formData.phoneNumber} type="tel" pattern="^\+?\d{10,12}$" maxLength={12} placeholder="Phone Number" className="border border-gray-300 rounded px-3.5 py-1.5 w-full" />
+
+        <input
+          required
+          onChange={onChangeHandler}
+          name="phoneNumber"
+          value={formData.phoneNumber}
+          type="tel"
+          pattern="^\+?\d{10,12}$"
+          maxLength={12}
+          placeholder="Phone Number"
+          className="border border-gray-300 rounded px-3.5 py-1.5 w-full"
+        />
       </div>
 
       <div className="mt-8">
@@ -297,18 +573,22 @@ const PlaceOrder = () => {
           <Title text1={'PAYMENT'} text2={'METHOD'} />
           <div className="flex gap-3 flex-col lg:flex-row">
             <div onClick={() => setMethod('stripe')} className="flex items-center gap-3 p-2 px-3 cursor-pointer">
-              <p className={`min-w-3.5 h-3.5 border rounded-full ${method === 'stripe' ? 'bg-green-400' : ''}`}></p>
-              <img className="h-5 mx-4" src={assets.stripe_logo} alt="" />
+              <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${method === 'stripe' ? 'border-green-500' : 'border-gray-300'}`}>
+                {method === 'stripe' && <div className="w-2 h-2 bg-green-500 rounded-full"></div>}
+              </div>
+              <img className="h-5 mx-4" src={assets.stripe_logo} alt="Stripe" />
             </div>
 
             <div onClick={() => setMethod('cod')} className="flex items-center gap-3 p-2 px-3 cursor-pointer">
-              <p className={`min-w-3.5 h-3.5 border rounded-full ${method === 'cod' ? 'bg-green-400' : ''}`}></p>
+              <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${method === 'cod' ? 'border-green-500' : 'border-gray-300'}`}>
+                {method === 'cod' && <div className="w-2 h-2 bg-green-500 rounded-full"></div>}
+              </div>
               <p className="text-gray-500 text-sm font-medium mx-4">CASH ON DELIVERY</p>
             </div>
           </div>
 
           <div className="w-full text-end mt-8">
-            <button type="submit" className="bg-black text-white px-16 py-3 text-sm rounded-sm">PLACE ORDER</button>
+            <button type="submit" className="bg-black text-white px-16 py-3 text-sm rounded-sm hover:bg-gray-800 transition-colors">PLACE ORDER</button>
           </div>
         </div>
       </div>

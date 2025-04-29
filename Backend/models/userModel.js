@@ -11,8 +11,10 @@ const userSchema = new mongoose.Schema({
     },
     firstName: { type: String },
     lastName: { type: String },
+
     addresses: [{
         _id: { type: mongoose.Schema.Types.ObjectId, auto: true },
+        addressName: { type: String, required: true },  
         street: String,
         city: String,
         state: String,

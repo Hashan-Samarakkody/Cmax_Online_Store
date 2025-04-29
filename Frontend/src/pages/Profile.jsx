@@ -125,7 +125,7 @@ const Profile = () => {
         phoneNumber: user.phoneNumber,
       };
 
-      const response = await axios.put(`${backendUrl}/api/user/profile`, userData, {
+      const response = await axios.put(`${backendUrl}/api/user/update-profile`, userData, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
