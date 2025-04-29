@@ -30,6 +30,37 @@ const Profile = () => {
   const [previewImage, setPreviewImage] = useState(null);
   const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
+  const [errors, setErrors] = useState({
+    firstName: '',
+    lastName: '',
+    phoneNumber: ''
+  });
+
+  // Validate name (only letters allowed)
+  const validateName = (name) => {
+    return /^[A-Za-z\s]+$/.test(name);
+  };
+
+  // Validate phone number
+  const validatePhoneNumber = (phone) => {
+    if (!phone) return true; // Phone number is optional
+
+    // Must start with 0 and have exactly 10 digits
+    if (!/^0\d{9}$/.test(phone)) {
+      return false;
+    }
+
+    // Check for repeated digits (same digit cannot repeat 9 times)
+    for (let i = 0; i < 10; i++) {
+      const regex = new RegExp(`${i}{9}`);
+      if (regex.test(phone)) {
+        return false;
+      }
+    }
+
+    return true;
+  };
+
   // Fetch user data
   const fetchUserData = async () => {
     if (!token) {
@@ -111,11 +142,47 @@ const Profile = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setUser(prev => ({ ...prev, [name]: value }));
+
+    // Clear error when field is being edited
+    setErrors(prev => ({ ...prev, [name]: '' }));
   };
+
 
   // Update profile
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Validate inputs
+    const newErrors = {
+      firstName: '',
+      lastName: '',
+      phoneNumber: ''
+    };
+
+    let isValid = true;
+
+    if (!validateName(user.firstName)) {
+      newErrors.firstName = 'First name should contain only letters';
+      isValid = false;
+    }
+
+    if (!validateName(user.lastName)) {
+      newErrors.lastName = 'Last name should contain only letters';
+      isValid = false;
+    }
+
+    if (user.phoneNumber && !validatePhoneNumber(user.phoneNumber)) {
+      newErrors.phoneNumber = 'Phone number must start with 0 and be exactly 10 digits, without excessive repetition';
+      isValid = false;
+    }
+
+    setErrors(newErrors);
+
+    if (!isValid) {
+      toast.error('Please correct the errors in the form');
+      return;
+    }
+
     setUpdateLoading(true);
 
     try {
@@ -141,6 +208,7 @@ const Profile = () => {
       setUpdateLoading(false);
     }
   };
+
 
   // Handle logout
   const handleLogout = () => {
@@ -230,9 +298,12 @@ const Profile = () => {
                       name="firstName"
                       value={user?.firstName || ''}
                       onChange={handleChange}
-                      className="w-full border border-gray-300 rounded-md px-3 py-2"
+                      className={`w-full border ${errors.firstName ? 'border-red-500' : 'border-gray-300'} rounded-md px-3 py-2`}
                       required
                     />
+                    {errors.firstName && (
+                      <p className="mt-1 text-xs text-red-500">{errors.firstName}</p>
+                    )}
                   </div>
 
                   {/* Last Name */}
@@ -245,9 +316,12 @@ const Profile = () => {
                       name="lastName"
                       value={user?.lastName || ''}
                       onChange={handleChange}
-                      className="w-full border border-gray-300 rounded-md px-3 py-2"
+                      className={`w-full border ${errors.lastName ? 'border-red-500' : 'border-gray-300'} rounded-md px-3 py-2`}
                       required
                     />
+                    {errors.lastName && (
+                      <p className="mt-1 text-xs text-red-500">{errors.lastName}</p>
+                    )}
                   </div>
 
                   {/* Email (disabled) */}
@@ -274,8 +348,14 @@ const Profile = () => {
                       name="phoneNumber"
                       value={user?.phoneNumber || ''}
                       onChange={handleChange}
-                      className="w-full border border-gray-300 rounded-md px-3 py-2"
+                      placeholder="0XXXXXXXXX"
+                      className={`w-full border ${errors.phoneNumber ? 'border-red-500' : 'border-gray-300'} rounded-md px-3 py-2`}
                     />
+                    {errors.phoneNumber ? (
+                      <p className="mt-1 text-xs text-red-500">{errors.phoneNumber}</p>
+                    ) : (
+                      <p className="mt-1 text-xs text-gray-500">Format: 0XXXXXXXXX (10 digits)</p>
+                    )}
                   </div>
                 </div>
 
