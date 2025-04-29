@@ -20,6 +20,11 @@ const SignUp = () => {
     const [phoneNumber, setPhoneNumber] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    // Profile image state
+    const [profileImage, setProfileImage] = useState(null);
+    const [previewImage, setPreviewImage] = useState(null);
+    const fileInputRef = useRef(null);
+
     // Validation errors
     const [errors, setErrors] = useState({
         email: '',
@@ -27,7 +32,8 @@ const SignUp = () => {
         username: '',
         phoneNumber: '',
         firstName: '',
-        lastName: ''
+        lastName: '',
+        profileImage: ''
     });
 
     // General form error
@@ -65,6 +71,58 @@ const SignUp = () => {
     // Validate password strength
     const validatePassword = (password) => {
         return password.length >= 8;
+    };
+
+    // Validate image file
+    const validateImageFile = (file) => {
+        // Check if file exists
+        if (!file) return true;
+
+        // Check file type
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+        if (!allowedTypes.includes(file.type)) {
+            return false;
+        }
+
+        // Check file size (5MB max)
+        const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+        if (file.size > maxSize) {
+            return false;
+        }
+
+        return true;
+    };
+
+    // Handle image selection
+    const handleImageChange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Clear any previous image error
+        setErrors({ ...errors, profileImage: '' });
+
+        // Validate image
+        if (!validateImageFile(file)) {
+            setErrors({
+                ...errors,
+                profileImage: 'Please select a valid image file (JPEG, PNG or WebP) under 5MB'
+            });
+            return;
+        }
+
+        setProfileImage(file);
+
+        // Create preview URL
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setPreviewImage(reader.result);
+        };
+        reader.readAsDataURL(file);
+    };
+
+    // Trigger file input click
+    const triggerFileInput = () => {
+        fileInputRef.current.click();
     };
 
     // Handle input changes with sanitization
@@ -136,6 +194,12 @@ const SignUp = () => {
             isValid = false;
         }
 
+        // Profile image validation
+        if (profileImage && !validateImageFile(profileImage)) {
+            newErrors.profileImage = 'Please select a valid image file (JPEG, PNG or WebP) under 5MB';
+            isValid = false;
+        }
+
         setErrors(newErrors);
         return isValid;
     };
@@ -160,6 +224,7 @@ const SignUp = () => {
             formData.append('password', password);
             formData.append('username', username);
             if (phoneNumber) formData.append('phoneNumber', phoneNumber);
+            if (profileImage) formData.append('profileImage', profileImage);
 
             const response = await axios.post(`${backendUrl}/api/user/register`, formData, {
                 headers: {
@@ -216,6 +281,56 @@ const SignUp = () => {
                                 </div>
                             )}
 
+                            {/* Profile Image Upload */}
+                            <div className="mb-6 flex flex-col items-center">
+                                <div
+                                    className="w-24 h-24 rounded-full border-2 border-gray-300 overflow-hidden relative cursor-pointer mb-2 group"
+                                    onClick={triggerFileInput}
+                                >
+                                    {previewImage ? (
+                                        <img
+                                            src={previewImage}
+                                            alt="Profile preview"
+                                            className="w-full h-full object-cover"
+                                        />
+                                    ) : (
+                                        <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                                            <FiUser size={40} className="text-gray-400" />
+                                        </div>
+                                    )}
+                                    <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <FiCamera size={24} className="text-white" />
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    className="text-sm text-green-600 hover:text-green-700"
+                                    onClick={triggerFileInput}
+                                >
+                                    Upload Profile Picture
+                                </button>
+                                <input
+                                    type="file"
+                                    ref={fileInputRef}
+                                    onChange={handleImageChange}
+                                    accept="image/jpeg,image/png,image/webp"
+                                    className="hidden"
+                                />
+                                <ErrorMessage message={errors.profileImage} />
+                                {profileImage && (
+                                    <button
+                                        type="button"
+                                        className="text-xs text-red-500 hover:text-red-700 mt-1"
+                                        onClick={() => {
+                                            setProfileImage(null);
+                                            setPreviewImage(null);
+                                        }}
+                                    >
+                                        Remove image
+                                    </button>
+                                )}
+                            </div>
+
                             <div className="space-y-4">
                                 <div className="flex gap-3">
                                     <div className="w-1/2 relative">
@@ -249,6 +364,7 @@ const SignUp = () => {
                                     </div>
                                 </div>
 
+                                {/* Rest of your form remains the same */}
                                 <div className="relative">
                                     <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                                         <FiUser className="text-gray-500" />
@@ -327,6 +443,7 @@ const SignUp = () => {
                                     )}
                                 </button>
 
+                                {/* Rest of your form buttons remain the same */}
                                 <div className="my-4 flex items-center">
                                     <div className="flex-1 h-px bg-gray-300"></div>
                                     <p className="mx-4 text-gray-500 text-sm">OR</p>
@@ -356,6 +473,7 @@ const SignUp = () => {
                 </div>
             </div>
 
+            {/* Right side with animation remains unchanged */}
             <div className="hidden md:block md:w-1/2 relative overflow-hidden">
                 {/* Animated background */}
                 <div className="absolute inset-0 bg-gradient-to-br from-green-500 to-teal-600">
@@ -385,7 +503,7 @@ const SignUp = () => {
                 </div>
             </div>
 
-            {/* Add some keyframe animations for the floating effect */}
+            {/* Animation keyframes remain unchanged */}
             <style dangerouslySetInnerHTML={{
                 __html: `
     @keyframes float {

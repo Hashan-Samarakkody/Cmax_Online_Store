@@ -101,11 +101,20 @@ const registerUser = async (req, res) => {
         // Upload profile image to Cloudinary if provided
         if (req.file) {
             try {
-                const result = await cloudinary.uploader.upload(req.file.path, {
+                // Create a data URI from the buffer
+                const fileBuffer = req.file.buffer;
+                const fileType = req.file.mimetype;
+                const fileEncoding = 'base64';
+
+                const dataUri = `data:${fileType};${fileEncoding},${fileBuffer.toString('base64')}`;
+
+                // Upload to Cloudinary using the data URI
+                const result = await cloudinary.uploader.upload(dataUri, {
                     folder: 'user_profiles',
                     use_filename: true,
                     unique_filename: true
                 });
+
                 profileImageUrl = result.secure_url;
             } catch (uploadError) {
                 console.log("Error uploading to Cloudinary:", uploadError);

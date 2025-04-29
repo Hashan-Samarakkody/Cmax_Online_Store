@@ -19,7 +19,7 @@ const ProfileSidebar = ({ user, setActiveSection, activeSection, onShowPasswordM
             {/* Profile image at the top */}
             <div className="flex justify-center py-6 bg-gray-50">
                 <div className="relative">
-                    <div className="h-20 w-20 rounded-full overflow-hidden border-4 border-white shadow-md">
+                    <div className="h-35 w-35 rounded-full overflow-hidden border-4 border-white shadow-md">
                         <img
                             src={getProfileImageUrl()}
                             alt={user?.firstName || "Profile"}
