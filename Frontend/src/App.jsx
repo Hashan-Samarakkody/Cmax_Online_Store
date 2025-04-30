@@ -19,6 +19,7 @@ import Returns from './pages/Returns'
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Verify from './pages/Verify'
+import ChatBot from './components/ChatBot'
 
 
 const App = () => {
@@ -46,6 +47,7 @@ const App = () => {
         <Route path='/returns' element={<Returns />} />
       </Routes>
       <Footer />
+      <ChatBot />
     </div>
   )
 }
