@@ -383,12 +383,12 @@ const Profile = ({ token, setToken }) => {
                                         ? (admin.profileImage.includes('http')
                                             ? admin.profileImage
                                             : `${backendUrl}/uploads/${admin.profileImage}`)
-                                        : assets.defaultAvatar || 'https://www.w3schools.com/w3images/team2.jpg')}
+                                        : assets.defaultAvatar || 'https://static.vecteezy.com/system/resources/thumbnails/036/594/092/small_2x/man-empty-avatar-photo-placeholder-for-social-networks-resumes-forums-and-dating-sites-male-and-female-no-photo-images-for-unfilled-user-profile-free-vector.jpg')}
                                     alt={admin?.name || "Profile"}
                                     className="h-full w-full object-cover"
                                     onError={(e) => {
                                         e.target.onerror = null;
-                                        e.target.src = assets.defaultAvatar || 'https://www.w3schools.com/w3images/team2.jpg';
+                                        e.target.src = assets.defaultAvatar || 'https://static.vecteezy.com/system/resources/thumbnails/036/594/092/small_2x/man-empty-avatar-photo-placeholder-for-social-networks-resumes-forums-and-dating-sites-male-and-female-no-photo-images-for-unfilled-user-profile-free-vector.jpg';
                                     }}
                                 />
                             </div>
@@ -541,7 +541,7 @@ const Profile = ({ token, setToken }) => {
                                 <div className="relative">
                                     <div className="h-32 w-32 rounded-2xl overflow-hidden border-4 border-green-400/30">
                                         <img
-                                            src={ admin?.profileImage || (admin?.profileImage?.includes('http') ? admin.profileImage : `${backendUrl}/uploads/${admin.profileImage}`)}
+                                            src={ 'https://static.vecteezy.com/system/resources/thumbnails/036/594/092/small_2x/man-empty-avatar-photo-placeholder-for-social-networks-resumes-forums-and-dating-sites-male-and-female-no-photo-images-for-unfilled-user-profile-free-vector.jpg' || (admin?.profileImage?.includes('http') ? admin.profileImage : `${backendUrl}/uploads/${admin.profileImage}`)}
                                             alt={admin.name}
                                             className="h-full w-full object-cover"
                                             onError={(e) => {

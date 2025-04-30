@@ -128,7 +128,7 @@ const Login = () => {
 
     setIsResetting(true);
     try {
-      const response = await axios.post(backendUrl + '/api/user/reset-password/send-code', {
+      const response = await axios.post(backendUrl + '/api/user/send-reset-code', {
         email: resetEmail
       });
 
@@ -154,7 +154,7 @@ const Login = () => {
 
     setIsResetting(true);
     try {
-      const response = await axios.post(backendUrl + '/api/user/reset-password/verify-code', {
+      const response = await axios.post(backendUrl + '/api/user/verify-reset-code', {
         email: resetEmail,
         code: resetCode
       });
@@ -187,7 +187,7 @@ const Login = () => {
 
     setIsResetting(true);
     try {
-      const response = await axios.post(backendUrl + '/api/user/reset-password/reset', {
+      const response = await axios.post(backendUrl + '/api/user/reset-password', {
         email: resetEmail,
         code: resetCode,
         password: newPassword

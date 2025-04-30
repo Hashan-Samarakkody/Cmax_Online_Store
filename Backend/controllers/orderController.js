@@ -175,6 +175,11 @@ const placeOrder = async (req, res) => {
     try {
         const { userId, items, amount, address } = req.body
 
+        // Ensure we have complete address information
+        if (!address || !address.firstName || !address.street || !address.city || !address.state) {
+            return res.json({ success: false, message: 'Complete address information is required' });
+        }
+
         // Generate custom order ID
         const orderId = await generateOrderId({ items });
 

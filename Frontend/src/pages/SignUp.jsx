@@ -10,26 +10,30 @@ import { Link } from 'react-router-dom';
 
 const SignUp = () => {
     const { token, setToken, navigate, backendUrl } = useContext(ShopContext);
-    const fileInputRef = useRef(null);
 
     // Form fields
-    const [name, setName] = useState('');
+    const [firstName, setFirstName] = useState('');
+    const [lastName, setLastName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [username, setUsername] = useState('');
     const [phoneNumber, setPhoneNumber] = useState('');
-    const [profileImage, setProfileImage] = useState(null);
-    const [profilePreview, setProfilePreview] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Profile image state
+    const [profileImage, setProfileImage] = useState(null);
+    const [previewImage, setPreviewImage] = useState(null);
+    const fileInputRef = useRef(null);
 
     // Validation errors
     const [errors, setErrors] = useState({
-        name: '',
         email: '',
         password: '',
         username: '',
         phoneNumber: '',
-        profileImage: '',
+        firstName: '',
+        lastName: '',
+        profileImage: ''
     });
 
     // General form error
@@ -60,7 +64,7 @@ const SignUp = () => {
 
     // Validate phone number
     const validatePhoneNumber = (phone) => {
-        const phoneRegex = /^[\d\s\+\-\(\)]{7,15}$/;
+        const phoneRegex = /^0\d{9}$/;
         return phoneRegex.test(phone);
     };
 
@@ -69,35 +73,56 @@ const SignUp = () => {
         return password.length >= 8;
     };
 
-    // Handle image change
-    const handleImageChange = (e) => {
-        const file = e.target.files[0];
-
-        if (!file) return;
+    // Validate image file
+    const validateImageFile = (file) => {
+        // Check if file exists
+        if (!file) return true;
 
         // Check file type
-        if (!file.type.match(/image\/(jpeg|jpg|png|webp)/)) {
-            setErrors({ ...errors, profileImage: 'Please select a valid image file (JPEG, PNG, or WebP)' });
-            return;
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+        if (!allowedTypes.includes(file.type)) {
+            return false;
         }
 
-        // Check file size (max 5MB)
-        if (file.size > 5 * 1024 * 1024) {
-            setErrors({ ...errors, profileImage: 'Image size should be less than 5MB' });
-            return;
+        // Check file size (5MB max)
+        const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+        if (file.size > maxSize) {
+            return false;
         }
 
-        // Clear any previous errors
+        return true;
+    };
+
+    // Handle image selection
+    const handleImageChange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Clear any previous image error
         setErrors({ ...errors, profileImage: '' });
 
-        // Set image preview
-        const reader = new FileReader();
-        reader.onload = () => {
-            setProfilePreview(reader.result);
-        };
-        reader.readAsDataURL(file);
+        // Validate image
+        if (!validateImageFile(file)) {
+            setErrors({
+                ...errors,
+                profileImage: 'Please select a valid image file (JPEG, PNG or WebP) under 5MB'
+            });
+            return;
+        }
 
         setProfileImage(file);
+
+        // Create preview URL
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setPreviewImage(reader.result);
+        };
+        reader.readAsDataURL(file);
+    };
+
+    // Trigger file input click
+    const triggerFileInput = () => {
+        fileInputRef.current.click();
     };
 
     // Handle input changes with sanitization
@@ -117,45 +142,61 @@ const SignUp = () => {
         // Reset form error
         setFormError('');
 
-        // Name validation
-        if (!name) {
-            newErrors.name = 'Name is required';
+        // Sanitize all inputs
+        const sanitizedFirstName = sanitizeInput(firstName);
+        const sanitizedLastName = sanitizeInput(lastName);
+        const sanitizedUsername = sanitizeInput(username);
+        const sanitizedEmail = sanitizeInput(email);
+        const sanitizedPassword = sanitizeInput(password);
+        const sanitizedPhoneNumber = sanitizeInput(phoneNumber);
+
+        // First name and last name validation
+        if (!validateName(sanitizedFirstName)) {
+            newErrors.firstName = 'First name must be at least 2 characters and contain only letters';
             isValid = false;
-        } else if (!validateName(name)) {
-            newErrors.name = 'Name must be at least 2 characters and contain only letters and spaces';
+        }
+
+        if (!validateName(sanitizedLastName)) {
+            newErrors.lastName = 'Last name must be at least 2 characters and contain only letters';
             isValid = false;
         }
 
         // Username validation
-        if (!username) {
+        if (!sanitizedUsername) {
             newErrors.username = 'Username is required';
             isValid = false;
-        } else if (!validateUsername(username)) {
+        } else if (!validateUsername(sanitizedUsername)) {
             newErrors.username = 'Username must be alphanumeric and at least 3 characters';
             isValid = false;
         }
 
-        // Phone validation (if provided)
-        if (phoneNumber && !validatePhoneNumber(phoneNumber)) {
-            newErrors.phoneNumber = 'Please enter a valid phone number';
-            isValid = false;
-        }
-
         // Email validation
-        if (!email) {
+        if (!sanitizedEmail) {
             newErrors.email = 'Email is required';
             isValid = false;
-        } else if (!validateEmail(email)) {
+        } else if (!validateEmail(sanitizedEmail)) {
             newErrors.email = 'Please enter a valid email';
             isValid = false;
         }
 
+        // Phone validation (if provided)
+        if (sanitizedPhoneNumber && !validatePhoneNumber(sanitizedPhoneNumber)) {
+            newErrors.phoneNumber = 'Please enter a valid phone number (starting with 0, 10 digits)';
+            isValid = false;
+        }
+
         // Password validation
-        if (!password) {
+        if (!sanitizedPassword) {
             newErrors.password = 'Password is required';
             isValid = false;
-        } else if (!validatePassword(password)) {
+        } else if (!validatePassword(sanitizedPassword)) {
             newErrors.password = 'Password must be at least 8 characters';
+            isValid = false;
+        }
+
+        // Profile image validation
+        if (profileImage && !validateImageFile(profileImage)) {
+            newErrors.profileImage = 'Please select a valid image file (JPEG, PNG or WebP) under 5MB';
             isValid = false;
         }
 
@@ -175,22 +216,17 @@ const SignUp = () => {
         setIsSubmitting(true);
 
         try {
-            // Create form data for multipart form submission (for image upload)
+            // Create form data for multipart form submission
             const formData = new FormData();
-            formData.append('name', name);
+            formData.append('firstName', firstName);
+            formData.append('lastName', lastName);
             formData.append('email', email);
             formData.append('password', password);
             formData.append('username', username);
+            if (phoneNumber) formData.append('phoneNumber', phoneNumber);
+            if (profileImage) formData.append('profileImage', profileImage);
 
-            if (phoneNumber) {
-                formData.append('phoneNumber', phoneNumber);
-            }
-
-            if (profileImage) {
-                formData.append('profileImage', profileImage);
-            }
-
-            const response = await axios.post(backendUrl + '/api/user/register', formData, {
+            const response = await axios.post(`${backendUrl}/api/user/register`, formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
                 }
@@ -200,6 +236,7 @@ const SignUp = () => {
                 toast.success('Account created successfully!');
                 setToken(response.data.token);
                 localStorage.setItem('token', response.data.token);
+                navigate('/');
             } else {
                 setFormError(response.data.message || 'Registration failed');
                 toast.error(response.data.message);
@@ -243,37 +280,91 @@ const SignUp = () => {
                                     {formError}
                                 </div>
                             )}
-                            
+
+                            {/* Profile Image Upload */}
+                            <div className="mb-6 flex flex-col items-center">
+                                <div
+                                    className="w-24 h-24 rounded-full border-2 border-gray-300 overflow-hidden relative cursor-pointer mb-2 group"
+                                    onClick={triggerFileInput}
+                                >
+                                    {previewImage ? (
+                                        <img
+                                            src={previewImage}
+                                            alt="Profile preview"
+                                            className="w-full h-full object-cover"
+                                        />
+                                    ) : (
+                                        <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                                            <FiUser size={40} className="text-gray-400" />
+                                        </div>
+                                    )}
+                                    <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <FiCamera size={24} className="text-white" />
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    className="text-sm text-green-600 hover:text-green-700"
+                                    onClick={triggerFileInput}
+                                >
+                                    Upload Profile Picture
+                                </button>
+                                <input
+                                    type="file"
+                                    ref={fileInputRef}
+                                    onChange={handleImageChange}
+                                    accept="image/jpeg,image/png,image/webp"
+                                    className="hidden"
+                                />
+                                <ErrorMessage message={errors.profileImage} />
+                                {profileImage && (
+                                    <button
+                                        type="button"
+                                        className="text-xs text-red-500 hover:text-red-700 mt-1"
+                                        onClick={() => {
+                                            setProfileImage(null);
+                                            setPreviewImage(null);
+                                        }}
+                                    >
+                                        Remove image
+                                    </button>
+                                )}
+                            </div>
+
                             <div className="space-y-4">
-                                <div className="relative">
-                                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                                        <FiUser className="text-gray-500" />
+                                <div className="flex gap-3">
+                                    <div className="w-1/2 relative">
+                                        <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                                            <FiUser className="text-gray-500" />
+                                        </div>
+                                        <input
+                                            type="text"
+                                            placeholder="First Name"
+                                            className={`w-full p-3 pl-10 rounded-lg border ${errors.firstName ? 'border-red-500' : 'border-gray-300'} bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-500`}
+                                            value={firstName}
+                                            onChange={(e) => handleInputChange(e, setFirstName, 'firstName')}
+                                            required
+                                        />
+                                        <ErrorMessage message={errors.firstName} />
                                     </div>
-                                    <input
-                                        type="text"
-                                        placeholder="Full Name"
-                                        className={`w-full p-3 pl-10 rounded-lg border ${errors.name ? 'border-red-500' : 'border-gray-300'} bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-500`}
-                                        value={name}
-                                        onChange={(e) => handleInputChange(e, setName, 'name')}
-                                        required
-                                    />
-                                    <ErrorMessage message={errors.name} />
+
+                                    <div className="w-1/2 relative">
+                                        <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                                            <FiUser className="text-gray-500" />
+                                        </div>
+                                        <input
+                                            type="text"
+                                            placeholder="Last Name"
+                                            className={`w-full p-3 pl-10 rounded-lg border ${errors.lastName ? 'border-red-500' : 'border-gray-300'} bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-500`}
+                                            value={lastName}
+                                            onChange={(e) => handleInputChange(e, setLastName, 'lastName')}
+                                            required
+                                        />
+                                        <ErrorMessage message={errors.lastName} />
+                                    </div>
                                 </div>
 
-                                <div className="relative">
-                                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                                        <FiPhone className="text-gray-500" />
-                                    </div>
-                                    <input
-                                        type="tel"
-                                        placeholder="Phone Number"
-                                        className={`w-full p-3 pl-10 rounded-lg border ${errors.phoneNumber ? 'border-red-500' : 'border-gray-300'} bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-500`}
-                                        value={phoneNumber}
-                                        onChange={(e) => handleInputChange(e, setPhoneNumber, 'phoneNumber')}
-                                    />
-                                    <ErrorMessage message={errors.phoneNumber} />
-                                </div>
-
+                                {/* Rest of your form remains the same */}
                                 <div className="relative">
                                     <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                                         <FiUser className="text-gray-500" />
@@ -302,6 +393,21 @@ const SignUp = () => {
                                         required
                                     />
                                     <ErrorMessage message={errors.email} />
+                                </div>
+
+                                <div className="relative">
+                                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                                        <FiPhone className="text-gray-500" />
+                                    </div>
+                                    <input
+                                        type="tel"
+                                        placeholder="Phone Number (e.g. 0712345678)"
+                                        pattern="0[0-9]{9}"
+                                        className={`w-full p-3 pl-10 rounded-lg border ${errors.phoneNumber ? 'border-red-500' : 'border-gray-300'} bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-500`}
+                                        value={phoneNumber}
+                                        onChange={(e) => handleInputChange(e, setPhoneNumber, 'phoneNumber')}
+                                    />
+                                    <ErrorMessage message={errors.phoneNumber} />
                                 </div>
 
                                 <div className="relative">
@@ -337,6 +443,7 @@ const SignUp = () => {
                                     )}
                                 </button>
 
+                                {/* Rest of your form buttons remain the same */}
                                 <div className="my-4 flex items-center">
                                     <div className="flex-1 h-px bg-gray-300"></div>
                                     <p className="mx-4 text-gray-500 text-sm">OR</p>
@@ -366,6 +473,7 @@ const SignUp = () => {
                 </div>
             </div>
 
+            {/* Right side with animation remains unchanged */}
             <div className="hidden md:block md:w-1/2 relative overflow-hidden">
                 {/* Animated background */}
                 <div className="absolute inset-0 bg-gradient-to-br from-green-500 to-teal-600">
@@ -395,7 +503,7 @@ const SignUp = () => {
                 </div>
             </div>
 
-            {/* Add some keyframe animations for the floating effect */}
+            {/* Animation keyframes remain unchanged */}
             <style dangerouslySetInnerHTML={{
                 __html: `
     @keyframes float {
