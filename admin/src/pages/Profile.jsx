@@ -361,164 +361,185 @@ const Profile = ({ token, setToken }) => {
     }
 
     return (
-        <div className="container mx-auto px-4 py-8 max-w-5xl">
+        <div className="bg-gray-50 min-h-screen">
             <ToastContainer position="top-right" autoClose={500} />
 
-            {/* Profile Card - Green Theme Design */}
-            <div className="bg-gradient-to-br from-white to-green-50 rounded-2xl shadow-xl overflow-hidden">
-                <div className="bg-gradient-to-r from-green-600 to-green-500 p-4 sm:p-6 text-white relative">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-10 rounded-full transform translate-x-1/2 -translate-y-1/2"></div>
-                    <div className="absolute bottom-0 left-0 w-32 h-32 bg-white opacity-10 rounded-full transform -translate-x-1/2 translate-y-1/2"></div>
-                    <h1 className="text-2xl md:text-3xl font-bold relative z-10">Administrator Profile</h1>
-                    <p className="text-green-100 opacity-90 mt-1 relative z-10">Manage your account settings and preferences</p>
+            <div className="container mx-auto px-4 py-6">
+                {/* Page Header */}
+                <div className="mb-6">
+                    <h1 className="text-2xl font-bold text-gray-800">Administrator Profile</h1>
+                    <p className="text-gray-500">Manage your account settings and preferences</p>
                 </div>
 
-                <div className="p-6 md:p-8">
-                    {/* Profile Header with Image - Improved Layout */}
-                    <div className="flex flex-col md:flex-row items-center md:items-start gap-8 mb-8">
-                        <div className="relative group">
-                            <div className="h-32 w-32 rounded-2xl overflow-hidden border-4 border-green-400/30">
-                                <img
-                                    src={previewImage || (admin?.profileImage
-                                        ? (admin.profileImage.includes('http')
-                                            ? admin.profileImage
-                                            : `${backendUrl}/uploads/${admin.profileImage}`)
-                                        : assets.defaultAvatar || 'https://static.vecteezy.com/system/resources/thumbnails/036/594/092/small_2x/man-empty-avatar-photo-placeholder-for-social-networks-resumes-forums-and-dating-sites-male-and-female-no-photo-images-for-unfilled-user-profile-free-vector.jpg')}
-                                    alt={admin?.name || "Profile"}
-                                    className="h-full w-full object-cover"
-                                    onError={(e) => {
-                                        e.target.onerror = null;
-                                        e.target.src = assets.defaultAvatar || 'https://static.vecteezy.com/system/resources/thumbnails/036/594/092/small_2x/man-empty-avatar-photo-placeholder-for-social-networks-resumes-forums-and-dating-sites-male-and-female-no-photo-images-for-unfilled-user-profile-free-vector.jpg';
-                                    }}
-                                />
+                <div className="flex flex-col lg:flex-row gap-6">
+                    {/* Left Sidebar - Profile Summary */}
+                    <div className="w-full lg:w-1/3">
+                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                            <div className="bg-gray-800 p-4 text-white">
+                                <h2 className="font-semibold">Profile Information</h2>
                             </div>
-                            <div
-                                className="absolute -bottom-2 -right-2 bg-green-500 p-2 rounded-full shadow-lg cursor-pointer hover:bg-green-600 transition-colors duration-200"
-                                onClick={openEditModal}
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor">
-                                    <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                                </svg>
-                            </div>
-                        </div>
 
-                        <div className="text-center md:text-left md:flex-1">
-                            <h2 className="text-3xl font-bold text-gray-800 mb-1">{admin?.name}</h2>
-                            <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mb-4">
-                                <p className="text-green-700 font-medium">@{admin?.username}</p>
-                                <div className="h-4 w-px bg-gray-300"></div>
-                                <div className="inline-block bg-green-100 text-green-700 text-sm font-medium px-3 py-1 rounded-full border border-green-200">
+                            {/* Profile Image and Basic Info */}
+                            <div className="p-5 flex flex-col items-center">
+                                <div className="relative mb-4">
+                                    <div className="h-28 w-28 rounded-full overflow-hidden border-2 border-gray-200">
+                                        <img
+                                            src={previewImage || (admin?.profileImage
+                                                ? (admin.profileImage.includes('http')
+                                                    ? admin.profileImage
+                                                    : `${backendUrl}/uploads/${admin.profileImage}`)
+                                                : assets.defaultAvatar)}
+                                            alt={admin?.name || "Profile"}
+                                            className="h-full w-full object-cover"
+                                            onError={(e) => {
+                                                e.target.onerror = null;
+                                                e.target.src = assets.defaultAvatar;
+                                            }}
+                                        />
+                                    </div>
+                                    <div
+                                        className="absolute bottom-0 right-0 bg-blue-600 p-1.5 rounded-full shadow-lg cursor-pointer hover:bg-blue-700 transition-colors"
+                                        onClick={openEditModal}
+                                        title="Edit profile picture"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-white" viewBox="0 0 20 20" fill="currentColor">
+                                            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                                        </svg>
+                                    </div>
+                                </div>
+
+                                <h3 className="text-xl font-bold text-gray-800">{admin?.name}</h3>
+                                <p className="text-gray-500 mb-2">@{admin?.username}</p>
+                                <span className="bg-blue-100 text-blue-700 text-xs font-medium px-2.5 py-0.5 rounded-full">
                                     {admin?.role.charAt(0).toUpperCase() + admin?.role.slice(1)}
+                                </span>
+                            </div>
+
+                            {/* Contact Information */}
+                            <div className="border-t border-gray-100 p-5">
+                                <h3 className="text-sm font-medium text-gray-600 uppercase mb-3">Contact Details</h3>
+                                <div className="space-y-2 text-sm">
+                                    <div className="flex items-center">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
+                                            <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                                            <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+                                        </svg>
+                                        <span className="text-gray-800">{admin?.email}</span>
+                                    </div>
+                                    <div className="flex items-center">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                                        </svg>
+                                        <span className="text-gray-800 capitalize">{admin?.role}</span>
+                                    </div>
                                 </div>
                             </div>
 
-                            <div className="bg-white rounded-xl p-4 backdrop-blur-sm border border-green-200 shadow-sm">
-                                <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-green-500" viewBox="0 0 20 20" fill="currentColor">
-                                        <path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                    </svg>
-                                    Permissions
-                                </h3>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            {/* Quick Actions */}
+                            <div className="border-t border-gray-100 p-5">
+                                <h3 className="text-sm font-medium text-gray-600 uppercase mb-3">Quick Actions</h3>
+                                <div className="space-y-2">
+                                    <button
+                                        onClick={openEditModal}
+                                        className="w-full text-left px-3 py-2 flex items-center text-sm rounded hover:bg-gray-100 transition-colors"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2 text-blue-600" viewBox="0 0 20 20" fill="currentColor">
+                                            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                                        </svg>
+                                        Edit Profile
+                                    </button>
+                                    <button
+                                        onClick={() => setShowPasswordModal(true)}
+                                        className="w-full text-left px-3 py-2 flex items-center text-sm rounded hover:bg-gray-100 transition-colors"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2 text-amber-600" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                                        </svg>
+                                        Change Password
+                                    </button>
+                                    <button
+                                        onClick={() => setShowLogoutModal(true)}
+                                        className="w-full text-left px-3 py-2 flex items-center text-sm rounded hover:bg-gray-100 transition-colors"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2 text-gray-600" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fillRule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clipRule="evenodd" />
+                                        </svg>
+                                        Logout
+                                    </button>
+                                    <button
+                                        onClick={() => setShowDeleteModal(true)}
+                                        className="w-full text-left px-3 py-2 flex items-center text-sm rounded hover:bg-gray-100 transition-colors"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2 text-red-600" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                                        </svg>
+                                        Delete Account
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Right Content - Admin Details */}
+                    <div className="w-full lg:w-2/3">
+                        {/* Admin Information Section */}
+                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+                            <div className="bg-gray-800 p-4 text-white">
+                                <h2 className="font-semibold">Administrative Details</h2>
+                            </div>
+                            <div className="p-5">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <h3 className="text-sm font-medium text-gray-600 uppercase mb-3">Basic Information</h3>
+                                        <div className="space-y-3">
+                                            <div>
+                                                <label className="block text-gray-500 text-xs mb-1">Full Name</label>
+                                                <p className="text-gray-800 font-medium">{admin?.name}</p>
+                                            </div>
+                                            <div>
+                                                <label className="block text-gray-500 text-xs mb-1">Username</label>
+                                                <p className="text-gray-800 font-medium">{admin?.username}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h3 className="text-sm font-medium text-gray-600 uppercase mb-3">System Information</h3>
+                                        <div className="space-y-3">
+                                            <div>
+                                                <label className="block text-gray-500 text-xs mb-1">Email Address</label>
+                                                <p className="text-gray-800 font-medium">{admin?.email}</p>
+                                            </div>
+                                            <div>
+                                                <label className="block text-gray-500 text-xs mb-1">Role</label>
+                                                <p className="text-gray-800 font-medium capitalize">{admin?.role}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Admin Permissions Section */}
+                        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+                            <div className="bg-gray-800 p-4 text-white">
+                                <h2 className="font-semibold">Permissions & Access Control</h2>
+                            </div>
+                            <div className="p-5">
+                                <h3 className="text-sm font-medium text-gray-600 uppercase mb-3">Assigned Permissions</h3>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                                     {Object.entries(admin?.permissions || {}).map(([key, value]) => (
                                         value && (
-                                            <span key={key} className="flex items-center text-sm text-green-700">
-                                                <span className="h-2 w-2 rounded-full bg-green-400 mr-2"></span>
-                                                {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
-                                            </span>
+                                            <div key={key} className="bg-gray-50 border border-gray-200 rounded p-2 flex items-center">
+                                                <span className="h-2 w-2 rounded-full bg-blue-500 mr-2"></span>
+                                                <span className="text-sm text-gray-700">
+                                                    {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                                                </span>
+                                            </div>
                                         )
                                     ))}
                                 </div>
                             </div>
                         </div>
-                    </div>
-
-                    {/* Admin Information - Cards Layout */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                        <div className="bg-white rounded-xl p-5 border border-green-200 shadow-sm">
-                            <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-green-500" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                                </svg>
-                                Basic Information
-                            </h3>
-                            <div className="space-y-3">
-                                <div>
-                                    <label className="block text-green-600 text-sm mb-1">Full Name</label>
-                                    <p className="text-gray-800 font-medium">{admin?.name}</p>
-                                </div>
-                                <div>
-                                    <label className="block text-green-600 text-sm mb-1">Username</label>
-                                    <p className="text-gray-800 font-medium">{admin?.username}</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="bg-white rounded-xl p-5 border border-green-200 shadow-sm">
-                            <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-green-500" viewBox="0 0 20 20" fill="currentColor">
-                                    <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
-                                    <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
-                                </svg>
-                                Contact Information
-                            </h3>
-                            <div className="space-y-3">
-                                <div>
-                                    <label className="block text-green-600 text-sm mb-1">Email Address</label>
-                                    <p className="text-gray-800 font-medium">{admin?.email}</p>
-                                </div>
-                                <div>
-                                    <label className="block text-green-600 text-sm mb-1">Role</label>
-                                    <p className="text-gray-800 font-medium capitalize">{admin?.role}</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Action Buttons - Stylized */}
-                    <div className="flex flex-wrap gap-4 justify-center md:justify-start">
-                        <button
-                            type="button"
-                            onClick={openEditModal}
-                            className="bg-gradient-to-r from-green-500 to-green-500 hover:from-green-600 hover:to-green-600 text-black hover:text-white font-medium py-2.5 px-5 rounded-lg shadow-lg shadow-green-400/20 flex items-center transition-all duration-200 transform hover:translate-y-px"
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                                <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                            </svg>
-                            Edit Profile
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setShowPasswordModal(true)}
-                            className="bg-gradient-to-r  from-yellow-500 to-yellow-500 hover:from-yellow-600 hover:to-yellow-600 text-black hover:text-white
-                             font-medium py-2.5 px-5 rounded-lg shadow-lg shadow-teal-400/20 flex items-center transition-all duration-200 transform hover:translate-y-px"
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-                            </svg>
-                            Change Password
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setShowLogoutModal(true)}
-                            className="bg-gradient-to-r from-gray-500 to-gray-500 hover:from-gray-600 hover:to-gray-600 text-black hover:text-white font-medium py-2.5 px-5 rounded-lg shadow-lg shadow-gray-300/20 flex items-center transition-all duration-200 transform hover:translate-y-px border border-gray-300"
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clipRule="evenodd" />
-                            </svg>
-                            Logout
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setShowDeleteModal(true)}
-                            className="bg-gradient-to-r from-red-500 to-red-500 hover:from-red-600 hover:to-red-600 text-black hover:text-white
-                             font-medium py-2.5 px-5 rounded-lg shadow-lg shadow-red-400/20 flex items-center transition-all duration-200 transform hover:translate-y-px"
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
-                            </svg>
-                            Delete Account
-                        </button>
                     </div>
                 </div>
             </div>
@@ -541,7 +562,7 @@ const Profile = ({ token, setToken }) => {
                                 <div className="relative">
                                     <div className="h-32 w-32 rounded-2xl overflow-hidden border-4 border-green-400/30">
                                         <img
-                                            src={ 'https://static.vecteezy.com/system/resources/thumbnails/036/594/092/small_2x/man-empty-avatar-photo-placeholder-for-social-networks-resumes-forums-and-dating-sites-male-and-female-no-photo-images-for-unfilled-user-profile-free-vector.jpg' || (admin?.profileImage?.includes('http') ? admin.profileImage : `${backendUrl}/uploads/${admin.profileImage}`)}
+                                            src={previewImage || (admin?.profileImage?.includes('http') ? admin.profileImage : `${backendUrl}/uploads/${admin.profileImage}`)}
                                             alt={admin.name}
                                             className="h-full w-full object-cover"
                                             onError={(e) => {
