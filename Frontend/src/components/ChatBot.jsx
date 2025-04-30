@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useEffect, useState, useContext, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { ShopContext } from '../context/ShopContext';
 import axios from 'axios';
@@ -10,6 +10,7 @@ const ChatBot = () => {
     const [isTyping, setIsTyping] = useState(false);
     const location = useLocation();
     const { backendUrl, token, user } = useContext(ShopContext);
+    const messagesEndRef = useRef(null);
 
     // Pages where the chatbot should be available - updated to include all requested pages
     const allowedPages = [
@@ -23,6 +24,38 @@ const ChatBot = () => {
         '/profile',
         '/'  // Home page
     ];
+
+    // Function to format message text with line breaks and clickable links
+    const formatMessageText = (text) => {
+        if (!text) return '';
+
+        // First, handle line breaks
+        const withLineBreaks = text.split('\n').map((line, i) => (
+            <React.Fragment key={i}>
+                {line}
+                {i !== text.split('\n').length - 1 && <br />}
+            </React.Fragment>
+        ));
+
+        return withLineBreaks;
+    };
+
+    // Auto-scroll to latest message
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    };
+
+    useEffect(() => {
+        // Scroll to bottom when messages change
+        scrollToBottom();
+    }, [messages]);
+
+    useEffect(() => {
+        // Scroll to bottom when chat is opened
+        if (isOpen) {
+            scrollToBottom();
+        }
+    }, [isOpen]);
 
     useEffect(() => {
         // Reset chat when navigating to another page
@@ -153,7 +186,7 @@ const ChatBot = () => {
                         {messages.map((msg, index) => (
                             <div key={index} className={`message ${msg.sender}`}>
                                 <div className="message-content">
-                                    {msg.text}
+                                    {formatMessageText(msg.text)}
                                 </div>
                                 <div className="message-time">
                                     {new Date(msg.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -169,6 +202,7 @@ const ChatBot = () => {
                                 </div>
                             </div>
                         )}
+                        <div ref={messagesEndRef} />
                     </div>
                     <div className="chat-input">
                         <input
@@ -263,6 +297,7 @@ const ChatBot = () => {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  scroll-behavior: smooth;
 }
 
 .message {
@@ -284,6 +319,16 @@ const ChatBot = () => {
   align-self: flex-end;
   background-color: #dcf8c6;
   border-bottom-right-radius: 5px;
+}
+
+.message-content {
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.message-content a {
+  color: #0078d7;
+  text-decoration: underline;
 }
 
 .message-time {
