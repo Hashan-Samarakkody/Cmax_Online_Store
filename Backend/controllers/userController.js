@@ -388,7 +388,7 @@ const updateUserProfile = async (req, res) => {
         if (name) updateData.name = name;
         if (phoneNumber !== undefined) updateData.phoneNumber = phoneNumber;
 
-        // Update address information
+        // Update personal information
         if (firstName !== undefined) updateData.firstName = firstName;
         if (lastName !== undefined) updateData.lastName = lastName;
         if (street !== undefined) updateData.street = street;
@@ -396,6 +396,34 @@ const updateUserProfile = async (req, res) => {
         if (state !== undefined) updateData.state = state;
         if (postalCode !== undefined) updateData.postalCode = postalCode;
 
+        // Handle profile image upload if file is provided
+        if (req.file) {
+            try {
+                // Create a data URI from the buffer
+                const fileBuffer = req.file.buffer;
+                const fileType = req.file.mimetype;
+                const fileEncoding = 'base64';
+
+                const dataUri = `data:${fileType};${fileEncoding},${fileBuffer.toString('base64')}`;
+
+                // Upload to Cloudinary using the data URI
+                const result = await cloudinary.uploader.upload(dataUri, {
+                    folder: 'user_profiles',
+                    use_filename: true,
+                    unique_filename: true,
+                    transformation: [{ width: 500, height: 500, crop: "fill" }]
+                });
+
+                // Add profile image URL to update data
+                updateData.profileImage = result.secure_url;
+            } catch (uploadError) {
+                console.error("Error uploading to Cloudinary:", uploadError);
+                return res.status(500).json({
+                    success: false,
+                    message: "Error uploading profile image"
+                });
+            }
+        }
 
         // Update user in database
         const updatedUser = await userModel.findByIdAndUpdate(

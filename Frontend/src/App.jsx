@@ -45,7 +45,7 @@ const App = () => {
         <Route path='/profile' element={<Profile />} />
         <Route path='/returns' element={<Returns />} />
       </Routes>
-      {!isAuthPage && <Footer />}
+      <Footer />
     </div>
   )
 }
