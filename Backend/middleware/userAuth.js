@@ -58,4 +58,39 @@ const orderAndCartAuth = async (req, res, next) => {
     }
 }
 
-export { userAuth, orderAndCartAuth };
+const wishlistAuth = async (req, res, next) => {
+    try {
+        const { token } = req.headers;
+
+        if (!token) {
+            return res.status(401).json({ success: false, message: 'Authentication required' });
+        }
+
+        // Verify token
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+        // For wishlist, we use decoded.userId (if your token stores it as userId)
+        // or decoded.id (if your token stores it as id)
+        const userId = decoded.userId || decoded.id;
+
+        if (!userId) {
+            return res.status(401).json({ success: false, message: 'Invalid token format' });
+        }
+
+        // Get user from database
+        const user = await userModel.findById(userId);
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        // Add user ID to request body
+        req.body.userId = userId;
+        next();
+    } catch (error) {
+        console.log(error);
+        res.status(401).json({ success: false, message: 'Invalid token' });
+    }
+};
+
+
+export { userAuth, orderAndCartAuth, wishlistAuth };

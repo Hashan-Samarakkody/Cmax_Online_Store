@@ -22,6 +22,7 @@ import footer_logo from './footer_logo.png'
 import product_icon from './product.svg'
 import empty_cart from './empty_cart.png'
 import empty_order from './empty_orders.png'
+import remove_icon from './remove_icon.png'
 
 export const assets = {
     logo,
@@ -48,4 +49,5 @@ export const assets = {
     product_icon,
     empty_cart,
     empty_order,
+    remove_icon
 }
