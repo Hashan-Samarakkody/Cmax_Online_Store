@@ -13,6 +13,7 @@ import reportRouter from './routes/reportRoute.js';
 import adminRouter from './routes/adminRoute.js';
 import reviewRouter from './routes/reviewRoute.js';
 import returnRouter from './routes/returnRoute.js';
+import chatbotRouter from './routes/chatbotRoute.js';
 import { WebSocketServer } from 'ws'; 
 
 // App Config
@@ -36,6 +37,7 @@ app.use('/api/dashboard', dashboardRouter);
 app.use('/api/reports', reportRouter);
 app.use('/api/returns', returnRouter);
 app.use('/api/admin', adminRouter);
+app.use('/api/chatbot', chatbotRouter);
 app.get('/', (req, res) => {
     res.send('API is working');
 });

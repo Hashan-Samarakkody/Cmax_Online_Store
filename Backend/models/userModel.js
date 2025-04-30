@@ -1,7 +1,6 @@
 import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema({
-    name: { type: String, required: true },
     username: { type: String, required: true, unique: true },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
@@ -10,6 +9,19 @@ const userSchema = new mongoose.Schema({
         type: String,
         default: 'https://static.vecteezy.com/system/resources/thumbnails/036/594/092/small_2x/man-empty-avatar-photo-placeholder-for-social-networks-resumes-forums-and-dating-sites-male-and-female-no-photo-images-for-unfilled-user-profile-free-vector.jpg'
     },
+    firstName: { type: String },
+    lastName: { type: String },
+
+    addresses: [{
+        _id: { type: mongoose.Schema.Types.ObjectId, auto: true },
+        addressName: { type: String, required: true },  
+        street: String,
+        city: String,
+        state: String,
+        postalCode: String,
+        isDefault: { type: Boolean, default: false }
+    }],
+
     cartData: { type: Object, default: {} },
     lastLogin: { type: Date },
     createdAt: { type: Date, default: Date.now },
