@@ -22,6 +22,11 @@ const userSchema = new mongoose.Schema({
         isDefault: { type: Boolean, default: false }
     }],
 
+    wishlistItems: {
+        type: Array,
+        default: []
+    },
+
     cartData: { type: Object, default: {} },
     lastLogin: { type: Date },
     createdAt: { type: Date, default: Date.now },

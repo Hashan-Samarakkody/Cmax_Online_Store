@@ -16,7 +16,59 @@ const ShopContextProvider = (props) => {
     const [cartItems, setCartItems] = useState({});
     const [products, setProducts] = useState([]);
     const [token, setToken] = useState('');
+    const [wishlistItems, setWishlistItems] = useState([]); 
     const navigate = useNavigate();
+
+    const addToWishlist = async (itemId) => {
+        try {
+            const response = await axios.post(backendUrl + '/api/wishlist/add', {
+                itemId
+            }, { headers: { token } });
+
+            if (response.data.success) {
+                setWishlistItems([...wishlistItems, itemId]);
+                toast.success('Added to wishlist!');
+            }
+        } catch (error) {
+            console.log(error);
+            toast.error(error.message);
+        }
+    };
+
+    const removeFromWishlist = async (itemId) => {
+        try {
+            const response = await axios.post(backendUrl + '/api/wishlist/remove', {
+                itemId
+            }, { headers: { token } });
+
+            if (response.data.success) {
+                setWishlistItems(wishlistItems.filter(id => id !== itemId));
+                toast.success('Removed from wishlist!');
+            }
+        } catch (error) {
+            console.log(error);
+            toast.error(error.message);
+        }
+    };
+
+    const getWishlist = async () => {
+        try {
+            const response = await axios.post(backendUrl + '/api/wishlist/get', {}, { headers: { token } });
+            if (response.data.success) {
+                setWishlistItems(response.data.wishlistItems);
+            }
+        } catch (error) {
+            console.log(error);
+        }
+    };
+
+    // Add to useEffect that runs on login/token change
+    useEffect(() => {
+        if (token) {
+            getUserCart(token);
+            getWishlist();
+        }
+    }, [token]);
 
     // Add WebSocket connection and handlers
     useEffect(() => {
@@ -237,7 +289,12 @@ const ShopContextProvider = (props) => {
         navigate,
         backendUrl,
         setToken,
-        token
+        token,
+        wishlistItems,
+        setWishlistItems,
+        addToWishlist,
+        removeFromWishlist,
+        getWishlist
     }
 
     return (
