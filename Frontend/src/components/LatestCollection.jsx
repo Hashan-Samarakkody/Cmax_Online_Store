@@ -3,10 +3,16 @@ import { ShopContext } from '../context/ShopContext'
 import Title from './Title'
 import ProductItem from './ProductItem'
 import WebSocketService from '../services/WebSocketService'
+import { motion } from 'framer-motion'
+import { useInView } from 'react-intersection-observer'
 
 const LatestCollection = () => {
   const { products, setProducts } = useContext(ShopContext);
   const [latestProducts, setLatestCollection] = useState([]);
+  const [ref, inView] = useInView({
+    triggerOnce: false,
+    threshold: 0.1,
+  });
 
   useEffect(() => {
     // Update latest products when products array changes
@@ -14,23 +20,20 @@ const LatestCollection = () => {
   }, [products]);
 
   useEffect(() => {
-    // Ensure WebSocket connection is established
+    // WebSocket functionality - kept exactly the same
     if (!WebSocketService.isConnected()) {
       WebSocketService.connect();
     }
 
-    // Handle new product events
     const handleNewProduct = (data) => {
       if (data && data.product) {
         setProducts(prevProducts => {
-          // Only add if not already in the array
           const exists = prevProducts.some(p => p._id === data.product._id);
           return exists ? prevProducts : [...prevProducts, data.product];
         });
       }
     };
 
-    // Handle product updates
     const handleUpdateProduct = (data) => {
       if (data && data.product) {
         setProducts(prevProducts => prevProducts.map(product =>
@@ -39,35 +42,71 @@ const LatestCollection = () => {
       }
     };
 
-    // Register for WebSocket events
     WebSocketService.on('newProduct', handleNewProduct);
     WebSocketService.on('updateProduct', handleUpdateProduct);
 
-    // Cleanup on unmount
     return () => {
       WebSocketService.off('newProduct', handleNewProduct);
       WebSocketService.off('updateProduct', handleUpdateProduct);
     };
   }, [setProducts]);
 
+  // Animation variants
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+      }
+    }
+  };
+
   return (
-    <div className='my-10'>
-      <div className='text-center py-8 text-3xl'>
-        <Title text1={'LATEST'} text2={'COLLECTION'} />
-        <p className='w-3/4 m-auto text-sm sm:text-sm md:text-base text-gray-600'>
-          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Aperiam fuga molestiae natus,
-          maxime in recusandae reprehenderit! Similique, quos aspernatur, possimus quaerat earum
-          veritatis et asperiores inventore aliquid aperiam necessitatibus consequatur.
-        </p>
+    <div className='my-16 py-6'>
+      <div className='text-center py-8' ref={ref}>
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
+          transition={{ duration: 0.7 }}
+        >
+          <Title text1={'LATEST'} text2={'COLLECTION'} />
+          <p className='w-3/4 m-auto text-sm sm:text-sm md:text-base text-gray-600 mt-4'>
+            Discover our newest arrivals and stay ahead of the trends with C-max's latest collection.
+            We've handpicked these items to ensure quality, style, and value for our customers.
+          </p>
+        </motion.div>
       </div>
 
-      {/* Rendering Products */}
-      <div className='grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 gap-y-6'>
-        {
-          latestProducts.map((item, index) => (
-            <ProductItem key={item._id} id={item._id} image={item.images} name={item.name} price={item.price} />
-          ))
-        }
+      {/* Rendering Products with animation */}
+      <motion.div
+        className='grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 gap-y-6'
+        variants={containerVariants}
+        initial="hidden"
+        animate={inView ? "show" : "hidden"}
+      >
+        {latestProducts.map((item, index) => (
+          <motion.div
+            key={item._id}
+            variants={{
+              hidden: { opacity: 0, y: 20 },
+              show: { opacity: 1, y: 0, transition: { duration: 0.5 } }
+            }}
+            whileHover={{ y: -10, transition: { duration: 0.3 } }}
+          >
+            <ProductItem id={item._id} image={item.images} name={item.name} price={item.price} />
+          </motion.div>
+        ))}
+      </motion.div>
+
+      <div className="text-center mt-8">
+        <motion.button
+          className="px-8 py-3 bg-black text-white rounded-full hover:bg-gray-800 transition-all"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          View All Products
+        </motion.button>
       </div>
     </div>
   )
