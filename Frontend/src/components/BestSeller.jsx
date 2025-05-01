@@ -5,6 +5,7 @@ import ProductItem from './ProductItem'
 import WebSocketService from '../services/WebSocketService'
 import { motion } from 'framer-motion'
 import { useInView } from 'react-intersection-observer'
+import { useNavigate } from 'react-router-dom'
 
 const BestSeller = () => {
     const { products, setProducts } = useContext(ShopContext);
@@ -13,6 +14,8 @@ const BestSeller = () => {
         triggerOnce: false,
         threshold: 0.1,
     });
+
+    const navigate = useNavigate();
 
     useEffect(() => {
         // Filter and set best sellers - keep original functionality
@@ -122,6 +125,7 @@ const BestSeller = () => {
                     className="px-8 py-3 bg-black text-white rounded-full hover:bg-gray-800 transition-all"
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
+                    onClick={() => navigate('/collection')}
                 >
                     View All Bestsellers
                 </motion.button>

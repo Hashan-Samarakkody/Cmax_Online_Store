@@ -4,12 +4,20 @@ import { motion } from 'framer-motion'
 import Slider from 'react-slick'
 import 'slick-carousel/slick/slick.css'
 import 'slick-carousel/slick/slick-theme.css'
+import { useNavigate } from 'react-router-dom'
 
 const Hero = () => {
+
+    const navigate = useNavigate()
+
     // Sample images for carousel (replace with your actual images)
     const heroImages = [
         assets.hero_img,
-        // Add more images to the carousel if available
+        assets.h1,
+        assets.h2,
+        assets.h3,
+        assets.h4,
+        assets.h5
     ];
 
     const settings = {
@@ -83,6 +91,7 @@ const Hero = () => {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ delay: 1.5 }}
+                        onClick={() => navigate('/collection')}
                     >
                         Shop Now
                     </motion.button>

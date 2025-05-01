@@ -30,6 +30,11 @@ import luxury_fashion from './luxury_fashion.jpg'
 import exclusive_collections from './exclusive_collections.jpg'
 import premium_quality from './premium_quality.jpg'
 import fast_delivery from './fast_delivery.jpeg'
+import h1 from './h1.jpg'
+import h2 from './h2.jpg'
+import h3 from './h3.jpeg'
+import h4 from './h4.jpg'
+import h5 from './h5.jpg'
 
 
 export const assets = {
@@ -64,5 +69,10 @@ export const assets = {
     luxury_fashion,
     exclusive_collections,
     premium_quality,
-    fast_delivery
+    fast_delivery,
+    h1,
+    h2,
+    h3,
+    h4,
+    h5
 }
