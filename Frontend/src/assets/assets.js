@@ -23,6 +23,14 @@ import product_icon from './product.svg'
 import empty_cart from './empty_cart.png'
 import empty_order from './empty_orders.png'
 import remove_icon from './remove_icon.png'
+import empty_wishlist from './empty_wishlist.png'
+import premium_electronics from './premium_electronics.jpg'
+import highend_cosmetics from './high-end_cosmetics.jpg'
+import luxury_fashion from './luxury_fashion.jpg'
+import exclusive_collections from './exclusive_collections.jpg'
+import premium_quality from './premium_quality.jpg'
+import fast_delivery from './fast_delivery.jpeg'
+
 
 export const assets = {
     logo,
@@ -49,5 +57,12 @@ export const assets = {
     product_icon,
     empty_cart,
     empty_order,
-    remove_icon
+    remove_icon,
+    empty_wishlist,
+    premium_electronics,
+    highend_cosmetics,
+    luxury_fashion,
+    exclusive_collections,
+    premium_quality,
+    fast_delivery
 }
