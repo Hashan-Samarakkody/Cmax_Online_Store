@@ -147,7 +147,7 @@ const Orders = () => {
               src={assets.empty_order}
               alt='Empty Cart'
             />
-            <p className='text-gray-400 font-semibold text-4xl mt-4'>No orders to display!</p>
+            <p className='text-gray-400 font-semibold text-4xl mt-4 animate-pulse'>No orders to display!</p>
           </div>
         ) : (
           orderData.map((item, index) => {

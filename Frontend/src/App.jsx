@@ -20,6 +20,7 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Verify from './pages/Verify'
 import ChatBot from './components/ChatBot'
+import Wishlist from './pages/Wishlist'
 
 
 const App = () => {
@@ -45,6 +46,7 @@ const App = () => {
         <Route path='/verify' element={<Verify />} />
         <Route path='/profile' element={<Profile />} />
         <Route path='/returns' element={<Returns />} />
+        <Route path='/wishlist' element={<Wishlist />} />
       </Routes>
       <Footer />
       <ChatBot />

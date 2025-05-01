@@ -29,6 +29,10 @@ const Navbar = () => {
 					<p>COLLECTION</p>
 					<hr className='w-3/4 border-none h-[2px] bg-gray-700 hidden' />
 				</NavLink>
+				<NavLink to='/wishlist' className='flex flex-col items-center gap-1'>
+					<p>WISHLIST</p>
+					<hr className='w-3/4 border-none h-[2px] bg-gray-700 hidden' />
+				</NavLink>
 				<NavLink to='/about' className='flex flex-col items-center gap-1'>
 					<p>ABOUT</p>
 					<hr className='w-3/4 border-none h-[2px] bg-gray-700 hidden' />
@@ -94,6 +98,10 @@ const Navbar = () => {
 
 					<NavLink onClick={() => setVisible(false)} className='py-2 pl-5 hover:bg-gray-50' to='/collection'>
 						COLLECTION
+					</NavLink>
+
+					<NavLink onClick={() => setVisible(false)} className='py-2 pl-5 hover:bg-gray-50' to='/wishlist'>
+						WISHLIST
 					</NavLink>
 
 					<NavLink onClick={() => setVisible(false)} className='py-2 pl-5 hover:bg-gray-50' to='/about'>

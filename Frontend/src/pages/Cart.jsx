@@ -49,11 +49,12 @@ const Cart = () => {
         // Display "Cart is Empty" message when cartData is empty
         <div className='flex flex-col justify-center items-center h-[50vh]'>
           <img
-            className='w-40 sm:w-60 animate-pulse'
+            className='w-80 sm:w-100 animate-pulse '
             src={assets.empty_cart}
             alt='Empty Cart'
+            onClick={() => navigate('/collection')}
           />
-          <p className='text-gray-400 font-semibold text-4xl mt-4'>Cart is empty!</p>
+          <p className='text-gray-400 font-semibold text-4xl mt-4 animate-pulse'>Cart is empty!</p>
         </div>
       ) : (
         <div>

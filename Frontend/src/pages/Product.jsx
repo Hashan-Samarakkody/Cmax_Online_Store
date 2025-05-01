@@ -8,6 +8,7 @@ import ProductReviews from '../components/ProductReviews';
 import { toast } from 'react-toastify';
 import { backendUrl } from '../../../admin/src/App';
 import WebSocketService from '../services/WebSocketService';
+import { FiHeart } from 'react-icons/fi';
 
 const Product = () => {
   const { productId } = useParams();
@@ -19,6 +20,8 @@ const Product = () => {
   const [color, setColor] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('description');
+  const { wishlistItems, addToWishlist, removeFromWishlist } = useContext(ShopContext);
+  const isInWishlist = wishlistItems.includes(productId);
 
   // Fetch product data
   const fetchProductData = async () => {
@@ -190,9 +193,23 @@ const Product = () => {
               addToCart(productData._id, size, color);
               toast.success('Product added to cart!', { autoClose: 800 });
             }}
-            className='bg-black text-white px-8 py-3 text-sm active:bg-gray-700 rounded-lg'
+            className='bg-black text-white px-8 py-3 text-sm active:bg-gray-700 rounded-lg cursor-pointer hover:bg-gray-800 transition-colors duration-200 ease-in-out'
           >
             Add to Cart
+          </button>
+          <button
+            onClick={() => {
+              if (isInWishlist) {
+                removeFromWishlist(productId);
+              } else {
+                addToWishlist(productId);
+              }
+            }}
+            className={`cursor-pointer mt-4 border border-black px-8 py-3 text-sm rounded-lg flex items-center gap-2 ${isInWishlist ? 'bg-red-50 border-red-300' : 'bg-white'
+              } hover:bg-green-200 transition-colors duration-200 ease-in-out`}
+          >
+            <FiHeart className={isInWishlist ? 'fill-red-500 text-red-500' : ''} />
+            {isInWishlist ? 'Remove from Wishlist' : 'Add to Wishlist'}
           </button>
           <hr className='mt-8 sm:w-4/5' />
           <div className='text-sm text-gray-500 mt-5 flex flex-col gap-1'>
