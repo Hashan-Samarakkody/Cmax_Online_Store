@@ -100,6 +100,10 @@ const Navbar = () => {
 						COLLECTION
 					</NavLink>
 
+					<NavLink onClick={() => setVisible(false)} className='py-2 pl-5 hover:bg-gray-50' to='/wishlist'>
+						WISHLIST
+					</NavLink>
+
 					<NavLink onClick={() => setVisible(false)} className='py-2 pl-5 hover:bg-gray-50' to='/about'>
 						ABOUT
 					</NavLink>

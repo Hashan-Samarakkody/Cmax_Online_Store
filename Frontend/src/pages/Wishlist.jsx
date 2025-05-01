@@ -5,7 +5,7 @@ import { assets } from '../assets/assets';
 import ProductItem from '../components/ProductItem';
 
 const Wishlist = () => {
-    const { products, wishlistItems, removeFromWishlist, addToCart } = useContext(ShopContext);
+    const { products, wishlistItems, removeFromWishlist, addToCart,navigate } = useContext(ShopContext);
     const [wishlistProducts, setWishlistProducts] = useState([]);
 
     useEffect(() => {
@@ -23,11 +23,12 @@ const Wishlist = () => {
             {wishlistProducts.length === 0 ? (
                 <div className='flex flex-col justify-center items-center h-[50vh]'>
                     <img
-                        className='w-40 sm:w-60'
-                        src={assets.empty_cart}
+                        className='w-80 sm:w-100 animate-pulse'
+                        src={assets.empty_wishlist}
                         alt='Empty Wishlist'
+                        onClick={() => navigate('/collection')}
                     />
-                    <p className='text-gray-400 font-semibold text-4xl mt-4'>Your wishlist is empty!</p>
+                    <p className='text-gray-400 font-semibold text-4xl mt-4 text-center animate-pulse'>Your wishlist is empty!</p>
                 </div>
             ) : (
                 <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6'>

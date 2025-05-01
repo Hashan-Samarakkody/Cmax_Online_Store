@@ -2,10 +2,10 @@ import React, { useState, useContext, useEffect } from 'react'
 import { ShopContext } from '../context/ShopContext'
 import axios from 'axios'
 import { toast } from 'react-toastify'
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import DOMPurify from 'dompurify'
 import { assets } from '../assets/assets';
-import { FiMail, FiLock, FiLoader, FiArrowRight, FiArrowLeft } from 'react-icons/fi';
+import { FiMail, FiLock, FiLoader, FiArrowRight, FiArrowLeft, FiShoppingBag, FiShield, FiTruck } from 'react-icons/fi';
 import { FcGoogle } from 'react-icons/fc';
 import { Link } from 'react-router-dom';
 
@@ -25,6 +25,29 @@ const Login = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [resetStep, setResetStep] = useState(1);
   const [isResetting, setIsResetting] = useState(false);
+
+  // Animation & carousel state
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [animatingOut, setAnimatingOut] = useState(false);
+
+  // Carousel content
+  const carouselItems = [
+    {
+      image: assets.exclusive_collections,
+      title: "Exclusive Collections",
+      description: "Discover our latest arrivals and seasonal favorites"
+    },
+    {
+      image: assets.premium_quality,
+      title: "Premium Quality",
+      description: "Curated products that meet our highest standards"
+    },
+    {
+      image: assets.fast_delivery,
+      title: "Fast Delivery",
+      description: "Quick shipping to bring your favorites to your doorstep"
+    }
+  ];
 
   // Validation errors
   const [errors, setErrors] = useState({
@@ -213,6 +236,19 @@ const Login = () => {
     }
   };
 
+  // Auto-advance carousel
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setAnimatingOut(true);
+      setTimeout(() => {
+        setCurrentSlide((prev) => (prev + 1) % carouselItems.length);
+        setAnimatingOut(false);
+      }, 500);
+    }, 5000);
+
+    return () => clearInterval(timer);
+  }, [carouselItems.length]);
+
   // Reset modal content based on current step
   const renderResetModalContent = () => {
     switch (resetStep) {
@@ -370,36 +406,74 @@ const Login = () => {
   // Error message component for form fields
   const ErrorMessage = ({ message }) => {
     return message ? (
-      <p className="text-red-500 text-xs mt-1">{message}</p>
+      <motion.p
+        className="text-red-500 text-xs mt-1"
+        initial={{ opacity: 0, y: -5 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        {message}
+      </motion.p>
     ) : null;
   };
 
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="flex min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden">
       <div className="w-full md:w-1/2 flex items-center justify-center p-4">
-        <div className="w-full max-w-md">
+        <motion.div
+          className="w-full max-w-md"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
           <form onSubmit={onSubmitHandler} className="py-8 px-4 sm:px-0">
             <div className="w-full max-w-md mx-auto">
-              <div className="text-center mb-8">
+              <Link to="/" className="flex items-center justify-center mb-6">
+                <motion.img
+                  src={assets.logo || "https://via.placeholder.com/50"}
+                  alt="Logo"
+                  className="h-12 mr-2"
+                  initial={{ scale: 0.8, rotateY: 180 }}
+                  animate={{ scale: 1, rotateY: 0 }}
+                  transition={{ duration: 0.7 }}
+                  whileHover={{ rotateY: 10 }}
+                />
+              </Link>
+
+              <motion.div
+                className="text-center mb-8"
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2, duration: 0.5 }}
+              >
                 <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-green-500 to-teal-400 bg-clip-text text-transparent">Welcome Back!</h1>
-                <p className="text-gray-600">Log in to your account</p>
-              </div>
+                <p className="text-gray-600">Log in to continue your shopping experience</p>
+              </motion.div>
 
               {formError && (
-                <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 mb-6 rounded-lg">
+                <motion.div
+                  className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 mb-6 rounded-lg"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.3 }}
+                >
                   {formError}
-                </div>
+                </motion.div>
               )}
 
-              <div className="space-y-5">
+              <motion.div
+                className="space-y-5"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3, duration: 0.5 }}
+              >
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                    <FiMail className="text-gray-500" />
+                    <FiMail className="text-green-500" />
                   </div>
                   <input
                     type="email"
                     placeholder="Email"
-                    className={`w-full p-3 pl-10 rounded-lg border ${errors.email ? 'border-red-500' : 'border-gray-300'} bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-300`}
+                    className={`w-full p-3 pl-10 rounded-lg border ${errors.email ? 'border-red-500' : 'border-gray-300'} bg-white focus:outline-none focus:ring-2 focus:ring-green-500 transition-all duration-300 shadow-sm`}
                     value={email}
                     onChange={(e) => handleInputChange(e, setEmail, 'email')}
                     required
@@ -409,119 +483,227 @@ const Login = () => {
 
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                    <FiLock className="text-gray-500" />
+                    <FiLock className="text-green-500" />
                   </div>
                   <input
                     type="password"
                     placeholder="Password"
-                    className={`w-full p-3 pl-10 rounded-lg border ${errors.password ? 'border-red-500' : 'border-gray-300'} bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-300`}
+                    className={`w-full p-3 pl-10 rounded-lg border ${errors.password ? 'border-red-500' : 'border-gray-300'} bg-white focus:outline-none focus:ring-2 focus:ring-green-500 transition-all duration-300 shadow-sm`}
                     value={password}
                     onChange={(e) => handleInputChange(e, setPassword, 'password')}
                     required
                   />
                   <ErrorMessage message={errors.password} />
                 </div>
-              </div>
+              </motion.div>
 
-              <div className="mt-2 text-right">
+              <motion.div
+                className="mt-2 text-right"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.4, duration: 0.5 }}
+              >
                 <span
-                  className="text-green-600 text-sm cursor-pointer hover:underline"
+                  className="text-green-600 text-sm cursor-pointer hover:underline transition-colors duration-200"
                   onClick={() => setShowResetModal(true)}
                 >
                   Forgot Password?
                 </span>
-              </div>
+              </motion.div>
 
-              <div className="mt-6">
-                <button
+              <motion.div
+                className="mt-6"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5, duration: 0.5 }}
+              >
+                <motion.button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full bg-gradient-to-r from-green-600 to-teal-600 text-white py-3 rounded-lg hover:opacity-90 transition flex items-center justify-center"
+                  className="w-full bg-gradient-to-r from-green-600 to-teal-600 text-white py-3 rounded-lg shadow-md transition-all duration-300 transform hover:shadow-lg hover:translate-y-[-2px] disabled:opacity-70 disabled:cursor-not-allowed"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                 >
                   {isSubmitting ? (
-                    <>
+                    <div className="flex items-center justify-center">
                       <FiLoader className="animate-spin mr-2" />
-                      Logging in...
-                    </>
+                      <span>Logging in...</span>
+                    </div>
                   ) : (
-                    "Log In"
+                    <span>Log In</span>
                   )}
-                </button>
+                </motion.button>
 
-                <div className="my-4 flex items-center">
+                <div className="my-6 flex items-center">
                   <div className="flex-1 h-px bg-gray-300"></div>
                   <p className="mx-4 text-gray-500 text-sm">OR</p>
                   <div className="flex-1 h-px bg-gray-300"></div>
                 </div>
 
-                <button
+                <motion.button
                   type="button"
-                  className="w-full border border-gray-300 py-3 rounded-lg flex items-center justify-center gap-2 hover:bg-gray-50 transition"
+                  className="w-full flex items-center justify-center gap-2 p-3 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-all duration-300 shadow-sm"
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.99 }}
                 >
                   <FcGoogle size={20} />
                   <span>Continue with Google</span>
-                </button>
+                </motion.button>
 
-                <div className="text-center mt-6 text-sm">
+                <div className="text-center mt-6">
                   <span className="text-gray-600">Don't have an account? </span>
                   <Link
                     to="/signup"
-                    className="text-green-600 font-medium cursor-pointer hover:underline"
+                    className="text-green-600 font-medium hover:text-green-800 hover:underline transition-colors duration-200"
                   >
                     Sign up now
                   </Link>
                 </div>
-              </div>
+              </motion.div>
             </div>
           </form>
-        </div>
+        </motion.div>
       </div>
 
-      <div className="hidden md:block md:w-1/2 relative overflow-hidden">
-        {/* Animated background */}
+      <motion.div
+        className="hidden md:block md:w-1/2 relative overflow-hidden"
+        initial={{ opacity: 0, x: 50 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.7, delay: 0.2, ease: "easeOut" }}
+      >
+        {/* Animated background with subtle patterns */}
         <div className="absolute inset-0 bg-gradient-to-br from-green-500 to-teal-600">
-          <div className="absolute inset-0 opacity-20">
-            {Array.from({ length: 20 }).map((_, i) => (
-              <div
+          <div className="absolute inset-0 opacity-5"
+            style={{ backgroundImage: "url('https://www.transparenttextures.com/patterns/diagonales-decalees.png')" }}
+          />
+
+          {/* Animated floating elements */}
+          <div className="absolute inset-0">
+            {Array.from({ length: 15 }).map((_, i) => (
+              <motion.div
                 key={i}
                 className="absolute rounded-full bg-white"
                 style={{
-                  width: `${Math.random() * 20 + 5}px`,
-                  height: `${Math.random() * 20 + 5}px`,
+                  width: `${Math.random() * 50 + 10}px`,
+                  height: `${Math.random() * 50 + 10}px`,
                   left: `${Math.random() * 100}%`,
                   top: `${Math.random() * 100}%`,
-                  opacity: Math.random() * 0.8 + 0.2,
-                  animation: `float ${Math.random() * 10 + 10}s infinite linear`
+                  opacity: 0.05 + Math.random() * 0.1,
+                }}
+                animate={{
+                  y: [0, Math.random() * 30 - 15, 0],
+                  x: [0, Math.random() * 30 - 15, 0],
+                  scale: [1, Math.random() * 0.2 + 0.9, 1],
+                }}
+                transition={{
+                  duration: Math.random() * 10 + 15,
+                  repeat: Infinity,
+                  ease: "easeInOut"
                 }}
               />
             ))}
           </div>
         </div>
 
-        {/* Centered image with glass effect */}
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="relative w-3/4 h-3/4 backdrop-blur-sm bg-white/20 rounded-3xl overflow-hidden border border-white/30 shadow-2xl flex items-center justify-center p-8">
-            <img src={assets.login_img} className="max-w-full max-h-full object-contain" alt="Login illustration" />
+        {/* Main content area */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center p-10 z-10">
+
+          <AnimatePresence mode="wait">
+            <motion.div
+              className="w-full max-w-lg rounded-xl overflow-hidden shadow-2xl"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.7, duration: 0.8 }}
+            >
+              <div className="h-64 relative rounded-xl overflow-hidden">
+                {/* Current slide with animation */}
+                <AnimatePresence initial={false} mode="popLayout">
+                  <motion.div
+                    key={currentSlide}
+                    className="absolute inset-0"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 1, delay: 0.3 }}
+                    onAnimationStart={() => setAnimatingOut(true)}
+                  >
+                    <img
+                      src={carouselItems[currentSlide].image}
+                      alt={carouselItems[currentSlide].title}
+                      className="w-full h-full object-cover"
+                    />
+
+                    {/* Overlay and content */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent"></div>
+                    <motion.div
+                      className="absolute bottom-0 left-0 right-0 p-6"
+                      initial={{ y: 10, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      transition={{ duration: 1, delay: 0.3 }}
+                    >
+                      <h3 className="text-white text-xl font-bold">{carouselItems[currentSlide].title}</h3>
+                      <p className="text-white/80 text-sm mt-1">{carouselItems[currentSlide].description}</p>
+                    </motion.div>
+                  </motion.div>
+                </AnimatePresence>
+
+                {/* Carousel indicators */}
+                <div className="absolute bottom-3 left-1/2 transform -translate-x-1/2 flex space-x-2 z-10">
+                  {carouselItems.map((_, i) => (
+                    <button
+                      key={i}
+                      className={`h-1.5 rounded-full transition-all duration-300 ${i === currentSlide ? 'w-6 bg-white' : 'w-2 bg-white/50'
+                        }`}
+                      onClick={() => setCurrentSlide(i)}
+                    />
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          </AnimatePresence>
+
+          {/* Feature highlights */}
+          <div className="grid grid-cols-3 gap-4 mt-8 w-full max-w-lg">
+            {[
+              { icon: <FiShoppingBag />, title: "Shop With Ease" },
+              { icon: <FiTruck />, title: "Fast Delivery" },
+              { icon: <FiShield />, title: "Secure Payment" }
+            ].map((feature, i) => (
+              <motion.div
+                key={i}
+                className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-4 flex flex-col items-center text-center"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.9 + i * 0.2, duration: 0.5 }}
+                whileHover={{ y: -5, backgroundColor: "rgba(255, 255, 255, 0.15)" }}
+              >
+                <div className="text-white text-xl p-2 bg-white/10 rounded-full mb-2">
+                  {feature.icon}
+                </div>
+                <h3 className="text-white font-medium text-sm">{feature.title}</h3>
+              </motion.div>
+            ))}
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Reset Password Modal */}
       {showResetModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm">
           <motion.div
-            className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
+            className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 overflow-hidden"
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ duration: 0.3 }}
           >
-            <div className="flex justify-between items-center mb-4">
-              <div className="text-green-600">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="bg-gradient-to-r from-green-600 to-teal-600 px-6 py-4 text-white flex justify-between items-center">
+              <div className="flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
                 </svg>
+                <h3 className="font-bold">Password Recovery</h3>
               </div>
-              <button
+              <motion.button
                 onClick={() => {
                   setShowResetModal(false);
                   setResetStep(1);
@@ -530,48 +712,66 @@ const Login = () => {
                   setNewPassword('');
                   setConfirmPassword('');
                 }}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-white hover:text-gray-200"
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
                 </svg>
-              </button>
+              </motion.button>
             </div>
 
             {/* Step indicators */}
-            <div className="flex items-center justify-center mb-6">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-medium ${resetStep >= 1 ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-600'}`}>1</div>
-              <div className={`h-1 w-10 ${resetStep >= 2 ? 'bg-green-500' : 'bg-gray-200'}`}></div>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-medium ${resetStep >= 2 ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-600'}`}>2</div>
-              <div className={`h-1 w-10 ${resetStep >= 3 ? 'bg-green-500' : 'bg-gray-200'}`}></div>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-medium ${resetStep >= 3 ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-600'}`}>3</div>
+            <div className="flex items-center justify-center py-4 bg-green-50">
+              <motion.div
+                className={`w-8 h-8 rounded-full flex items-center justify-center font-medium ${resetStep >= 1 ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-600'}`}
+                animate={{ scale: resetStep === 1 ? 1.1 : 1 }}
+                transition={{ duration: 0.3 }}
+              >1</motion.div>
+              <motion.div
+                className={`h-1 w-10 ${resetStep >= 2 ? 'bg-green-500' : 'bg-gray-200'}`}
+                animate={{
+                  width: resetStep >= 2 ? "2.5rem" : "2rem",
+                  backgroundColor: resetStep >= 2 ? "#22c55e" : "#e5e7eb"
+                }}
+                transition={{ duration: 0.4 }}
+              ></motion.div>
+              <motion.div
+                className={`w-8 h-8 rounded-full flex items-center justify-center font-medium ${resetStep >= 2 ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-600'}`}
+                animate={{ scale: resetStep === 2 ? 1.1 : 1 }}
+                transition={{ duration: 0.3 }}
+              >2</motion.div>
+              <motion.div
+                className={`h-1 w-10 ${resetStep >= 3 ? 'bg-green-500' : 'bg-gray-200'}`}
+                animate={{
+                  width: resetStep >= 3 ? "2.5rem" : "2rem",
+                  backgroundColor: resetStep >= 3 ? "#22c55e" : "#e5e7eb"
+                }}
+                transition={{ duration: 0.4 }}
+              ></motion.div>
+              <motion.div
+                className={`w-8 h-8 rounded-full flex items-center justify-center font-medium ${resetStep >= 3 ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-600'}`}
+                animate={{ scale: resetStep === 3 ? 1.1 : 1 }}
+                transition={{ duration: 0.3 }}
+              >3</motion.div>
             </div>
 
             {/* Dynamic content based on current step */}
-            {renderResetModalContent()}
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={resetStep}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.3 }}
+              >
+                {renderResetModalContent()}
+              </motion.div>
+            </AnimatePresence>
           </motion.div>
         </div>
       )}
-
-      {/* Add some keyframe animations for the floating effect */}
-      <style dangerouslySetInnerHTML={{
-        __html: `
-    @keyframes float {
-      0%, 100% {
-        transform: translateY(0) translateX(0);
-      }
-      25% {
-        transform: translateY(-20px) translateX(10px);
-      }
-      50% {
-        transform: translateY(0) translateX(20px);
-      }
-      75% {
-        transform: translateY(20px) translateX(10px);
-      }
-    }
-  `
-      }} />
     </div>
   )
 }
