@@ -430,25 +430,24 @@ const getUserReturns = async (req, res) => {
 // Get all returns for admin
 const getAdminReturns = async (req, res) => {
     try {
-        // Find all returns and sort by requestedDate
+        // Get all returns
         const returns = await returnModel.find().sort({ requestedDate: -1 });
 
-        // Get user details for each return
-        const returnsWithUserDetails = await Promise.all(
-            returns.map(async (returnItem) => {
-                const user = await userModel.findById(returnItem.userId);
-                const returnObj = returnItem.toObject();
+        // Enhance returns with user information
+        const enhancedReturns = await Promise.all(returns.map(async (returnItem) => {
+            const user = await userModel.findById(returnItem.userId);
+            return {
+                ...returnItem._doc,
+                userName: user ? (user.userName || user.firstName + ' ' + user.lastName) : 'Unknown User'
+            };
+        }));
 
-                // Add user details to the return object
-                returnObj.userName = user ? user.name : 'Unknown User';
-
-                return returnObj;
-            })
-        );
-
-        res.json({ success: true, returns: returnsWithUserDetails });
+        res.json({
+            success: true,
+            returns: enhancedReturns
+        });
     } catch (error) {
-        console.error(error);
+        console.error('Error getting admin returns:', error);
         res.status(500).json({ success: false, message: error.message });
     }
 };
