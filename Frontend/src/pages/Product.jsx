@@ -166,15 +166,27 @@ const Product = () => {
           {/* Color selection */}
           {productData.hasColors && (
             <div className='flex flex-col gap-4 my-8'>
-              <p>Select Color</p>
-              <div className='flex gap-2'>
+              <p className='font-semibold'>Select Color</p>
+              <div className='flex gap-4'>
                 {productData.colors.map((colorItem, index) => (
                   <div
                     key={index}
                     onClick={() => setColor(colorItem)}
-                    className={`w-7 h-7 rounded-full cursor-pointer ${color === colorItem ? 'w-8.5 h-8.5 border border-black-50' : ''}`}
-                    style={{ backgroundColor: colorItem }}
-                  />
+                    className="relative cursor-pointer"
+                  >
+                    {/* Container for color and ring */}
+                    <div
+                      className={`w-7 h-7 rounded-full flex items-center justify-center
+              transition-all duration-300
+              ${color === colorItem ? 'ring-3 ring-blue-500 ring-offset-2' : 'ring-1 ring-blue-300 ring-offset-2 hover:ring-2 hover:ring-blue-600 hover:ring-offset-2'}`}
+                    >
+                      {/* The actual color circle */}
+                      <div
+                        className="w-6 h-6 rounded-full"
+                        style={{ backgroundColor: colorItem }}
+                      ></div>
+                    </div>
+                  </div>
                 ))}
               </div>
             </div>
