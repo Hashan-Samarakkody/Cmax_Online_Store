@@ -67,8 +67,8 @@ const Cart = () => {
             }
 
             // Prepare size and color display
-            const sizeInfo = item.size ? ` | Size: ${item.size}` : '';
-            const colorInfo = item.color ? ` | Color: ${item.color}` : '';
+            const sizeInfo = item.size ? ` Size: ${item.size}` : '';
+            const colorInfo = item.color ? ` Color: ${item.color}` : '';
 
             return (
               <div
