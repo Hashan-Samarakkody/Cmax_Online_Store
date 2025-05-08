@@ -17,8 +17,8 @@ const ReturnRestrictionInfo = () => {
           </svg>
         </div>
         <div className="ml-3">
-          <p className="text-xl text-blue-800 font-medium">Return Request Limits</p>
-          <ul className="mt-1 text-lg text-blue-700 list-disc list-inside">
+          <p className="text-lg text-blue-800 font-medium">Return Request Limits</p>
+          <ul className="mt-1 text-sm text-blue-700 list-disc list-inside">
             <li>Maximum of 4 return requests per order per day</li>
             <li>6-hour waiting period between return requests for the same order</li>
             <li>Only delivered orders with tracking IDs within 7 days are eligible</li>
@@ -599,6 +599,8 @@ const Returns = () => {
     <div className="pt-16 pb-10">
       <div className="text-2xl mb-8">
         <Title text1={'RETURN'} text2={'REQUEST'} />
+        <p className='text-lg font-semibold'> Once you placed a return request you will receive an order confirmation via email.</p>
+        <p className='text-sm text-red-500 font-semibold'> * Please be kind enough to check your spam folder in case it does not appear in your inbox.</p>
       </div>
 
       {/* Return History */}

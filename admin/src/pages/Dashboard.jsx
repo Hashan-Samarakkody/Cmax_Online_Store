@@ -7,6 +7,7 @@ import { backendUrl } from '../App';
 import { assets } from '../assets/assets';
 import { useNavigate } from 'react-router-dom';
 import WebSocketService from '../services/WebSocketService';
+import RevenuePrediction from '../components/RevenuePrediction';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Title, Tooltip, Legend);
 
@@ -18,7 +19,8 @@ const Dashboard = () => {
   const [categoryDistribution, setCategoryDistribution] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [lastUpdate, setLastUpdate] = useState(Date.now()); // Track last update time
+  const [lastUpdate, setLastUpdate] = useState(Date.now());
+  const [token, setToken] = useState(localStorage.getItem('adminToken'));
 
   // Function to fetch all dashboard data
   const fetchAllData = async () => {
@@ -342,22 +344,22 @@ const Dashboard = () => {
           onClick={() => navigate('/sales')}
           className="flex items-center px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors"
         >
-          Sales Report
+          Sold Items Count Report
         </button>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        {/* Revenue Card */}
+        {/* Sales Card */}
         <div className="bg-white rounded-lg shadow p-5">
           <div className="flex items-center">
             <div className="flex-shrink-0 h-12 w-12 rounded-full bg-indigo-100 flex items-center justify-center">
               <FiDollarSign className="h-6 w-6 text-indigo-600" />
             </div>
             <div className="ml-5">
-              <div className="text-gray-500 text-sm">Total Revenue (Monthly)</div>
+              <div className="text-gray-500 text-sm">Total Sales (Monthly)</div>
               <div className="text-2xl font-bold text-gray-900">
-                ${stats ? stats.revenue.monthly.toFixed(2) : '0.00'}
+                Rs.{stats ? stats.revenue.monthly.toFixed(2) : '0.00'}
               </div>
             </div>
           </div>
@@ -409,11 +411,12 @@ const Dashboard = () => {
         </div>
       </div>
 
+
       {/* Charts */}
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-        {/* Revenue Chart */}
+        {/* Sales Chart */}
         <div className="bg-white rounded-lg shadow p-5">
-          <h2 className="text-xl font-semibold mb-4">Revenue Trends</h2>
+          <h2 className="text-xl font-semibold mb-4">Sales Trends</h2>
           <div className="h-80">
             <Line
               data={salesChartData}
@@ -428,6 +431,11 @@ const Dashboard = () => {
               }}
             />
           </div>
+        </div>
+
+        {/* Sales Prediction Section */}
+        <div className="mb-6">
+          <RevenuePrediction token={token} />
         </div>
 
         {/* Orders Chart */}

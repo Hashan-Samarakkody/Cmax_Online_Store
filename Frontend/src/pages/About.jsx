@@ -2,55 +2,122 @@ import React from 'react'
 import Title from '../components/Title'
 import { assets } from '../assets/assets'
 import NewsletterBox from '../components/NewsletterBox'
+import { motion } from 'framer-motion'
 
 const About = () => {
   return (
-    <div>
-      <div className='text-2xl text-center pt-8 border-t'>
-        <Title text1={'ABOUT'} text2={'US'}/>
-      </div>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+    >
+      <motion.div
+        className='text-2xl text-center pt-8 border-t'
+        initial={{ y: -20 }}
+        animate={{ y: 0 }}
+        transition={{ delay: 0.2, duration: 0.5 }}
+      >
+        <Title text1={'ABOUT'} text2={'US'} />
+      </motion.div>
 
       <div className='my-10 flex flex-col md:flex-row gap-16'>
-        <img className='w-full md:max-w-[450px] rounded-sm' src={assets.about_img} alt="" />
-        <div className='flex flex-col justify-center gap-6 md:w-2/4 text-gray-600 text-center'>
-          <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Magni explicabo
+        <motion.img
+          className='w-full md:max-w-[450px] rounded-sm shadow-lg hover:shadow-xl transition-shadow duration-300'
+          src={assets.about_img}
+          alt="About Us"
+          initial={{ x: -100, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          transition={{ delay: 0.4, duration: 0.6 }}
+          whileHover={{ scale: 1.03 }}
+        />
+        <motion.div
+          className='flex flex-col justify-center gap-6 md:w-2/4 text-gray-600 text-center'
+          initial={{ x: 100, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          transition={{ delay: 0.6, duration: 0.6 }}
+        >
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.8, duration: 0.5 }}
+          >
+            Lorem ipsum dolor sit amet consectetur adipisicing elit. Magni explicabo
             repudiandae ad? Non architecto itaque tempora at fugit voluptatum, ipsum,
-            culpa suscipit repellat molestiae harum totam sequi accusantium assumenda maiores!</p>
-          <p>Lorem, ipsum dolor sit amet consectetur adipisicing elit. Totam aut
+            culpa suscipit repellat molestiae harum totam sequi accusantium assumenda maiores!
+          </motion.p>
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1, duration: 0.5 }}
+          >
+            Lorem, ipsum dolor sit amet consectetur adipisicing elit. Totam aut
             incidunt magnam recusandae perferendis aliquam eos iste unde pariatur
-            expedita delectus accusamus cum ipsam veniam, ea ratione minus distinctio numquam!</p>
-          
-          <b className='text-gray-800'>Our Mission</b>
-          <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Magni explicabo</p>
-        </div>
+            expedita delectus accusamus cum ipsam veniam, ea ratione minus distinctio numquam!
+          </motion.p>
+
+          <motion.b
+            className='text-gray-800'
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1.2, duration: 0.5 }}
+          >
+            Our Mission
+          </motion.b>
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1.4, duration: 0.5 }}
+          >
+            Lorem ipsum dolor sit amet consectetur adipisicing elit. Magni explicabo
+          </motion.p>
+        </motion.div>
       </div>
 
-      <div className='text-4xl py-4'>
-        <Title text1={'WHY'} text2={'CHOOSE US?'}/>
-      </div>
+      <motion.div
+        className='text-4xl py-4'
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.6 }}
+      >
+        <Title text1={'WHY'} text2={'CHOOSE US?'} />
+      </motion.div>
 
       <div className='flex flex-col md:flex-row text-sm mb-20'>
-        <div className='border px-10 md:px-16 py-8 sm:py-20 flex flex-col gap-5'>
-          <b>Quality Assuarance:</b>
-          <p className='text-gray-600'>Lorem ipsum dolor sit amet consectetur adipisicing elit.</p>
-        </div>
-        <div className='border px-10 md:px-16 py-8 sm:py-20 flex flex-col gap-5'>
-          <b>Convenience:</b>
-          <p className='text-gray-600'>Lorem ipsum dolor sit amet consectetur adipisicing elit.</p>
-        </div>
-        <div className='border px-10 md:px-16 py-8 sm:py-20 flex flex-col gap-5'>
-          <b>Exceptional Customer Service:</b>
-          <p className='text-gray-600'>Lorem ipsum dolor sit amet consectetur adipisicing elit.</p>
-        </div>
-        <div className='border px-10 md:px-16 py-8 sm:py-20 flex flex-col gap-5'>
-          <b>Fast Delivery:</b>
-          <p className='text-gray-600'>Lorem ipsum dolor sit amet consectetur adipisicing elit.</p>
-        </div>
+        {[
+          { title: 'Quality Assurance:', text: 'Lorem ipsum dolor sit amet consectetur adipisicing elit.' },
+          { title: 'Convenience:', text: 'Lorem ipsum dolor sit amet consectetur adipisicing elit.' },
+          { title: 'Exceptional Customer Service:', text: 'Lorem ipsum dolor sit amet consectetur adipisicing elit.' },
+          { title: 'Fast Delivery:', text: 'Lorem ipsum dolor sit amet consectetur adipisicing elit.' }
+        ].map((item, index) => (
+          <motion.div
+            key={index}
+            className='border px-10 md:px-16 py-8 sm:py-20 flex flex-col gap-5 bg-white hover:bg-gray-50 transition-colors duration-300'
+            initial={{ opacity: 0, y: 50 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.2 * index, duration: 0.5 }}
+            whileHover={{
+              scale: 1.05,
+              boxShadow: '0px 10px 30px rgba(0, 0, 0, 0.1)'
+            }}
+          >
+            <b>{item.title}</b>
+            <p className='text-gray-600'>{item.text}</p>
+          </motion.div>
+        ))}
       </div>
 
-      <NewsletterBox/>
+      <motion.div
+        initial={{ opacity: 0, y: 50 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.7 }}
+      >
+        <NewsletterBox />
+      </motion.div>
 
-    </div>
+    </motion.div>
   )
 }
 
