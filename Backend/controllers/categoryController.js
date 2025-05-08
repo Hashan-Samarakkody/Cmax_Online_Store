@@ -1,6 +1,7 @@
 import Category from "../models/categoryModel.js";
 import Subcategory from "../models/subcategoryModel.js";
 import Product from "../models/productModel.js";
+import mongoose from "mongoose";
 
 // Add Category
 const addCategory = async (req, res) => {
@@ -65,24 +66,33 @@ const getCategories = async (req, res) => {
 // Get Subcategories with Product Counts (Optionally filtered by category)
 const getSubCategories = async (req, res) => {
     try {
-        const { categoryId } = req.query; // Optional query parameter to filter by category
+        const { categoryId } = req.query;
+        console.log("Request query params:", req.query); // Log all query parameters
+        console.log("Fetching subcategories with filter:", categoryId ? `Category ID: ${categoryId}` : "No filter");
 
         let subcategories;
         if (categoryId) {
-            // If categoryId is provided, find subcategories for this category
-            const category = await Category.findById(categoryId);
-            if (!category) return res.status(404).json({ message: "Category not found" });
+            // Check if categoryId is valid ObjectId
+            if (!mongoose.Types.ObjectId.isValid(categoryId)) {
+                return res.status(400).json({ message: "Invalid category ID format" });
+            }
 
+            // If categoryId is provided, find subcategories for this category
             subcategories = await Subcategory.find({ category: categoryId });
+            console.log(`Found ${subcategories.length} subcategories for category ${categoryId}`);
         } else {
             // If no categoryId is provided, return all subcategories
             subcategories = await Subcategory.find();
+            console.log(`Found ${subcategories.length} subcategories (all categories)`);
         }
 
         // Add product count for each subcategory
         const subcategoryData = await Promise.all(subcategories.map(async (sub) => {
             const subProductCount = await Product.countDocuments({ subcategory: sub._id });
-            return { ...sub.toObject(), productCount: subProductCount };
+            return {
+                ...sub.toObject(),
+                productCount: subProductCount
+            };
         }));
 
         res.status(200).json(subcategoryData);

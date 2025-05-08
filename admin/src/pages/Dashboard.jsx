@@ -24,10 +24,10 @@ const Dashboard = () => {
   const [subcategoryDistribution, setSubcategoryDistribution] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedPeriod, setSelectedPeriod] = useState('monthly');
+  const [categoryMap, setCategoryMap] = useState({}); // Map of category names to IDs
 
   // Function to fetch all dashboard data
   const fetchAllData = async () => {
-    console.log("Fetching all dashboard data...");
     const token = localStorage.getItem('adminToken');
 
     try {
@@ -56,11 +56,8 @@ const Dashboard = () => {
       });
       if (salesRes.data.success) setSalesTrends(salesRes.data.salesData || []);
 
-      // Fetch category distribution
-      const categoryRes = await axios.get(backendUrl + '/api/dashboard/category-distribution', {
-        headers: { token }
-      });
-      if (categoryRes.data.success) setCategoryDistribution(categoryRes.data.categoryDistribution || []);
+      // Fetch category distribution and build category map
+      await fetchCategoryData();
 
       // Fetch subcategory distribution
       await fetchSubcategoryData();
@@ -75,16 +72,50 @@ const Dashboard = () => {
     }
   };
 
-  // Function to fetch subcategories data
-  const fetchSubcategoryData = async (categoryId = null) => {
-    console.log('[Dashboard] Fetching subcategory data...');
+  // Function to build a map of category names to IDs
+  const buildCategoryMap = async () => {
     const token = localStorage.getItem('adminToken');
     try {
-      const params = categoryId ? { categoryId } : {};
-      const response = await axios.get(backendUrl + '/api/categories/subcategories/all', {
-        headers: { token },
-        params
+      const response = await axios.get(`${backendUrl}/api/categories`, {
+        headers: { token }
       });
+
+      if (response.data) {
+        // Create a map of category names to IDs
+        const map = {};
+        response.data.forEach(cat => {
+          map[cat.name.toLowerCase()] = cat._id;
+        });
+        setCategoryMap(map);
+        console.log('Category map built:', map);
+      }
+    } catch (error) {
+      console.error('Error building category map:', error);
+    }
+  };
+
+  // Function to fetch subcategories data
+  const fetchSubcategoryData = async (categoryId = null) => {
+    const token = localStorage.getItem('adminToken');
+    try {
+      console.log(`[Dashboard] Fetching subcategory data for category ID: ${categoryId || 'all'}`);
+
+      // Create request options with token
+      const options = {
+        headers: { token }
+      };
+
+      // Only add params if categoryId exists
+      if (categoryId) {
+        options.params = { categoryId };
+      }
+
+      const response = await axios.get(
+        `${backendUrl}/api/categories/subcategories/all`,
+        options
+      );
+
+      console.log(`[Dashboard] Received ${response.data.length} subcategories`);
 
       // Transform the response data to have the format we need for the chart
       const subcategoryData = response.data.map(subcategory => ({
@@ -101,9 +132,47 @@ const Dashboard = () => {
     }
   };
 
+  // Function to handle category click
+  const handleCategoryClick = (_, elements) => {
+    if (elements.length > 0) {
+      const categoryIndex = elements[0].index;
+      const category = categoryDistribution[categoryIndex];
+
+      if (category) {
+        // Find the category ID from the category name using our map
+        const categoryName = category.category.toLowerCase();
+        const categoryId = categoryMap[categoryName];
+
+        console.log('Category Click Details:', {
+          categoryName: category.category,
+          categoryId: categoryId,
+          fullObject: category
+        });
+
+        setSelectedCategory(category);
+
+        if (categoryId) {
+          // Fetch subcategories for this category
+          fetchSubcategoryData(categoryId);
+        } else {
+          console.error('Could not find category ID for:', category.category);
+        }
+      }
+    } else {
+      // Reset to show all subcategories when clicking outside a category
+      setSelectedCategory(null);
+      fetchSubcategoryData();
+    }
+  };
+
+  // Function to clear category selection
+  const clearCategorySelection = () => {
+    setSelectedCategory(null);
+    fetchSubcategoryData(); // Fetch all subcategories
+  };
+
   // Improved focused data fetching functions with consistent error handling and loading states
   const fetchUserStats = async () => {
-    console.log('[WebSocket Event] Fetching user stats...');
     const token = localStorage.getItem('adminToken');
     try {
       const statsResponse = await axios.get(backendUrl + '/api/dashboard/stats', {
@@ -115,12 +184,10 @@ const Dashboard = () => {
       }
     } catch (error) {
       console.error('Error fetching user stats:', error);
-
     }
   };
 
   const fetchProductData = async () => {
-    console.log('[WebSocket Event] Fetching product data...');
     const token = localStorage.getItem('adminToken');
     try {
       // Update product performance
@@ -137,14 +204,20 @@ const Dashboard = () => {
   };
 
   const fetchCategoryData = async () => {
-    console.log('[WebSocket Event] Fetching category data...');
     const token = localStorage.getItem('adminToken');
     try {
+      // Get categories from dashboard endpoint
       const categoryRes = await axios.get(backendUrl + '/api/dashboard/category-distribution', {
         headers: { token }
       });
+
       if (categoryRes.data.success) {
-        setCategoryDistribution(categoryRes.data.categoryDistribution || []);
+        const categories = categoryRes.data.categoryDistribution || [];
+        setCategoryDistribution(categories);
+
+        // After getting category distribution, build our category map
+        await buildCategoryMap();
+
         setLastUpdate(Date.now());
       }
     } catch (error) {
@@ -153,7 +226,6 @@ const Dashboard = () => {
   };
 
   const fetchSalesData = async () => {
-    console.log(`[WebSocket Event] Fetching sales data with period: ${selectedPeriod}`);
     const token = localStorage.getItem('adminToken');
     try {
       // Update sales trends
@@ -186,12 +258,10 @@ const Dashboard = () => {
 
   // Event handlers with better logging and improved reliability
   const handleUserChange = () => {
-    console.log('[WebSocket] User changed. Updating stats...');
     fetchUserStats();
   };
 
   const handleProductChange = (data) => {
-    console.log('[WebSocket] Product data changed:', data);
     // Only fetch product data when needed
     fetchProductData();
     // Product changes can affect stats and categories
@@ -200,26 +270,14 @@ const Dashboard = () => {
   };
 
   const handleCategoryChange = () => {
-    console.log('[WebSocket] Category changed. Updating category data...');
     fetchCategoryData();
   };
 
   const handleOrderChange = (data) => {
-    console.log('[WebSocket] Order changed:', data);
     // Order changes affect multiple aspects of the dashboard
     fetchSalesData();
     fetchUserStats();
     fetchProductData();
-  };
-
-  // Handle category click
-  const handleCategoryClick = (_, elements) => {
-    if (elements.length > 0) {
-      const categoryIndex = elements[0].index;
-      const category = categoryDistribution[categoryIndex];
-      setSelectedCategory(category._id);
-      fetchSubcategoryData(category._id);
-    }
   };
 
   // Debounced full refresh for multiple rapid changes
@@ -227,7 +285,6 @@ const Dashboard = () => {
     const currentTime = Date.now();
     // Only do a full refresh if it's been more than 10 min since last update
     if (currentTime - lastUpdate > 600000) {
-      console.log('[Dashboard] Multiple changes detected, performing full refresh');
       fetchAllData();
     }
   };
@@ -238,14 +295,11 @@ const Dashboard = () => {
       // First ensure WebSocket is connected before setting up listeners
       if (!WebSocketService.isConnected()) {
         WebSocketService.connect(() => {
-          console.log("WebSocket connected from Dashboard component");
-          // Once connected, set up all event listeners and fetch initial data
           setupWebSocketListeners();
           fetchAllData();
         });
       } else {
         // WebSocket already connected, set up listeners and fetch data
-        console.log("WebSocket already connected, setting up listeners");
         setupWebSocketListeners();
         fetchAllData();
       }
@@ -253,11 +307,9 @@ const Dashboard = () => {
 
     // Setup all WebSocket event listeners
     const setupWebSocketListeners = () => {
-      console.log("Setting up WebSocket listeners");
-
       // User-related events
       WebSocketService.on('userChange', handleUserChange);
-      WebSocketService.on('newUser', handleUserChange); 
+      WebSocketService.on('newUser', handleUserChange);
 
       // Product-related events
       WebSocketService.on('newProduct', handleProductChange);
@@ -279,7 +331,6 @@ const Dashboard = () => {
 
     // Cleanup function
     return () => {
-      console.log("Cleaning up WebSocket listeners in Dashboard");
       WebSocketService.off('userChange', handleUserChange);
       WebSocketService.off('newUser', handleUserChange);
       WebSocketService.off('newProduct', handleProductChange);
@@ -341,6 +392,7 @@ const Dashboard = () => {
     labels: categoryDistribution.map(item => item.category),
     datasets: [
       {
+        label: 'Products',
         data: categoryDistribution.map(item => item.count),
         backgroundColor: [
           'rgba(255, 99, 132, 0.5)',
@@ -390,7 +442,7 @@ const Dashboard = () => {
           'rgb(162, 94, 232)',
           'rgb(232, 94, 94)'
         ],
-        borderWidth: 1
+        borderWidth: 2
       }
     ]
   };
@@ -587,20 +639,37 @@ const Dashboard = () => {
               }}
             />
           </div>
+          <div>
+            <p className="text-sm text-gray-500 mt-2 text-center font-semibold">Click on a category to view subcategory distribution</p>
+          </div>
         </div>
 
         {/* Subcategory Distribution Chart */}
         <div className="bg-white rounded-lg shadow p-5">
-          <h2 className="text-xl font-semibold mb-4">
-            {selectedCategory ? 'Category Subcategories' : 'All Subcategories'}
-          </h2>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold">
+              {selectedCategory ? `Subcategory distribution in "${selectedCategory.category}" category` : 'All Subcategory Distribution'}
+            </h2>
+            {selectedCategory && (
+              <button
+                onClick={clearCategorySelection}
+                className="px-2 py-1 text-sm bg-black text-white rounded hover:bg-white hover:text-black border border-gray-800 transition-colors duration-300"
+              >
+                Show All
+              </button>
+            )}
+          </div>
           <div className="h-80">
             <Bar
               data={subcategoryData}
               options={{
                 responsive: true,
                 maintainAspectRatio: false,
-                indexAxis: 'y',
+                plugins: {
+                  legend: {
+                    display: false 
+                  }
+                },
                 scales: {
                   x: {
                     beginAtZero: true,
@@ -613,19 +682,6 @@ const Dashboard = () => {
               }}
             />
           </div>
-          {selectedCategory && (
-            <div className="flex justify-center mt-2">
-              <button
-                onClick={() => {
-                  setSelectedCategory(null);
-                  fetchSubcategoryData();
-                }}
-                className="px-2 py-1 text-xs text-blue-600 hover:text-blue-800"
-              >
-                Show All Subcategories
-              </button>
-            </div>
-          )}
         </div>
       </div>
 
