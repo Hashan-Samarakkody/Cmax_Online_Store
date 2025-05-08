@@ -350,14 +350,14 @@ const Dashboard = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        {/* Revenue Card */}
+        {/* Sales Card */}
         <div className="bg-white rounded-lg shadow p-5">
           <div className="flex items-center">
             <div className="flex-shrink-0 h-12 w-12 rounded-full bg-indigo-100 flex items-center justify-center">
               <FiDollarSign className="h-6 w-6 text-indigo-600" />
             </div>
             <div className="ml-5">
-              <div className="text-gray-500 text-sm">Total Revenue (Monthly)</div>
+              <div className="text-gray-500 text-sm">Total Sales (Monthly)</div>
               <div className="text-2xl font-bold text-gray-900">
                 Rs.{stats ? stats.revenue.monthly.toFixed(2) : '0.00'}
               </div>
@@ -414,9 +414,9 @@ const Dashboard = () => {
 
       {/* Charts */}
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-        {/* Revenue Chart */}
+        {/* Sales Chart */}
         <div className="bg-white rounded-lg shadow p-5">
-          <h2 className="text-xl font-semibold mb-4">Revenue Trends</h2>
+          <h2 className="text-xl font-semibold mb-4">Sales Trends</h2>
           <div className="h-80">
             <Line
               data={salesChartData}
@@ -433,7 +433,7 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Revenue Prediction Section */}
+        {/* Sales Prediction Section */}
         <div className="mb-6">
           <RevenuePrediction token={token} />
         </div>

@@ -380,7 +380,7 @@ const generateReport = async (req, res) => {
     }
 };
 
-// Get revenue prediction data
+
 // Get revenue prediction data
 const getRevenuePrediction = async (req, res) => {
     try {

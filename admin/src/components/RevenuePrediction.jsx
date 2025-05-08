@@ -27,8 +27,8 @@ const RevenuePrediction = ({ token }) => {
                     setError('Failed to fetch prediction data');
                 }
             } catch (error) {
-                console.error('Error fetching revenue prediction:', error);
-                setError('Error fetching revenue prediction data');
+                console.error('Error fetching sales prediction:', error);
+                setError('Error fetching sales prediction data');
             } finally {
                 setLoading(false);
             }
@@ -130,7 +130,7 @@ const RevenuePrediction = ({ token }) => {
             <div className="bg-white rounded-lg shadow p-5">
                 <div className="flex items-center text-red-500 mb-4">
                     <FiAlertCircle className="h-6 w-6" />
-                    <h3 className="ml-2 font-semibold">Revenue Prediction Error</h3>
+                    <h3 className="ml-2 font-semibold">Sales Prediction Error</h3>
                 </div>
                 <p className="text-gray-700">{error}</p>
             </div>
@@ -140,7 +140,7 @@ const RevenuePrediction = ({ token }) => {
     return (
         <div className="bg-white rounded-lg shadow p-5">
             <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-bold text-gray-800">Revenue Prediction</h2>
+                <h2 className="text-lg font-bold text-gray-800">Sales Prediction</h2>
                 <div className={`flex items-center ${growthTrend === 'positive' ? 'text-green-600' : 'text-red-600'}`}>
                     <FiTrendingUp className="h-5 w-5" />
                     <span className="ml-1 font-medium">{growthRateFormatted} monthly growth</span>
