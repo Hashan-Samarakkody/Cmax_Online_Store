@@ -7,7 +7,7 @@ const SignUpLoginNavbar = () => {
     const [hoverButton, setHoverButton] = useState(null);
 
     return (
-        <div className='flex items-center justify-between py-4 px-6 bg-gradient-to-r text-black w-full'>
+        <div className='flex items-center justify-between py-1 px-1 bg-gradient-to-r text-black w-full'>
             <Link to="/" className='flex items-center transition-transform duration-300 hover:scale-105'>
                 <img className='w-36' src={assets.logo} alt="C-max Online Store Logo" />
             </Link>
