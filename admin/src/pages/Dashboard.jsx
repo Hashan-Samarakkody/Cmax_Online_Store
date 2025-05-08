@@ -21,6 +21,9 @@ const Dashboard = () => {
   const [error, setError] = useState(null);
   const [lastUpdate, setLastUpdate] = useState(Date.now());
   const [token, setToken] = useState(localStorage.getItem('adminToken'));
+  const [subcategoryDistribution, setSubcategoryDistribution] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [selectedPeriod, setSelectedPeriod] = useState('monthly');
 
   // Function to fetch all dashboard data
   const fetchAllData = async () => {
@@ -46,10 +49,10 @@ const Dashboard = () => {
         setProductPerformance(prodResponse.data.productPerformance || []);
       }
 
-      // Fetch sales trends
+      // Fetch sales trends with selected period
       const salesRes = await axios.get(backendUrl + '/api/dashboard/sales-trends', {
         headers: { token },
-        params: { period: 'monthly' }
+        params: { period: selectedPeriod }
       });
       if (salesRes.data.success) setSalesTrends(salesRes.data.salesData || []);
 
@@ -59,6 +62,9 @@ const Dashboard = () => {
       });
       if (categoryRes.data.success) setCategoryDistribution(categoryRes.data.categoryDistribution || []);
 
+      // Fetch subcategory distribution
+      await fetchSubcategoryData();
+
       // Update last update timestamp
       setLastUpdate(Date.now());
     } catch (apiError) {
@@ -66,6 +72,32 @@ const Dashboard = () => {
       setError(`API error: ${apiError.message}`);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Function to fetch subcategories data
+  const fetchSubcategoryData = async (categoryId = null) => {
+    console.log('[Dashboard] Fetching subcategory data...');
+    const token = localStorage.getItem('adminToken');
+    try {
+      const params = categoryId ? { categoryId } : {};
+      const response = await axios.get(backendUrl + '/api/categories/subcategories/all', {
+        headers: { token },
+        params
+      });
+
+      // Transform the response data to have the format we need for the chart
+      const subcategoryData = response.data.map(subcategory => ({
+        name: subcategory.name,
+        count: subcategory.productCount || 0
+      }));
+
+      // Sort by count and get top subcategories
+      const sortedData = subcategoryData.sort((a, b) => b.count - a.count).slice(0, 10);
+      setSubcategoryDistribution(sortedData);
+      setLastUpdate(Date.now());
+    } catch (error) {
+      console.error('Error fetching subcategory data:', error);
     }
   };
 
@@ -121,13 +153,13 @@ const Dashboard = () => {
   };
 
   const fetchSalesData = async () => {
-    console.log('[WebSocket Event] Fetching sales data...');
+    console.log(`[WebSocket Event] Fetching sales data with period: ${selectedPeriod}`);
     const token = localStorage.getItem('adminToken');
     try {
       // Update sales trends
       const salesRes = await axios.get(backendUrl + '/api/dashboard/sales-trends', {
         headers: { token },
-        params: { period: 'monthly' }
+        params: { period: selectedPeriod }
       });
       if (salesRes.data.success) {
         setSalesTrends(salesRes.data.salesData || []);
@@ -137,6 +169,20 @@ const Dashboard = () => {
       console.error('Error fetching sales data:', error);
     }
   };
+
+  // Function to handle period selection change
+  const handlePeriodChange = (e) => {
+    const newPeriod = e.target.value;
+    setSelectedPeriod(newPeriod);
+    // When period changes, fetch new data
+  };
+
+  // Re-fetch sales data when period changes
+  useEffect(() => {
+    if (!loading) {
+      fetchSalesData();
+    }
+  }, [selectedPeriod]);
 
   // Event handlers with better logging and improved reliability
   const handleUserChange = () => {
@@ -166,11 +212,21 @@ const Dashboard = () => {
     fetchProductData();
   };
 
+  // Handle category click
+  const handleCategoryClick = (_, elements) => {
+    if (elements.length > 0) {
+      const categoryIndex = elements[0].index;
+      const category = categoryDistribution[categoryIndex];
+      setSelectedCategory(category._id);
+      fetchSubcategoryData(category._id);
+    }
+  };
+
   // Debounced full refresh for multiple rapid changes
   const debouncedFullRefresh = () => {
     const currentTime = Date.now();
-    // Only do a full refresh if it's been more than 5 seconds since last update
-    if (currentTime - lastUpdate > 5000) {
+    // Only do a full refresh if it's been more than 10 min since last update
+    if (currentTime - lastUpdate > 600000) {
       console.log('[Dashboard] Multiple changes detected, performing full refresh');
       fetchAllData();
     }
@@ -219,7 +275,7 @@ const Dashboard = () => {
     connectAndSetup();
 
     // Add an interval to ensure data is fresh
-    const refreshInterval = setInterval(debouncedFullRefresh, 30000);
+    const refreshInterval = setInterval(debouncedFullRefresh, 600000);
 
     // Cleanup function
     return () => {
@@ -305,6 +361,40 @@ const Dashboard = () => {
     ]
   };
 
+  const subcategoryData = {
+    labels: subcategoryDistribution.map(item => item.name),
+    datasets: [
+      {
+        data: subcategoryDistribution.map(item => item.count),
+        backgroundColor: [
+          'rgba(54, 162, 235, 0.5)',
+          'rgba(255, 99, 132, 0.5)',
+          'rgba(255, 206, 86, 0.5)',
+          'rgba(75, 192, 192, 0.5)',
+          'rgba(153, 102, 255, 0.5)',
+          'rgba(255, 159, 64, 0.5)',
+          'rgba(201, 203, 207, 0.5)',
+          'rgba(94, 232, 129, 0.5)',
+          'rgba(162, 94, 232, 0.5)',
+          'rgba(232, 94, 94, 0.5)'
+        ],
+        borderColor: [
+          'rgb(54, 162, 235)',
+          'rgb(255, 99, 132)',
+          'rgb(255, 206, 86)',
+          'rgb(75, 192, 192)',
+          'rgb(153, 102, 255)',
+          'rgb(255, 159, 64)',
+          'rgb(201, 203, 207)',
+          'rgb(94, 232, 129)',
+          'rgb(162, 94, 232)',
+          'rgb(232, 94, 94)'
+        ],
+        borderWidth: 1
+      }
+    ]
+  };
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
@@ -340,13 +430,26 @@ const Dashboard = () => {
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Dashboard Overview</h1>
 
-        <button
-          onClick={() => navigate('/sales')}
-          className="flex items-center px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors"
-        >
-          Sold Items Count Report
-        </button>
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => navigate('/sales')}
+            className="flex items-center px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors"
+          >
+            Sold Items Count Report
+          </button>
+        </div>
       </div>
+
+      <select
+        value={selectedPeriod}
+        onChange={handlePeriodChange}
+        className="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+      >
+        <option value="daily">Daily</option>
+        <option value="weekly">Weekly</option>
+        <option value="monthly">Monthly</option>
+        <option value="yearly">Yearly</option>
+      </select>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
@@ -357,24 +460,24 @@ const Dashboard = () => {
               <FiDollarSign className="h-6 w-6 text-indigo-600" />
             </div>
             <div className="ml-5">
-              <div className="text-gray-500 text-sm">Total Sales (Monthly)</div>
+              <div className="text-gray-500 text-sm">Total Sales ({selectedPeriod})</div>
               <div className="text-2xl font-bold text-gray-900">
-                Rs.{stats ? stats.revenue.monthly.toFixed(2) : '0.00'}
+                Rs.{stats ? stats.revenue[selectedPeriod]?.toFixed(2) || '0.00' : '0.00'}
               </div>
             </div>
           </div>
         </div>
 
-        {/* Orders Card */}
+        {/* Orders Card*/}
         <div className="bg-white rounded-lg shadow p-5">
           <div className="flex items-center">
             <div className="flex-shrink-0 h-12 w-12 rounded-full bg-green-100 flex items-center justify-center">
               <FiShoppingCart className="h-6 w-6 text-green-600" />
             </div>
             <div className="ml-5">
-              <div className="text-gray-500 text-sm">Orders (Monthly)</div>
+              <div className="text-gray-500 text-sm">Orders ({selectedPeriod})</div>
               <div className="text-2xl font-bold text-gray-900">
-                {stats ? stats.orders.monthly : '0'}
+                {stats ? stats.orders[selectedPeriod] || '0' : '0'}
               </div>
             </div>
           </div>
@@ -416,7 +519,7 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         {/* Sales Chart */}
         <div className="bg-white rounded-lg shadow p-5">
-          <h2 className="text-xl font-semibold mb-4">Sales Trends</h2>
+          <h2 className="text-xl font-semibold mb-4">Sales Trends ({selectedPeriod})</h2>
           <div className="h-80">
             <Line
               data={salesChartData}
@@ -440,7 +543,7 @@ const Dashboard = () => {
 
         {/* Orders Chart */}
         <div className="bg-white rounded-lg shadow p-5">
-          <h2 className="text-xl font-semibold mb-4">Order Trends</h2>
+          <h2 className="text-xl font-semibold mb-4">Order Trends ({selectedPeriod})</h2>
           <div className="h-80">
             <Bar
               data={ordersChartData}
@@ -479,10 +582,50 @@ const Dashboard = () => {
               data={categoryData}
               options={{
                 responsive: true,
-                maintainAspectRatio: false
+                maintainAspectRatio: false,
+                onClick: handleCategoryClick
               }}
             />
           </div>
+        </div>
+
+        {/* Subcategory Distribution Chart */}
+        <div className="bg-white rounded-lg shadow p-5">
+          <h2 className="text-xl font-semibold mb-4">
+            {selectedCategory ? 'Category Subcategories' : 'All Subcategories'}
+          </h2>
+          <div className="h-80">
+            <Bar
+              data={subcategoryData}
+              options={{
+                responsive: true,
+                maintainAspectRatio: false,
+                indexAxis: 'y',
+                scales: {
+                  x: {
+                    beginAtZero: true,
+                    title: {
+                      display: true,
+                      text: 'Product Count'
+                    }
+                  }
+                }
+              }}
+            />
+          </div>
+          {selectedCategory && (
+            <div className="flex justify-center mt-2">
+              <button
+                onClick={() => {
+                  setSelectedCategory(null);
+                  fetchSubcategoryData();
+                }}
+                className="px-2 py-1 text-xs text-blue-600 hover:text-blue-800"
+              >
+                Show All Subcategories
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
