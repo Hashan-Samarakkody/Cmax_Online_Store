@@ -37,14 +37,14 @@ const Navbar = ({ setToken }) => {
   }, [])
 
   return (
-    <div className='flex items-center py-2 px-[4%] justify-between'>
-      <img className='w-[max(6%,50px)]' src={assets.logo} alt="Cmax Logo" />
+    <div className='flex items-center py-1 px-[4%] justify-between'>
+      <img className='w-[max(5%,70px)]' src={assets.logo} alt="Cmax Logo" />
 
-      <div className='flex items-center gap-4'>
-        <h1 className='hidden sm:block text-2xl font-semibold text-green-400'>
+      <div className='flex items-center gap-3'>
+        <h1 className='hidden sm:block text-3xl font-semibold text-green-400'>
           Welcome, {adminName}!
         </h1>
-        <div className='w-15 h-15 rounded-full overflow-hidden border-2 border-green-400'>
+        <div className='w-12 h-12 rounded-full overflow-hidden border-2 border-green-400'>
           {profilePic ? (
             <img
               src={profilePic}
@@ -54,7 +54,7 @@ const Navbar = ({ setToken }) => {
             />
           ) : (
             <div className='w-full h-full bg-gray-300 flex items-center justify-center'>
-              <span className='text-gray-600 font-bold text-lg'>
+              <span className='text-gray-600 font-bold text-sm'>
                 {adminName.charAt(0).toUpperCase()}
               </span>
             </div>
