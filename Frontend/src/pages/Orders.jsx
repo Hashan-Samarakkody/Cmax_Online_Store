@@ -138,7 +138,10 @@ const Orders = () => {
     <div className='boarder-t pt-16'>
       <div className='text-2xl'>
         <Title text1={'MY'} text2={'ORDERS'} />
+        <p className='text-sm font-semibold'> Once you placed an order you will receive an order confirmation via email.</p>
+        <p className='text-xs text-red-500 font-semibold'> * Please be kind enough to check your spam folder in case it does not appear in your inbox.</p>
       </div>
+      <br />
       <div>
         {orderData.length === 0 ? (
           <div className='flex flex-col justify-center items-center h-[50vh]'>

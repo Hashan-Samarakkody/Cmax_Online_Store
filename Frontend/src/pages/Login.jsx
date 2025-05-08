@@ -427,18 +427,7 @@ const Login = () => {
         >
           <form onSubmit={onSubmitHandler} className="py-8 px-4 sm:px-0">
             <div className="w-full max-w-md mx-auto">
-              <Link to="/" className="flex items-center justify-center mb-6">
-                <motion.img
-                  src={assets.logo || "https://via.placeholder.com/50"}
-                  alt="Logo"
-                  className="h-12 mr-2"
-                  initial={{ scale: 0.8, rotateY: 180 }}
-                  animate={{ scale: 1, rotateY: 0 }}
-                  transition={{ duration: 0.7 }}
-                  whileHover={{ rotateY: 10 }}
-                />
-              </Link>
-
+          
               <motion.div
                 className="text-center mb-8"
                 initial={{ opacity: 0, y: -10 }}

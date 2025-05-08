@@ -6,7 +6,8 @@ import {
     getUserActivity,
     getCartAnalytics,
     getCategoryDistribution,
-    generateReport
+    generateReport,
+    getRevenuePrediction
 } from '../controllers/dashboardController.js';
 import adminAuth from '../middleware/adminAuth.js';
 
@@ -20,5 +21,6 @@ dashboardRouter.get('/user-activity', adminAuth, getUserActivity);
 dashboardRouter.get('/cart-analytics', adminAuth, getCartAnalytics);
 dashboardRouter.get('/category-distribution', adminAuth, getCategoryDistribution);
 dashboardRouter.post('/generate-report', adminAuth, generateReport);
+dashboardRouter.get('/revenue-prediction', adminAuth, getRevenuePrediction);
 
 export default dashboardRouter;

@@ -16,28 +16,28 @@ const Navbar = () => {
 	}
 
 	return (
-		<div className='relative flex items-center justify-between py-2 px-0 font-medium'>
+		<div className='relative flex items-center justify-between py-1 px-0 font-medium'>
 			<img className='w-36' src={assets.logo} alt="" />
 
 			{/* Desktop Navigation */}
 			<ul className='w-2/4 sm:flex gap-5 text-sm text-gray-700 hidden'>
-				<NavLink to='/' className='flex flex-col items-center gap-1'>
+				<NavLink to='/' className='flex flex-col items-center gap-2 px-4 text-[16px]'>
 					<p>HOME</p>
 					<hr className='w-3/4 border-none h-[2px] bg-gray-700 hidden' />
 				</NavLink>
-				<NavLink to='/collection' className='flex flex-col items-center gap-1'>
+				<NavLink to='/collection' className='flex flex-col items-center gap-2 px-4 text-[16px]'>
 					<p>COLLECTION</p>
 					<hr className='w-3/4 border-none h-[2px] bg-gray-700 hidden' />
 				</NavLink>
-				<NavLink to='/wishlist' className='flex flex-col items-center gap-1'>
+				<NavLink to='/wishlist' className='flex flex-col items-center gap-2 px-4 text-[16px]'>
 					<p>WISHLIST</p>
 					<hr className='w-3/4 border-none h-[2px] bg-gray-700 hidden' />
 				</NavLink>
-				<NavLink to='/about' className='flex flex-col items-center gap-1'>
+				<NavLink to='/about' className='flex flex-col items-center gap-2 px-4 text-[16px]'>
 					<p>ABOUT</p>
 					<hr className='w-3/4 border-none h-[2px] bg-gray-700 hidden' />
 				</NavLink>
-				<NavLink to='/contact' className='flex flex-col items-center gap-1'>
+				<NavLink to='/contact' className='flex flex-col items-center gap-2 px-4 text-[16px]'>
 					<p>CONTACT</p>
 					<hr className='w-3/4 border-none h-[2px] bg-gray-700 hidden' />
 				</NavLink>
@@ -56,6 +56,7 @@ const Navbar = () => {
 							<div className='flex flex-col gap-2 w-36 py-3 px-5 bg-slate-100 text-gray-500 rounded'>
 								<p onClick={() => navigate('/profile')} className='cursor-pointer hover:text-black'>My Profile</p>
 								<p onClick={() => navigate('/orders')} className='cursor-pointer hover:text-black'>My Orders</p>
+								<p onClick={() => navigate('/returns')} className='cursor-pointer hover:text-black'>My Returns</p>
 								<p onClick={logout} className='cursor-pointer hover:text-black'>Logout</p>
 							</div>
 						</div>
@@ -102,6 +103,18 @@ const Navbar = () => {
 
 					<NavLink onClick={() => setVisible(false)} className='py-2 pl-5 hover:bg-gray-50' to='/wishlist'>
 						WISHLIST
+					</NavLink>
+
+					<NavLink onClick={() => setVisible(false)} className='py-2 pl-5 hover:bg-gray-50' to='/orders'>
+						MY ORDERS
+					</NavLink>
+
+					<NavLink onClick={() => setVisible(false)} className='py-2 pl-5 hover:bg-gray-50' to='/returns'>
+						MY RETURNS
+					</NavLink>
+
+					<NavLink onClick={() => setVisible(false)} className='py-2 pl-5 hover:bg-gray-50' to='/profile'>
+						MY PROFILE
 					</NavLink>
 
 					<NavLink onClick={() => setVisible(false)} className='py-2 pl-5 hover:bg-gray-50' to='/about'>

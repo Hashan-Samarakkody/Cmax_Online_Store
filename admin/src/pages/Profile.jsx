@@ -24,7 +24,7 @@ const Profile = ({ token, setToken }) => {
         currentPassword: '',
         newPassword: '',
         confirmPassword: '',
-        code:''
+        code: ''
     });
     const [updateLoading, setUpdateLoading] = useState(false);
     const fileInputRef = useRef(null);
