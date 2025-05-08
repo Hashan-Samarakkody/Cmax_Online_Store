@@ -21,10 +21,13 @@ const Dashboard = () => {
   const [error, setError] = useState(null);
   const [lastUpdate, setLastUpdate] = useState(Date.now());
   const [token, setToken] = useState(localStorage.getItem('adminToken'));
+  const [subcategoryDistribution, setSubcategoryDistribution] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [selectedPeriod, setSelectedPeriod] = useState('monthly');
+  const [categoryMap, setCategoryMap] = useState({}); // Map of category names to IDs
 
   // Function to fetch all dashboard data
   const fetchAllData = async () => {
-    console.log("Fetching all dashboard data...");
     const token = localStorage.getItem('adminToken');
 
     try {
@@ -46,18 +49,18 @@ const Dashboard = () => {
         setProductPerformance(prodResponse.data.productPerformance || []);
       }
 
-      // Fetch sales trends
+      // Fetch sales trends with selected period
       const salesRes = await axios.get(backendUrl + '/api/dashboard/sales-trends', {
         headers: { token },
-        params: { period: 'monthly' }
+        params: { period: selectedPeriod }
       });
       if (salesRes.data.success) setSalesTrends(salesRes.data.salesData || []);
 
-      // Fetch category distribution
-      const categoryRes = await axios.get(backendUrl + '/api/dashboard/category-distribution', {
-        headers: { token }
-      });
-      if (categoryRes.data.success) setCategoryDistribution(categoryRes.data.categoryDistribution || []);
+      // Fetch category distribution and build category map
+      await fetchCategoryData();
+
+      // Fetch subcategory distribution
+      await fetchSubcategoryData();
 
       // Update last update timestamp
       setLastUpdate(Date.now());
@@ -69,9 +72,107 @@ const Dashboard = () => {
     }
   };
 
+  // Function to build a map of category names to IDs
+  const buildCategoryMap = async () => {
+    const token = localStorage.getItem('adminToken');
+    try {
+      const response = await axios.get(`${backendUrl}/api/categories`, {
+        headers: { token }
+      });
+
+      if (response.data) {
+        // Create a map of category names to IDs
+        const map = {};
+        response.data.forEach(cat => {
+          map[cat.name.toLowerCase()] = cat._id;
+        });
+        setCategoryMap(map);
+        console.log('Category map built:', map);
+      }
+    } catch (error) {
+      console.error('Error building category map:', error);
+    }
+  };
+
+  // Function to fetch subcategories data
+  const fetchSubcategoryData = async (categoryId = null) => {
+    const token = localStorage.getItem('adminToken');
+    try {
+      console.log(`[Dashboard] Fetching subcategory data for category ID: ${categoryId || 'all'}`);
+
+      // Create request options with token
+      const options = {
+        headers: { token }
+      };
+
+      // Only add params if categoryId exists
+      if (categoryId) {
+        options.params = { categoryId };
+      }
+
+      const response = await axios.get(
+        `${backendUrl}/api/categories/subcategories/all`,
+        options
+      );
+
+      console.log(`[Dashboard] Received ${response.data.length} subcategories`);
+
+      // Transform the response data to have the format we need for the chart
+      const subcategoryData = response.data.map(subcategory => ({
+        name: subcategory.name,
+        count: subcategory.productCount || 0
+      }));
+
+      // Sort by count and get top subcategories
+      const sortedData = subcategoryData.sort((a, b) => b.count - a.count).slice(0, 10);
+      setSubcategoryDistribution(sortedData);
+      setLastUpdate(Date.now());
+    } catch (error) {
+      console.error('Error fetching subcategory data:', error);
+    }
+  };
+
+  // Function to handle category click
+  const handleCategoryClick = (_, elements) => {
+    if (elements.length > 0) {
+      const categoryIndex = elements[0].index;
+      const category = categoryDistribution[categoryIndex];
+
+      if (category) {
+        // Find the category ID from the category name using our map
+        const categoryName = category.category.toLowerCase();
+        const categoryId = categoryMap[categoryName];
+
+        console.log('Category Click Details:', {
+          categoryName: category.category,
+          categoryId: categoryId,
+          fullObject: category
+        });
+
+        setSelectedCategory(category);
+
+        if (categoryId) {
+          // Fetch subcategories for this category
+          fetchSubcategoryData(categoryId);
+        } else {
+          console.error('Could not find category ID for:', category.category);
+        }
+      }
+    } else {
+      // Reset to show all subcategories when clicking outside a category
+      setSelectedCategory(null);
+      fetchSubcategoryData();
+    }
+  };
+
+  // Function to clear category selection
+  const clearCategorySelection = () => {
+    setSelectedCategory(null);
+    fetchSubcategoryData(); // Fetch all subcategories
+  };
+
   // Improved focused data fetching functions with consistent error handling and loading states
   const fetchUserStats = async () => {
-    console.log('[WebSocket Event] Fetching user stats...');
     const token = localStorage.getItem('adminToken');
     try {
       const statsResponse = await axios.get(backendUrl + '/api/dashboard/stats', {
@@ -83,12 +184,10 @@ const Dashboard = () => {
       }
     } catch (error) {
       console.error('Error fetching user stats:', error);
-
     }
   };
 
   const fetchProductData = async () => {
-    console.log('[WebSocket Event] Fetching product data...');
     const token = localStorage.getItem('adminToken');
     try {
       // Update product performance
@@ -105,14 +204,20 @@ const Dashboard = () => {
   };
 
   const fetchCategoryData = async () => {
-    console.log('[WebSocket Event] Fetching category data...');
     const token = localStorage.getItem('adminToken');
     try {
+      // Get categories from dashboard endpoint
       const categoryRes = await axios.get(backendUrl + '/api/dashboard/category-distribution', {
         headers: { token }
       });
+
       if (categoryRes.data.success) {
-        setCategoryDistribution(categoryRes.data.categoryDistribution || []);
+        const categories = categoryRes.data.categoryDistribution || [];
+        setCategoryDistribution(categories);
+
+        // After getting category distribution, build our category map
+        await buildCategoryMap();
+
         setLastUpdate(Date.now());
       }
     } catch (error) {
@@ -121,13 +226,12 @@ const Dashboard = () => {
   };
 
   const fetchSalesData = async () => {
-    console.log('[WebSocket Event] Fetching sales data...');
     const token = localStorage.getItem('adminToken');
     try {
       // Update sales trends
       const salesRes = await axios.get(backendUrl + '/api/dashboard/sales-trends', {
         headers: { token },
-        params: { period: 'monthly' }
+        params: { period: selectedPeriod }
       });
       if (salesRes.data.success) {
         setSalesTrends(salesRes.data.salesData || []);
@@ -138,14 +242,26 @@ const Dashboard = () => {
     }
   };
 
+  // Function to handle period selection change
+  const handlePeriodChange = (e) => {
+    const newPeriod = e.target.value;
+    setSelectedPeriod(newPeriod);
+    // When period changes, fetch new data
+  };
+
+  // Re-fetch sales data when period changes
+  useEffect(() => {
+    if (!loading) {
+      fetchSalesData();
+    }
+  }, [selectedPeriod]);
+
   // Event handlers with better logging and improved reliability
   const handleUserChange = () => {
-    console.log('[WebSocket] User changed. Updating stats...');
     fetchUserStats();
   };
 
   const handleProductChange = (data) => {
-    console.log('[WebSocket] Product data changed:', data);
     // Only fetch product data when needed
     fetchProductData();
     // Product changes can affect stats and categories
@@ -154,12 +270,10 @@ const Dashboard = () => {
   };
 
   const handleCategoryChange = () => {
-    console.log('[WebSocket] Category changed. Updating category data...');
     fetchCategoryData();
   };
 
   const handleOrderChange = (data) => {
-    console.log('[WebSocket] Order changed:', data);
     // Order changes affect multiple aspects of the dashboard
     fetchSalesData();
     fetchUserStats();
@@ -169,9 +283,8 @@ const Dashboard = () => {
   // Debounced full refresh for multiple rapid changes
   const debouncedFullRefresh = () => {
     const currentTime = Date.now();
-    // Only do a full refresh if it's been more than 5 seconds since last update
-    if (currentTime - lastUpdate > 5000) {
-      console.log('[Dashboard] Multiple changes detected, performing full refresh');
+    // Only do a full refresh if it's been more than 10 min since last update
+    if (currentTime - lastUpdate > 600000) {
       fetchAllData();
     }
   };
@@ -182,14 +295,11 @@ const Dashboard = () => {
       // First ensure WebSocket is connected before setting up listeners
       if (!WebSocketService.isConnected()) {
         WebSocketService.connect(() => {
-          console.log("WebSocket connected from Dashboard component");
-          // Once connected, set up all event listeners and fetch initial data
           setupWebSocketListeners();
           fetchAllData();
         });
       } else {
         // WebSocket already connected, set up listeners and fetch data
-        console.log("WebSocket already connected, setting up listeners");
         setupWebSocketListeners();
         fetchAllData();
       }
@@ -197,11 +307,9 @@ const Dashboard = () => {
 
     // Setup all WebSocket event listeners
     const setupWebSocketListeners = () => {
-      console.log("Setting up WebSocket listeners");
-
       // User-related events
       WebSocketService.on('userChange', handleUserChange);
-      WebSocketService.on('newUser', handleUserChange); 
+      WebSocketService.on('newUser', handleUserChange);
 
       // Product-related events
       WebSocketService.on('newProduct', handleProductChange);
@@ -219,11 +327,10 @@ const Dashboard = () => {
     connectAndSetup();
 
     // Add an interval to ensure data is fresh
-    const refreshInterval = setInterval(debouncedFullRefresh, 30000);
+    const refreshInterval = setInterval(debouncedFullRefresh, 600000);
 
     // Cleanup function
     return () => {
-      console.log("Cleaning up WebSocket listeners in Dashboard");
       WebSocketService.off('userChange', handleUserChange);
       WebSocketService.off('newUser', handleUserChange);
       WebSocketService.off('newProduct', handleProductChange);
@@ -285,6 +392,7 @@ const Dashboard = () => {
     labels: categoryDistribution.map(item => item.category),
     datasets: [
       {
+        label: 'Products',
         data: categoryDistribution.map(item => item.count),
         backgroundColor: [
           'rgba(255, 99, 132, 0.5)',
@@ -301,6 +409,40 @@ const Dashboard = () => {
           'rgb(153, 102, 255)'
         ],
         borderWidth: 1
+      }
+    ]
+  };
+
+  const subcategoryData = {
+    labels: subcategoryDistribution.map(item => item.name),
+    datasets: [
+      {
+        data: subcategoryDistribution.map(item => item.count),
+        backgroundColor: [
+          'rgba(54, 162, 235, 0.5)',
+          'rgba(255, 99, 132, 0.5)',
+          'rgba(255, 206, 86, 0.5)',
+          'rgba(75, 192, 192, 0.5)',
+          'rgba(153, 102, 255, 0.5)',
+          'rgba(255, 159, 64, 0.5)',
+          'rgba(201, 203, 207, 0.5)',
+          'rgba(94, 232, 129, 0.5)',
+          'rgba(162, 94, 232, 0.5)',
+          'rgba(232, 94, 94, 0.5)'
+        ],
+        borderColor: [
+          'rgb(54, 162, 235)',
+          'rgb(255, 99, 132)',
+          'rgb(255, 206, 86)',
+          'rgb(75, 192, 192)',
+          'rgb(153, 102, 255)',
+          'rgb(255, 159, 64)',
+          'rgb(201, 203, 207)',
+          'rgb(94, 232, 129)',
+          'rgb(162, 94, 232)',
+          'rgb(232, 94, 94)'
+        ],
+        borderWidth: 2
       }
     ]
   };
@@ -340,13 +482,26 @@ const Dashboard = () => {
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Dashboard Overview</h1>
 
-        <button
-          onClick={() => navigate('/sales')}
-          className="flex items-center px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors"
-        >
-          Sold Items Count Report
-        </button>
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => navigate('/sales')}
+            className="flex items-center px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors"
+          >
+            Sold Items Count Report
+          </button>
+        </div>
       </div>
+
+      <select
+        value={selectedPeriod}
+        onChange={handlePeriodChange}
+        className="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+      >
+        <option value="daily">Daily</option>
+        <option value="weekly">Weekly</option>
+        <option value="monthly">Monthly</option>
+        <option value="yearly">Yearly</option>
+      </select>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
@@ -357,24 +512,24 @@ const Dashboard = () => {
               <FiDollarSign className="h-6 w-6 text-indigo-600" />
             </div>
             <div className="ml-5">
-              <div className="text-gray-500 text-sm">Total Sales (Monthly)</div>
+              <div className="text-gray-500 text-sm">Total Sales ({selectedPeriod})</div>
               <div className="text-2xl font-bold text-gray-900">
-                Rs.{stats ? stats.revenue.monthly.toFixed(2) : '0.00'}
+                Rs.{stats ? stats.revenue[selectedPeriod]?.toFixed(2) || '0.00' : '0.00'}
               </div>
             </div>
           </div>
         </div>
 
-        {/* Orders Card */}
+        {/* Orders Card*/}
         <div className="bg-white rounded-lg shadow p-5">
           <div className="flex items-center">
             <div className="flex-shrink-0 h-12 w-12 rounded-full bg-green-100 flex items-center justify-center">
               <FiShoppingCart className="h-6 w-6 text-green-600" />
             </div>
             <div className="ml-5">
-              <div className="text-gray-500 text-sm">Orders (Monthly)</div>
+              <div className="text-gray-500 text-sm">Orders ({selectedPeriod})</div>
               <div className="text-2xl font-bold text-gray-900">
-                {stats ? stats.orders.monthly : '0'}
+                {stats ? stats.orders[selectedPeriod] || '0' : '0'}
               </div>
             </div>
           </div>
@@ -416,7 +571,7 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         {/* Sales Chart */}
         <div className="bg-white rounded-lg shadow p-5">
-          <h2 className="text-xl font-semibold mb-4">Sales Trends</h2>
+          <h2 className="text-xl font-semibold mb-4">Sales Trends ({selectedPeriod})</h2>
           <div className="h-80">
             <Line
               data={salesChartData}
@@ -440,7 +595,7 @@ const Dashboard = () => {
 
         {/* Orders Chart */}
         <div className="bg-white rounded-lg shadow p-5">
-          <h2 className="text-xl font-semibold mb-4">Order Trends</h2>
+          <h2 className="text-xl font-semibold mb-4">Order Trends ({selectedPeriod})</h2>
           <div className="h-80">
             <Bar
               data={ordersChartData}
@@ -479,7 +634,51 @@ const Dashboard = () => {
               data={categoryData}
               options={{
                 responsive: true,
-                maintainAspectRatio: false
+                maintainAspectRatio: false,
+                onClick: handleCategoryClick
+              }}
+            />
+          </div>
+          <div>
+            <p className="text-sm text-gray-500 mt-2 text-center font-semibold">Click on a category to view subcategory distribution</p>
+          </div>
+        </div>
+
+        {/* Subcategory Distribution Chart */}
+        <div className="bg-white rounded-lg shadow p-5">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold">
+              {selectedCategory ? `Subcategory distribution in "${selectedCategory.category}" category` : 'All Subcategory Distribution'}
+            </h2>
+            {selectedCategory && (
+              <button
+                onClick={clearCategorySelection}
+                className="px-2 py-1 text-sm bg-black text-white rounded hover:bg-white hover:text-black border border-gray-800 transition-colors duration-300"
+              >
+                Show All
+              </button>
+            )}
+          </div>
+          <div className="h-80">
+            <Bar
+              data={subcategoryData}
+              options={{
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                  legend: {
+                    display: false 
+                  }
+                },
+                scales: {
+                  x: {
+                    beginAtZero: true,
+                    title: {
+                      display: true,
+                      text: 'Product Count'
+                    }
+                  }
+                }
               }}
             />
           </div>

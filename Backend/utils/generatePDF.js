@@ -26,8 +26,18 @@ export const generateOrderPDF = async (req, res) => {
 
         // Process orders and group items by user and order
         for (const order of placedOrders) {
+            // Get user info - first try to find the user, then fall back to order.address
             const user = await userModel.findById(order.userId);
-            const userName = user ? user.name : 'Unknown User';
+
+            // Use address.firstName and address.lastName if available, otherwise use user.name or default
+            let userName;
+            if (order.address && order.address.firstName) {
+                userName = `${order.address.firstName}`.trim();
+            } else if (user && user.name) {
+                userName = user.name;
+            } else {
+                userName = 'Unknown User';
+            }
 
             if (!userOrderGroups[userName]) {
                 userOrderGroups[userName] = [];
@@ -106,11 +116,11 @@ export const generateOrderPDF = async (req, res) => {
         // Table Header
         const startX = 30;
         let startY = doc.y;
-        // Updated column widths to include Order ID and Time
-        const columnWidths = [80, 80, 80, 120, 50, 50, 50];
+        // Updated column widths - adjusting Order ID column to be wider
+        const columnWidths = [80, 90, 80, 110, 50, 50, 50]; // Made Order ID column wider
 
         const drawRow = (y, row, isHeader = false) => {
-            const fontSize = isHeader ? 12 : 10;
+            const fontSize = isHeader ? 12 : 9;
             doc.fontSize(fontSize);
 
             let currentX = startX;
@@ -118,10 +128,20 @@ export const generateOrderPDF = async (req, res) => {
             // Draw each column with proper alignment
             for (let i = 0; i < row.length; i++) {
                 const alignMode = i === 6 ? 'center' : 'left'; // Center-align quantity
-                doc.text(row[i] || '', currentX, y, {
+                const textOpts = {
                     width: columnWidths[i],
                     align: alignMode
-                });
+                };
+
+                // Use smaller font for Order ID if not header
+                if (i === 1 && !isHeader) {
+                    doc.fontSize(9); // Smaller font for Order ID
+                    doc.text(row[i] || '', currentX, y, textOpts);
+                    doc.fontSize(fontSize); // Reset back
+                } else {
+                    doc.text(row[i] || '', currentX, y, textOpts);
+                }
+
                 currentX += columnWidths[i];
             }
 
