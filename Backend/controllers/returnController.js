@@ -603,4 +603,21 @@ const sendReturnStatusUpdateEmail = async (returnData) => {
     }
 };
 
-export { createReturnRequest, getUserReturns, getAdminReturns, updateReturnStatus };
+// Get order summary for analytics
+const getReturnOrderSummary = async (req, res) => {
+    try {
+        // Get all orders, but only select the needed fields to improve performance
+        const orders = await orderModel.find()
+            .select('items date status');
+
+        res.json({
+            success: true,
+            orders
+        });
+    } catch (error) {
+        console.error('Error getting order summary:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+export { createReturnRequest, getUserReturns, getAdminReturns, updateReturnStatus, getReturnOrderSummary };

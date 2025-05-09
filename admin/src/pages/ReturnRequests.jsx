@@ -5,9 +5,11 @@ import WebSocketService from '../services/WebSocketService';
 import { format } from 'date-fns';
 import { toast } from 'react-toastify';
 import { FaImage, FaVideo, FaPlayCircle } from 'react-icons/fa';
+import { useNavigate } from 'react-router-dom';
 
 const ReturnRequests = ({ token }) => {
 	const [returns, setReturns] = useState([]);
+	const navigate = useNavigate();
 	const [expandedReturn, setExpandedReturn] = useState(null);
 	const [statusInputs, setStatusInputs] = useState({});
 	const [trackingInputs, setTrackingInputs] = useState({});
@@ -277,6 +279,16 @@ const ReturnRequests = ({ token }) => {
 	return (
 		<div className="p-6">
 			<h1 className="text-2xl font-bold mb-6">Return Requests</h1>
+
+			{/* Button to navigate to retuen analysis page */}
+			<div className="mb-4">
+				<button
+					onClick={() => navigate('/return-analysis')}
+					className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
+				>
+					Return Analysis
+				</button>
+			</div>
 
 			{/* Table to display return requests */}
 			<div className="bg-white rounded-lg shadow overflow-hidden">
