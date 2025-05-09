@@ -48,10 +48,14 @@ const UserActivityReport = () => {
             let queryParams = new URLSearchParams();
             queryParams.append('period', period);
 
+            // Only add date range parameters if we're showing the date range AND both dates are selected
             if (showDateRange && dateRange.startDate && dateRange.endDate) {
                 queryParams.append('startDate', dateRange.startDate);
                 queryParams.append('endDate', dateRange.endDate);
             }
+
+            // Log what we're requesting to help debug
+            console.log(`Fetching data with params: ${queryParams.toString()}`);
 
             // Fetch user activity data
             const response = await axios.get(
@@ -60,6 +64,13 @@ const UserActivityReport = () => {
             );
 
             if (response.data.success) {
+                // Log the response to help debug
+                console.log('Received data:', response.data.userActivity);
+
+                if (response.data.userActivity.length === 0) {
+                    toast.info('No user activity data found for the selected period');
+                }
+
                 setUserActivity(response.data.userActivity);
                 calculateTotalAndGrowth(response.data.userActivity);
             } else {
@@ -155,7 +166,18 @@ const UserActivityReport = () => {
 
     return (
         <div className="p-6 max-w-7xl mx-auto">
-            <h1 className="text-2xl font-bold mb-6">User Activity Report</h1>
+            <div className="flex items-center justify-between mb-6">
+                <h1 className="text-2xl font-bold">User Activity Report</h1>
+                <button
+                    onClick={() => navigate('/')}
+                    className="flex items-center text-blue-600 hover:text-blue-800"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                    <span className="ml-1">Back to Dashbord</span>
+                </button>
+            </div>
 
             <div className="bg-white rounded-lg shadow-md p-6 mb-6">
                 {/* Report Controls */}

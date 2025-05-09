@@ -588,19 +588,34 @@ const getRevenuePrediction = async (req, res) => {
 const getUserActivityReport = async (req, res) => {
     try {
         const { period = 'monthly', startDate, endDate } = req.query;
+
+        // Log the received parameters to debug
+        console.log(`Received params: period=${period}, startDate=${startDate}, endDate=${endDate}`);
+
         let dateFilter = {};
 
-        // Apply date range filter if provided
+        // Apply date range filter if provided 
         if (startDate && endDate) {
+            // Make sure to properly format the date range to include the entire day
+            const endDateWithTime = new Date(endDate);
+            endDateWithTime.setHours(23, 59, 59, 999);
+
             dateFilter = {
                 createdAt: {
                     $gte: new Date(startDate),
-                    $lte: new Date(endDate)
+                    $lte: endDateWithTime
                 }
             };
+
+            // Log the date filter being used
+            console.log('Date filter:', JSON.stringify(dateFilter));
         }
 
-        // Aggregate user registrations
+        // For debugging, count total documents that match the filter
+        const totalMatchingDocs = await userModel.countDocuments(dateFilter);
+        console.log(`Total documents matching filter: ${totalMatchingDocs}`);
+
+        // Rest of your aggregation logic...
         let groupBy;
         if (period === 'daily') {
             groupBy = {
@@ -628,6 +643,9 @@ const getUserActivityReport = async (req, res) => {
             { $sort: { "_id": 1 } }
         ]);
 
+        // Log the raw aggregation result
+        console.log('Aggregation result:', JSON.stringify(registrationData));
+
         // Format data for response
         const formattedData = registrationData.map(item => {
             if (period === 'weekly') {
@@ -647,11 +665,10 @@ const getUserActivityReport = async (req, res) => {
             userActivity: formattedData
         });
     } catch (error) {
-        console.error(error);
+        console.error('Error in getUserActivityReport:', error);
         res.status(500).json({ success: false, message: error.message });
     }
 };
-
 export {
     getDashboardStats,
     getSalesTrends,
