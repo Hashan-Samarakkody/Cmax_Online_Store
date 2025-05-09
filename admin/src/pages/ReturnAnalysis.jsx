@@ -285,9 +285,9 @@ const ReturnAnalysis = ({ token }) => {
             </div>
 
             <div className="mb-6">
-                <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-xl font-semibold">Filter Data</h2>
-                    <div className="flex space-x-2">
+                <div className="flex items-center mb-4">
+                    <h2 className="text-xl px-2 font-semibold text-blue-600">Filter Data</h2>
+                    <div className="space-x-2">
                         <button
                             onClick={() => setDateRange('week')}
                             className={`px-3 py-1 rounded ${dateRange === 'week' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
