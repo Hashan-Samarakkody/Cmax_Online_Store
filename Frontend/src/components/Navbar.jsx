@@ -21,23 +21,23 @@ const Navbar = () => {
 
 			{/* Desktop Navigation */}
 			<ul className='w-2/4 sm:flex gap-5 text-sm text-gray-700 hidden'>
-				<NavLink to='/' className='flex flex-col items-center gap-2 px-4 text-[16px]'>
+				<NavLink to='/' className='flex flex-col items-center gap-2 px-1 text-[16px]'>
 					<p>HOME</p>
 					<hr className='w-3/4 border-none h-[2px] bg-gray-700 hidden' />
 				</NavLink>
-				<NavLink to='/collection' className='flex flex-col items-center gap-2 px-4 text-[16px]'>
+				<NavLink to='/collection' className='flex flex-col items-center gap-2 px-1 text-[16px]'>
 					<p>COLLECTION</p>
 					<hr className='w-3/4 border-none h-[2px] bg-gray-700 hidden' />
 				</NavLink>
-				<NavLink to='/wishlist' className='flex flex-col items-center gap-2 px-4 text-[16px]'>
+				<NavLink to='/wishlist' className='flex flex-col items-center gap-2 px-1 text-[16px]'>
 					<p>WISHLIST</p>
 					<hr className='w-3/4 border-none h-[2px] bg-gray-700 hidden' />
 				</NavLink>
-				<NavLink to='/about' className='flex flex-col items-center gap-2 px-4 text-[16px]'>
+				<NavLink to='/about' className='flex flex-col items-center gap-2 px-1 text-[16px]'>
 					<p>ABOUT</p>
 					<hr className='w-3/4 border-none h-[2px] bg-gray-700 hidden' />
 				</NavLink>
-				<NavLink to='/contact' className='flex flex-col items-center gap-2 px-4 text-[16px]'>
+				<NavLink to='/contact' className='flex flex-col items-center gap-2 px-1 text-[16px]'>
 					<p>CONTACT</p>
 					<hr className='w-3/4 border-none h-[2px] bg-gray-700 hidden' />
 				</NavLink>
