@@ -250,7 +250,7 @@ const Edit = ({ token }) => {
     return (
         <div>
             <div className="mb-6 flex items-center justify-between">
-                    <h1 className="text-2xl font-bold">Edit Products</h1>
+                <h1 className="text-2xl font-bold">Edit Items</h1>
                     <div className='px-110'>
                         <button
                             onClick={() => navigate('/list')}

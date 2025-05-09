@@ -278,13 +278,13 @@ const ReturnRequests = ({ token }) => {
 
 	return (
 		<div className="p-6">
-			<h1 className="text-2xl font-bold mb-6">Return Requests</h1>
+			<div className="flex justify-between items-center mb-6">
+				<h1 className="text-2xl font-bold">Return Requests</h1>
 
-			{/* Button to navigate to retuen analysis page */}
-			<div className="mb-4">
+				{/* Button positioned at the same height as the heading on the right side */}
 				<button
 					onClick={() => navigate('/return-analysis')}
-					className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
+					className="flex items-center px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors"
 				>
 					Return Analysis
 				</button>

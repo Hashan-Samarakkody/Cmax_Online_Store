@@ -156,6 +156,11 @@ const ProductList = ({ token }) => {
 
   return (
     <div className="container mx-auto px-4 sm:px-8">
+      
+      <div className="mb-6 flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Item List</h1>
+      </div>
+
       <div className="py-8">
         {/* Search Section */}
         <div className="mb-6 p-4 border rounded-lg bg-gray-50">
