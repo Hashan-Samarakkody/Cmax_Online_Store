@@ -124,7 +124,7 @@ const Navbar = ({ setToken }) => {
             alt={`${adminName}'s profile`}
             className='w-full h-full object-cover'
             onError={(e) => {
-              e.target.onerror = null; // Prevent infinite error loops
+              e.target.onerror = null;
               e.target.src = assets.profile_icon;
             }}
           />
