@@ -446,21 +446,6 @@ const ReturnAnalysis = ({ token }) => {
                     </ResponsiveContainer>
                 </div>
             </div>
-
-            {/* Customer Satisfaction */}
-            <div className="mt-6 bg-white p-4 rounded-lg shadow">
-                <h2 className="text-lg font-semibold mb-4">Customer Satisfaction with Returns Process</h2>
-                <div className="bg-yellow-50 p-4 rounded-lg">
-                    <p className="text-yellow-800">
-                        ⚠️ Note: Currently there is no direct feedback data for return satisfaction. To improve this report, consider implementing:
-                    </p>
-                    <ul className="list-disc ml-6 mt-2 text-yellow-700">
-                        <li>Post-return customer satisfaction surveys</li>
-                        <li>Sentiment analysis of customer communication during return process</li>
-                        <li>Return-to-repurchase ratio tracking to measure customer retention after returns</li>
-                    </ul>
-                </div>
-            </div>
         </div>
     );
 };
