@@ -256,11 +256,11 @@ const ReturnAnalysis = ({ token }) => {
 
     return (
         <div className="p-6">
-            <div className="flex items-center mb-6">
+            <div className="flex items-center justify-between mb-6">
                 <h1 className="text-2xl font-bold">Return Analysis Report</h1>
                 <button
                     onClick={() => navigate('/return-requests')}
-                    className="mr-4 flex items-center text-blue-600 hover:text-blue-800"
+                    className="flex items-center text-blue-600 hover:text-blue-800"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
