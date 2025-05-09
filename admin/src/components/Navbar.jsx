@@ -1,40 +1,113 @@
-import React, { useState, useEffect } from 'react'
-import { assets } from '../assets/assets'
-import axios from 'axios'
-import { backendUrl } from '../App'
-import { useNavigate } from 'react-router-dom'
+import React, { useState, useEffect } from 'react';
+import { assets } from '../assets/assets';
+import axios from 'axios';
+import { backendUrl } from '../App';
+import { useNavigate } from 'react-router-dom';
+import WebSocketService from '../services/WebSocketService';
 
 const Navbar = ({ setToken }) => {
-  const [adminName, setAdminName] = useState('Admin')
-  const [profilePic, setProfilePic] = useState(null)
-  const navigate = useNavigate()
+  const [adminName, setAdminName] = useState('Admin');
+  const [profilePic, setProfilePic] = useState(null);
+  const navigate = useNavigate();
+
+  const fetchAdminDetails = async () => {
+    try {
+      const token = localStorage.getItem('adminToken');
+      if (token) {
+        const response = await axios.get(`${backendUrl}/api/admin/profile`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        console.log('Admin profile fetched:', response.data);
+
+        if (response.data && response.data.admin && response.data.admin.name) {
+          setAdminName(response.data.admin.name);
+        }
+
+        if (response.data && response.data.admin && response.data.admin.profileImage) {
+          setProfilePic(response.data.admin.profileImage);
+        }
+
+        // Store admin ID in localStorage if not already stored
+        if (response.data && response.data.admin && response.data.admin._id) {
+          localStorage.setItem('adminId', response.data.admin._id);
+          console.log('Admin ID stored in localStorage:', response.data.admin._id);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching admin details:', error);
+    }
+  };
 
   useEffect(() => {
-    // Fetch admin details when component mounts
-    const fetchAdminDetails = async () => {
-      try {
-        const token = localStorage.getItem('adminToken')
-        if (token) {
-          const response = await axios.get(`${backendUrl}/api/admin/profile`, {
-            headers: { token }
-          })
+    // Initial fetch of admin details
+    fetchAdminDetails();
 
-          if (response.data && response.data.admin && response.data.admin.name) {
-            setAdminName(response.data.admin.name)
-          }
-
-          // Update this line to use profileImage instead of profilePic
-          if (response.data && response.data.admin && response.data.admin.profileImage) {
-            setProfilePic(response.data.admin.profileImage)
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching admin details:', error)
-      }
+    // Connect to WebSocket if not already connected
+    if (!WebSocketService.isConnected()) {
+      console.log('Connecting to WebSocket...');
+      WebSocketService.connect(() => {
+        console.log('WebSocket connected successfully');
+      });
+    } else {
+      console.log('WebSocket already connected');
     }
 
-    fetchAdminDetails()
-  }, [])
+    // Setup profile update listener
+    const handleProfileUpdate = (data) => {
+      console.log('Profile update received:', data);
+
+      // Only update if the profile update is for the current admin
+      const currentAdminId = localStorage.getItem('adminId');
+      console.log('Current admin ID from localStorage:', currentAdminId);
+
+      if (currentAdminId && data.admin) {
+        console.log('Comparing IDs:', data.admin.id, currentAdminId);
+
+        // Check both string and ObjectId format
+        const isCurrentAdmin =
+          data.admin.id === currentAdminId ||
+          data.admin._id === currentAdminId;
+
+        if (isCurrentAdmin) {
+          console.log('Updating admin profile in navbar');
+          if (data.admin.name) {
+            setAdminName(data.admin.name);
+          }
+
+          if (data.admin.profileImage) {
+            setProfilePic(data.admin.profileImage);
+          }
+        }
+      }
+    };
+
+    // Register WebSocket event listener
+    console.log('Registering profileUpdate event listener');
+    WebSocketService.on('profileUpdate', handleProfileUpdate);
+
+    // Cleanup WebSocket listener when component unmounts
+    return () => {
+      console.log('Removing profileUpdate event listener');
+      WebSocketService.off('profileUpdate', handleProfileUpdate);
+    };
+  }, []);
+
+  // Helper function to get the appropriate profile image
+  const getProfileImageSrc = () => {
+    // If no profile pic or it's the default value from database
+    if (!profilePic || profilePic === 'default-admin.png') {
+      return assets.profile_icon;
+    }
+
+    // If the image is a full URL (from cloud storage)
+    if (profilePic.includes('http')) {
+      return profilePic;
+    }
+
+    // If it's a relative path (stored locally)
+    return `${backendUrl}/uploads/${profilePic}`;
+  };
 
   return (
     <div className='flex items-center py-1 px-[4%] justify-between'>
@@ -45,24 +118,20 @@ const Navbar = ({ setToken }) => {
           Welcome, {adminName}!
         </h1>
         <div className='w-12 h-12 rounded-full overflow-hidden border-2 border-green-400'>
-          {profilePic ? (
-            <img
-              src={profilePic}
-              onClick={() => navigate('/profile')}
-              alt={`${adminName}'s profile`}
-              className='w-full h-full object-cover'
-            />
-          ) : (
-            <div className='w-full h-full bg-gray-300 flex items-center justify-center'>
-              <span className='text-gray-600 font-bold text-sm'>
-                {adminName.charAt(0).toUpperCase()}
-              </span>
-            </div>
-          )}
+          <img
+            src={getProfileImageSrc()}
+            onClick={() => navigate('/profile')}
+            alt={`${adminName}'s profile`}
+            className='w-full h-full object-cover'
+            onError={(e) => {
+              e.target.onerror = null;
+              e.target.src = assets.profile_icon;
+            }}
+          />
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default Navbar
+export default Navbar;

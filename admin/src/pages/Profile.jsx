@@ -388,12 +388,12 @@ const Profile = ({ token, setToken }) => {
                                                 ? (admin.profileImage.includes('http')
                                                     ? admin.profileImage
                                                     : `${backendUrl}/uploads/${admin.profileImage}`)
-                                                : assets.defaultAvatar)}
+                                                : assets.profile_icon)}
                                             alt={admin?.name || "Profile"}
                                             className="h-full w-full object-cover"
                                             onError={(e) => {
                                                 e.target.onerror = null;
-                                                e.target.src = assets.defaultAvatar;
+                                                e.target.src = assets.profile_icon;
                                             }}
                                         />
                                     </div>
@@ -567,7 +567,7 @@ const Profile = ({ token, setToken }) => {
                                             className="h-full w-full object-cover"
                                             onError={(e) => {
                                                 e.target.onerror = null;
-                                                e.target.src = assets.defaultAvatar;
+                                                e.target.src = assets.profile_icon;
                                             }}
                                         />
                                     </div>

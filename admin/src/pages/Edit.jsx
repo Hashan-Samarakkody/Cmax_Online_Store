@@ -458,6 +458,7 @@ const Edit = ({ token }) => {
                 {/* Image Upload */}
                 <div>
                     <p className="font-semibold mb-2">Upload Images</p>
+                    <p className='text-sm text-red-500 mb-2'><i>* Only 700 × 700 images are allowed</i></p>
                     <div className="flex gap-2">
                         {[0, 1, 2, 3].map((index) => (
                             <label key={index} htmlFor={`image${index + 1}`} className="cursor-pointer">

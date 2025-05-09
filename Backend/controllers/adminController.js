@@ -265,6 +265,17 @@ const updateAdminProfile = async (req, res) => {
             { new: true, runValidators: true }
         ).select('-password');
 
+        // Broadcast profile update to all connected clients
+        broadcast({
+            type: "profileUpdate",
+            admin: {
+                id: updatedAdmin._id,
+                name: updatedAdmin.name,
+                email: updatedAdmin.email,
+                profileImage: updatedAdmin.profileImage
+            }
+        });
+
         res.json({
             success: true,
             message: "Profile updated successfully",
