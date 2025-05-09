@@ -1,28 +1,42 @@
-import React, { useEffect, useState, useContext, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
-import { ShopContext } from '../context/ShopContext';
 import axios from 'axios';
+import { backendUrl } from '../App';
 
-const ChatBot = () => {
+const AdminChatBot = ({ token }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [messages, setMessages] = useState([]);
     const [inputMessage, setInputMessage] = useState('');
     const [isTyping, setIsTyping] = useState(false);
     const location = useLocation();
-    const { backendUrl, token, user } = useContext(ShopContext);
     const messagesEndRef = useRef(null);
 
-    // Pages where the chatbot should be available - updated to include all requested pages
+    // Initialize with welcome message
+    useEffect(() => {
+        setMessages([
+            {
+                sender: 'bot',
+                text: 'Hello admin! How can I assist you with the admin panel today?',
+                time: new Date()
+            }
+        ]);
+    }, []);
+
+    // Pages where the admin chatbot should be available
     const allowedPages = [
-        '/collection',
+        '/',
+        '/dashboard',
+        '/list',
+        '/add',
+        '/edit',
+        '/category',
         '/orders',
-        '/place-order', 
-        '/about',
-        '/contact',
-        '/cart',
-        '/returns',
         '/profile',
-        '/' 
+        '/admin-management',
+        '/sales',
+        '/return-requests',
+        '/return-analysis',
+        '/user-activity-report'
     ];
 
     // Function to format message text with line breaks and clickable links
@@ -56,17 +70,6 @@ const ChatBot = () => {
             scrollToBottom();
         }
     }, [isOpen]);
-
-    useEffect(() => {
-        // Reset chat when navigating to another page
-        setMessages([
-            {
-                sender: 'bot',
-                text: 'Hello! Welcome to Cmax Online Store. How can I help you today?',
-                time: new Date()
-            }
-        ]);
-    }, [location.pathname]);
 
     // Check if current page should display chatbot
     const shouldDisplayChatbot = () => {
@@ -104,22 +107,29 @@ const ChatBot = () => {
             // Get contextual response based on current page
             let pageContext;
 
-            if (location.pathname === '/') pageContext = 'home';
-            else if (location.pathname.includes('/collection')) pageContext = 'collection';
-            else if (location.pathname.includes('/orders')) pageContext = 'orders';
-            else if (location.pathname.includes('/place-order')) pageContext = 'placeorder';
-            else if (location.pathname.includes('/about')) pageContext = 'about';
-            else if (location.pathname.includes('/contact')) pageContext = 'contact';
-            else if (location.pathname.includes('/cart')) pageContext = 'cart';
-            else if (location.pathname.includes('/returns')) pageContext = 'returns';
-            else if (location.pathname.includes('/profile')) pageContext = 'profile';
-            else pageContext = 'general';
+            if (location.pathname === '/') pageContext = 'admin_dashboard';
+            else if (location.pathname.includes('/dashboard')) pageContext = 'admin_dashboard';
+            else if (location.pathname.includes('/orders')) pageContext = 'admin_orders';
+            else if (location.pathname.includes('/list')) pageContext = 'admin_products';
+            else if (location.pathname.includes('/add')) pageContext = 'admin_add_product';
+            else if (location.pathname.includes('/edit')) pageContext = 'admin_edit_product';
+            else if (location.pathname.includes('/category')) pageContext = 'admin_categories';
+            else if (location.pathname.includes('/admin-management')) pageContext = 'admin_management';
+            else if (location.pathname.includes('/profile')) pageContext = 'admin_profile';
+            else if (location.pathname.includes('/user-activity-report')) pageContext = 'admin_user_activity';
+            else if (location.pathname.includes('/sales')) pageContext = 'admin_sales_report';
+            else if (location.pathname.includes('/return-requests')) pageContext = 'admin_returns';
+            else if (location.pathname.includes('/return-analysis')) pageContext = 'admin_return_analysis';
+            else pageContext = 'admin_general';
 
             // Send message to backend for processing
-            const response = await axios.post(`${backendUrl}/api/chatbot/message`, {
+            const response = await axios.post(`${backendUrl}/api/chatbot/admin/message`, {
                 message: inputMessage,
-                pageContext,
-                userId: token ? user?.id : null
+                pageContext
+            }, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
             });
 
             const botResponse = {
@@ -135,7 +145,7 @@ const ChatBot = () => {
             }, 600);
 
         } catch (error) {
-            console.error('Error getting chatbot response:', error);
+            console.error('Error getting admin chatbot response:', error);
 
             // Provide fallback response on error
             const errorMessage = {
@@ -144,8 +154,10 @@ const ChatBot = () => {
                 time: new Date()
             };
 
-            setMessages(prev => [...prev, errorMessage]);
-            setIsTyping(false);
+            setTimeout(() => {
+                setMessages(prev => [...prev, errorMessage]);
+                setIsTyping(false);
+            }, 600);
         }
     };
 
@@ -159,7 +171,7 @@ const ChatBot = () => {
     if (!shouldDisplayChatbot()) return null;
 
     return (
-        <div className="chatbot-container">
+        <div className="admin-chatbot-container">
             {/* Chat Toggle Button */}
             <button
                 className="chat-toggle-btn"
@@ -180,7 +192,7 @@ const ChatBot = () => {
             {isOpen && (
                 <div className="chat-window">
                     <div className="chat-header">
-                        <h3>Cmax Support</h3>
+                        <h3>Admin Support</h3>
                     </div>
                     <div className="chat-messages">
                         {messages.map((msg, index) => (
@@ -223,7 +235,7 @@ const ChatBot = () => {
 
             <style>
                 {`
-                    .chatbot-container {
+                    .admin-chatbot-container {
   position: fixed;
   bottom: 20px;
   right: 20px;
@@ -237,7 +249,7 @@ const ChatBot = () => {
   width: 50px;
   height: 50px;
   border-radius: 50%;
-  background-color: #4caf50;
+  background-color: #3f51b5;
   color: white;
   display: flex;
   align-items: center;
@@ -249,7 +261,7 @@ const ChatBot = () => {
 }
 
 .chat-toggle-btn:hover {
-  background-color: #45a049;
+  background-color: #303f9f;
   transform: scale(1.05);
 }
 
@@ -278,7 +290,7 @@ const ChatBot = () => {
 }
 
 .chat-header {
-  background-color: #4caf50;
+  background-color: #3f51b5;
   color: white;
   padding: 15px;
   display: flex;
@@ -317,7 +329,7 @@ const ChatBot = () => {
 
 .message.user {
   align-self: flex-end;
-  background-color: #dcf8c6;
+  background-color: #e3f2fd;
   border-bottom-right-radius: 5px;
 }
 
@@ -354,7 +366,7 @@ const ChatBot = () => {
 }
 
 .chat-input button {
-  background-color: #4caf50;
+  background-color: #3f51b5;
   color: white;
   border: none;
   width: 36px;
@@ -368,7 +380,7 @@ const ChatBot = () => {
 }
 
 .chat-input button:hover {
-  background-color: #45a049;
+  background-color: #303f9f;
 }
 
 .typing-indicator {
@@ -422,8 +434,7 @@ const ChatBot = () => {
                 `}
             </style>
         </div>
-
     );
 };
 
-export default ChatBot;
+export default AdminChatBot;

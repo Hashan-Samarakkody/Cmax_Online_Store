@@ -16,6 +16,7 @@ import ReturnRequests from './pages/ReturnRequests'
 import CategoryManager from './pages/CategoryManager'
 import ReturnAnalysis from './pages/ReturnAnalysis'
 import UserActivityReport from './pages/UserActivityReport'
+import AdminChatBot from './components/AdminChatBot'
 import { useState } from 'react'
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css'
@@ -43,7 +44,6 @@ const App = () => {
       </div>
     )
   }
-
   // If token exists, show the main application
   return (
     <div className='bg-gray-50 min-h-screen'>
@@ -72,6 +72,7 @@ const App = () => {
           </Routes>
         </div>
       </div>
+      <AdminChatBot token={token} />
     </div>
   )
 }
