@@ -584,6 +584,74 @@ const getRevenuePrediction = async (req, res) => {
     }
 };
 
+// Get detailed user activity data for reporting
+const getUserActivityReport = async (req, res) => {
+    try {
+        const { period = 'monthly', startDate, endDate } = req.query;
+        let dateFilter = {};
+
+        // Apply date range filter if provided
+        if (startDate && endDate) {
+            dateFilter = {
+                createdAt: {
+                    $gte: new Date(startDate),
+                    $lte: new Date(endDate)
+                }
+            };
+        }
+
+        // Aggregate user registrations
+        let groupBy;
+        if (period === 'daily') {
+            groupBy = {
+                $dateToString: { format: "%Y-%m-%d", date: "$createdAt" }
+            };
+        } else if (period === 'weekly') {
+            groupBy = {
+                year: { $year: "$createdAt" },
+                week: { $week: "$createdAt" }
+            };
+        } else { // monthly
+            groupBy = {
+                $dateToString: { format: "%Y-%m", date: "$createdAt" }
+            };
+        }
+
+        const registrationData = await userModel.aggregate([
+            { $match: dateFilter },
+            {
+                $group: {
+                    _id: groupBy,
+                    count: { $sum: 1 }
+                }
+            },
+            { $sort: { "_id": 1 } }
+        ]);
+
+        // Format data for response
+        const formattedData = registrationData.map(item => {
+            if (period === 'weekly') {
+                return {
+                    period: `${item._id.year}-W${item._id.week.toString().padStart(2, '0')}`,
+                    registrations: item.count
+                };
+            }
+            return {
+                period: item._id,
+                registrations: item.count
+            };
+        });
+
+        res.json({
+            success: true,
+            userActivity: formattedData
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
 export {
     getDashboardStats,
     getSalesTrends,
@@ -592,5 +660,6 @@ export {
     getCartAnalytics,
     getCategoryDistribution,
     generateReport,
-    getRevenuePrediction
+    getRevenuePrediction,
+    getUserActivityReport
 };
