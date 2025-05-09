@@ -16,13 +16,13 @@ const ChatBot = () => {
     const allowedPages = [
         '/collection',
         '/orders',
-        '/place-order',  // Note: using the actual path from your routes
+        '/place-order', 
         '/about',
         '/contact',
         '/cart',
         '/returns',
         '/profile',
-        '/'  // Home page
+        '/' 
     ];
 
     // Function to format message text with line breaks and clickable links

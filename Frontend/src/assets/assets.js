@@ -1,5 +1,9 @@
 import logo from './logo.png'
 import hero_img from './hero_img.png'
+import hero_img2 from './hero_img2.jpg'
+import hero_img3 from './hero_img3.jpg'
+import hero_img4 from './hero_img4.jpg'
+import hero_img5 from './hero_img5.jpg'
 import cart_icon from './cart_icon.png'
 import bin_icon from './bin_icon.png'
 import dropdown_icon from './dropdown_icon.png'
@@ -30,16 +34,20 @@ import luxury_fashion from './luxury_fashion.jpg'
 import exclusive_collections from './exclusive_collections.jpg'
 import premium_quality from './premium_quality.jpg'
 import fast_delivery from './fast_delivery.jpeg'
-import h1 from './h1.jpg'
-import h2 from './h2.jpg'
-import h3 from './h3.jpeg'
-import h4 from './h4.jpg'
-import h5 from './h5.jpg'
-
+import custome_satisfaction from './custome_satisfaction.jpeg'
+import elegant_accessories from './elegant_accessories.jpeg'
+import modern_lifestyle from './modern_lifestyle.jpeg'
+import seasonal_favorites from './seasonal_favorites.jpeg'
+import trendy_fashion from './trendy_fashion.jpeg'
+import sustainable_choices from './sustainable_choices.jpeg'
 
 export const assets = {
     logo,
     hero_img,
+    hero_img2,
+    hero_img3,
+    hero_img4,
+    hero_img5,
     cart_icon,
     dropdown_icon,
     exchange_icon,
@@ -70,9 +78,10 @@ export const assets = {
     exclusive_collections,
     premium_quality,
     fast_delivery,
-    h1,
-    h2,
-    h3,
-    h4,
-    h5
+    custome_satisfaction,
+    elegant_accessories,
+    modern_lifestyle,
+    seasonal_favorites,
+    trendy_fashion,
+    sustainable_choices
 }
