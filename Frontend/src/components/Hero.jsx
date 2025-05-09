@@ -1,10 +1,34 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { assets } from '../assets/assets'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 
 const Hero = () => {
+
     const navigate = useNavigate()
+
+    // Define carousel images - add your image paths to assets or directly here
+    const carouselImages = [
+        assets.hero_img,
+        assets.hero_img2,
+        assets.hero_img3,
+        assets.hero_img4,
+        assets.hero_img5
+    ]
+
+    const [currentImageIndex, setCurrentImageIndex] = useState(0)
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setCurrentImageIndex((prevIndex) =>
+                prevIndex === carouselImages.length - 1 ? 0 : prevIndex + 1
+            )
+        }, 10000)
+
+        return () => clearInterval(interval)
+    }, [])
+
+
     return (
         <motion.div
             className='flex flex-col sm:flex-row border border-gray-400 rounded-xl h-full sm:h-auto xl:h-[750px]'
@@ -17,7 +41,7 @@ const Hero = () => {
                 className='w-full sm:w-1/2 flex items-center justify-center py-10 sm:py-0'
                 initial={{ x: -50, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
-                transition={{ delay: 0.3, duration: 0.8 }}
+                transition={{ delay: 0.1, duration: 0.1 }}
             >
                 <div className='text-[#414141]'>
                     <motion.div
@@ -91,26 +115,40 @@ const Hero = () => {
                 </div>
             </motion.div>
 
-            {/* Hero Right Side */}
+            {/* Hero Right Side - Carousel */}
             <motion.div
-                className='w-full sm:w-1/2'
+                className='w-full sm:w-1/2 relative overflow-hidden rounded-xl'
                 initial={{ x: 50, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
-                transition={{ delay: 0.5, duration: 0.8 }}
+                transition={{ delay: 0.1, duration: 0.1 }}
+                style={{ zIndex: -1 }} // Lower z-index to prevent overlap with navigation
             >
-                <motion.img
-                    className='w-full h-full object-cover rounded-xl'
-                    src={assets.hero_img}
-                    alt="Welcome To C-Max"
-                    initial={{ scale: 1.1 }}
-                    animate={{ scale: 1 }}
-                    transition={{
-                        delay: 0.7,
-                        duration: 1.2,
-                        ease: "easeOut"
-                    }}
-                    whileHover={{ scale: 1.03 }}
-                />
+                <AnimatePresence mode="wait">
+                    <motion.img
+                        key={currentImageIndex}
+                        className='w-full h-full object-cover rounded-xl'
+                        src={carouselImages[currentImageIndex]}
+                        alt={`C-Max Product Showcase ${currentImageIndex + 1}`}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.7 }}
+                        whileHover={{ scale: 1.03 }}
+                    />
+                </AnimatePresence>
+
+                {/* Carousel Navigation Dots */}
+                <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2">
+                    {carouselImages.map((_, index) => (
+                        <button
+                            key={index}
+                            onClick={() => setCurrentImageIndex(index)}
+                            className={`w-2 h-2 rounded-full ${currentImageIndex === index ? 'bg-white' : 'bg-white/50'
+                                }`}
+                            aria-label={`Go to slide ${index + 1}`}
+                        />
+                    ))}
+                </div>
             </motion.div>
         </motion.div>
     )

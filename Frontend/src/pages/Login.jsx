@@ -35,17 +35,42 @@ const Login = () => {
     {
       image: assets.exclusive_collections,
       title: "Exclusive Collections",
-      description: "Discover our latest arrivals and seasonal favorites"
+      quote: "Style is a way to say who you are without having to speak."
     },
     {
       image: assets.premium_quality,
       title: "Premium Quality",
-      description: "Curated products that meet our highest standards"
+      quote: "Quality is remembered long after the price is forgotten."
     },
     {
       image: assets.fast_delivery,
       title: "Fast Delivery",
-      description: "Quick shipping to bring your favorites to your doorstep"
+      quote: "Time is valuable. We make sure you get your items quickly."
+    },
+    {
+      image: assets.luxury_fashion,
+      title: "Trendy Fashion",
+      quote: "Fashion is about dressing according to what's fashionable. Style is more about being yourself."
+    },
+    {
+      image: assets.sustainable_choices,
+      title: "Sustainable Choices",
+      quote: "We don't need a handful of people doing zero waste perfectly. We need millions doing it imperfectly."
+    },
+    {
+      image: assets.seasonal_favorites,
+      title: "Seasonal Favorites",
+      quote: "To be irreplaceable, one must always be different."
+    },
+    {
+      image: assets.custome_satisfaction,
+      title: "Customer Satisfaction",
+      quote: "The customer's perception is your reality."
+    },
+    {
+      image: assets.modern_lifestyle,
+      title: "Modern Lifestyle",
+      quote: "Life isn't perfect, but your outfit can be."
     }
   ];
 
@@ -244,7 +269,7 @@ const Login = () => {
         setCurrentSlide((prev) => (prev + 1) % carouselItems.length);
         setAnimatingOut(false);
       }, 500);
-    }, 5000);
+    }, 7000); // Increased from 5000 to 7000 to give more time for reading quotes
 
     return () => clearInterval(timer);
   }, [carouselItems.length]);
@@ -417,7 +442,7 @@ const Login = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden">
+    <div className="flex min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden h-5/6">
       <div className="w-full md:w-1/2 flex items-center justify-center p-4">
         <motion.div
           className="w-full max-w-md"
@@ -425,22 +450,22 @@ const Login = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <form onSubmit={onSubmitHandler} className="py-8 px-4 sm:px-0">
+          <form onSubmit={onSubmitHandler} className="py-4 px-4 sm:px-0">
             <div className="w-full max-w-md mx-auto">
-          
+
               <motion.div
-                className="text-center mb-8"
+                className="text-center mb-4"
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2, duration: 0.5 }}
               >
-                <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-green-500 to-teal-400 bg-clip-text text-transparent">Welcome Back!</h1>
-                <p className="text-gray-600">Log in to continue your shopping experience</p>
+                <h1 className="text-3xl font-bold mb-1 bg-gradient-to-r from-green-500 to-teal-400 bg-clip-text text-transparent">Welcome Back!</h1>
+                <p className="text-gray-600 text-sm">Log in to continue your shopping experience</p>
               </motion.div>
 
               {formError && (
                 <motion.div
-                  className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 mb-6 rounded-lg"
+                  className="bg-red-50 border border-red-200 text-red-800 px-3 py-2 mb-3 rounded-lg text-sm"
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 0.3 }}
@@ -450,7 +475,7 @@ const Login = () => {
               )}
 
               <motion.div
-                className="space-y-5"
+                className="space-y-3"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3, duration: 0.5 }}
@@ -462,7 +487,7 @@ const Login = () => {
                   <input
                     type="email"
                     placeholder="Email"
-                    className={`w-full p-3 pl-10 rounded-lg border ${errors.email ? 'border-red-500' : 'border-gray-300'} bg-white focus:outline-none focus:ring-2 focus:ring-green-500 transition-all duration-300 shadow-sm`}
+                    className={`w-full p-2 pl-10 rounded-lg border ${errors.email ? 'border-red-500' : 'border-gray-300'} bg-white focus:outline-none focus:ring-2 focus:ring-green-500 transition-all duration-300 shadow-sm`}
                     value={email}
                     onChange={(e) => handleInputChange(e, setEmail, 'email')}
                     required
@@ -477,7 +502,7 @@ const Login = () => {
                   <input
                     type="password"
                     placeholder="Password"
-                    className={`w-full p-3 pl-10 rounded-lg border ${errors.password ? 'border-red-500' : 'border-gray-300'} bg-white focus:outline-none focus:ring-2 focus:ring-green-500 transition-all duration-300 shadow-sm`}
+                    className={`w-full p-2 pl-10 rounded-lg border ${errors.password ? 'border-red-500' : 'border-gray-300'} bg-white focus:outline-none focus:ring-2 focus:ring-green-500 transition-all duration-300 shadow-sm`}
                     value={password}
                     onChange={(e) => handleInputChange(e, setPassword, 'password')}
                     required
@@ -487,13 +512,13 @@ const Login = () => {
               </motion.div>
 
               <motion.div
-                className="mt-2 text-right"
+                className="mt-1 text-right"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.4, duration: 0.5 }}
               >
                 <span
-                  className="text-green-600 text-sm cursor-pointer hover:underline transition-colors duration-200"
+                  className="text-green-600 text-xs cursor-pointer hover:underline transition-colors duration-200"
                   onClick={() => setShowResetModal(true)}
                 >
                   Forgot Password?
@@ -501,7 +526,7 @@ const Login = () => {
               </motion.div>
 
               <motion.div
-                className="mt-6"
+                className="mt-4"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.5, duration: 0.5 }}
@@ -509,7 +534,7 @@ const Login = () => {
                 <motion.button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full bg-gradient-to-r from-green-600 to-teal-600 text-white py-3 rounded-lg shadow-md transition-all duration-300 transform hover:shadow-lg hover:translate-y-[-2px] disabled:opacity-70 disabled:cursor-not-allowed"
+                  className="w-full bg-gradient-to-r from-green-600 to-teal-600 text-white py-2 rounded-lg shadow-md transition-all duration-300 transform hover:shadow-lg hover:translate-y-[-2px] disabled:opacity-70 disabled:cursor-not-allowed"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
@@ -523,27 +548,27 @@ const Login = () => {
                   )}
                 </motion.button>
 
-                <div className="my-6 flex items-center">
+                <div className="my-3 flex items-center">
                   <div className="flex-1 h-px bg-gray-300"></div>
-                  <p className="mx-4 text-gray-500 text-sm">OR</p>
+                  <p className="mx-4 text-gray-500 text-xs">OR</p>
                   <div className="flex-1 h-px bg-gray-300"></div>
                 </div>
 
                 <motion.button
                   type="button"
-                  className="w-full flex items-center justify-center gap-2 p-3 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-all duration-300 shadow-sm"
+                  className="w-full flex items-center justify-center gap-2 p-2 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-all duration-300 shadow-sm text-sm"
                   whileHover={{ scale: 1.01 }}
                   whileTap={{ scale: 0.99 }}
                 >
-                  <FcGoogle size={20} />
+                  <FcGoogle size={18} />
                   <span>Continue with Google</span>
                 </motion.button>
 
-                <div className="text-center mt-6">
-                  <span className="text-gray-600">Don't have an account? </span>
+                <div className="text-center mt-3">
+                  <span className="text-gray-600 text-sm">Don't have an account? </span>
                   <Link
                     to="/signup"
-                    className="text-green-600 font-medium hover:text-green-800 hover:underline transition-colors duration-200"
+                    className="text-green-600 font-medium hover:text-green-800 hover:underline transition-colors duration-200 text-sm"
                   >
                     Sign up now
                   </Link>
@@ -560,123 +585,83 @@ const Login = () => {
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.7, delay: 0.2, ease: "easeOut" }}
       >
-        {/* Animated background with subtle patterns */}
-        <div className="absolute inset-0 bg-gradient-to-br from-green-500 to-teal-600">
-          <div className="absolute inset-0 opacity-5"
-            style={{ backgroundImage: "url('https://www.transparenttextures.com/patterns/diagonales-decalees.png')" }}
-          />
-
-          {/* Animated floating elements */}
-          <div className="absolute inset-0">
-            {Array.from({ length: 15 }).map((_, i) => (
-              <motion.div
-                key={i}
-                className="absolute rounded-full bg-white"
-                style={{
-                  width: `${Math.random() * 50 + 10}px`,
-                  height: `${Math.random() * 50 + 10}px`,
-                  left: `${Math.random() * 100}%`,
-                  top: `${Math.random() * 100}%`,
-                  opacity: 0.05 + Math.random() * 0.1,
-                }}
-                animate={{
-                  y: [0, Math.random() * 30 - 15, 0],
-                  x: [0, Math.random() * 30 - 15, 0],
-                  scale: [1, Math.random() * 0.2 + 0.9, 1],
-                }}
-                transition={{
-                  duration: Math.random() * 10 + 15,
-                  repeat: Infinity,
-                  ease: "easeInOut"
-                }}
-              />
-            ))}
-          </div>
-        </div>
-
-        {/* Main content area */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center p-10 z-10">
-
-          <AnimatePresence mode="wait">
+        {/* Full-screen carousel - reduced padding/margins */}
+        <div className="absolute inset-0">
+          <AnimatePresence initial={false} mode="popLayout">
             <motion.div
-              className="w-full max-w-lg rounded-xl overflow-hidden shadow-2xl"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.7, duration: 0.8 }}
+              key={currentSlide}
+              className="absolute inset-0 w-full h-full"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 1.2 }}
+              onAnimationStart={() => setAnimatingOut(true)}
             >
-              <div className="h-64 relative rounded-xl overflow-hidden">
-                {/* Current slide with animation */}
-                <AnimatePresence initial={false} mode="popLayout">
-                  <motion.div
-                    key={currentSlide}
-                    className="absolute inset-0"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 1, delay: 0.3 }}
-                    onAnimationStart={() => setAnimatingOut(true)}
-                  >
-                    <img
-                      src={carouselItems[currentSlide].image}
-                      alt={carouselItems[currentSlide].title}
-                      className="w-full h-full object-cover"
-                    />
+              <img
+                src={carouselItems[currentSlide].image}
+                alt={carouselItems[currentSlide].title}
+                className="w-full h-full object-cover"
+              />
 
-                    {/* Overlay and content */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent"></div>
-                    <motion.div
-                      className="absolute bottom-0 left-0 right-0 p-6"
-                      initial={{ y: 10, opacity: 0 }}
-                      animate={{ y: 0, opacity: 1 }}
-                      transition={{ duration: 1, delay: 0.3 }}
-                    >
-                      <h3 className="text-white text-xl font-bold">{carouselItems[currentSlide].title}</h3>
-                      <p className="text-white/80 text-sm mt-1">{carouselItems[currentSlide].description}</p>
-                    </motion.div>
-                  </motion.div>
-                </AnimatePresence>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/60 to-black/40"></div>
 
-                {/* Carousel indicators */}
-                <div className="absolute bottom-3 left-1/2 transform -translate-x-1/2 flex space-x-2 z-10">
-                  {carouselItems.map((_, i) => (
-                    <button
-                      key={i}
-                      className={`h-1.5 rounded-full transition-all duration-300 ${i === currentSlide ? 'w-6 bg-white' : 'w-2 bg-white/50'
-                        }`}
-                      onClick={() => setCurrentSlide(i)}
-                    />
-                  ))}
+              {/* Quote with reduced padding */}
+              <motion.div
+                className="absolute top-0 left-0 p-5 z-10"
+                initial={{ y: -20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.8, delay: 0.4 }}
+              >
+                <p className="text-white/95 text-base text-center font-light italic max-w-md">
+                  "{carouselItems[currentSlide].quote}"
+                </p>
+              </motion.div>
+
+              {/* Title with reduced padding */}
+              <motion.div
+                className="absolute inset-x-0 bottom-0 p-5 z-10"
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.8, delay: 0.4 }}
+              >
+                <div className="flex items-center">
+                  <div className="w-8 h-0.5 bg-green-400 mr-2"></div>
+                  <h2 className="text-white text-2xl font-bold">
+                    {carouselItems[currentSlide].title}
+                  </h2>
                 </div>
-              </div>
+              </motion.div>
             </motion.div>
           </AnimatePresence>
+        </div>
 
-          {/* Feature highlights */}
-          <div className="grid grid-cols-3 gap-4 mt-8 w-full max-w-lg">
-            {[
-              { icon: <FiShoppingBag />, title: "Shop With Ease" },
-              { icon: <FiTruck />, title: "Fast Delivery" },
-              { icon: <FiShield />, title: "Secure Payment" }
-            ].map((feature, i) => (
-              <motion.div
-                key={i}
-                className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-4 flex flex-col items-center text-center"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.9 + i * 0.2, duration: 0.5 }}
-                whileHover={{ y: -5, backgroundColor: "rgba(255, 255, 255, 0.15)" }}
-              >
-                <div className="text-white text-xl p-2 bg-white/10 rounded-full mb-2">
-                  {feature.icon}
-                </div>
-                <h3 className="text-white font-medium text-sm">{feature.title}</h3>
-              </motion.div>
-            ))}
-          </div>
+        {/* Smaller navigation arrows */}
+        <div className="absolute top-1/2 left-0 right-0 flex justify-between px-4 transform -translate-y-1/2 z-20">
+          <motion.button
+            onClick={() => setCurrentSlide((prev) => (prev === 0 ? carouselItems.length - 1 : prev - 1))}
+            className="w-9 h-9 rounded-full bg-black/30 backdrop-blur-sm text-white flex items-center justify-center hover:bg-black/50 transition-colors"
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </motion.button>
+
+          <motion.button
+            onClick={() => setCurrentSlide((prev) => (prev + 1) % carouselItems.length)}
+            className="w-9 h-9 rounded-full bg-black/30 backdrop-blur-sm text-white flex items-center justify-center hover:bg-black/50 transition-colors"
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </motion.button>
         </div>
       </motion.div>
 
-      {/* Reset Password Modal */}
+      {/* Reset Password Modal - More compact version */}
       {showResetModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm">
           <motion.div
@@ -685,12 +670,12 @@ const Login = () => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ duration: 0.3 }}
           >
-            <div className="bg-gradient-to-r from-green-600 to-teal-600 px-6 py-4 text-white flex justify-between items-center">
+            <div className="bg-gradient-to-r from-green-600 to-teal-600 px-4 py-3 text-white flex justify-between items-center">
               <div className="flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
                 </svg>
-                <h3 className="font-bold">Password Recovery</h3>
+                <h3 className="font-bold text-sm">Password Recovery</h3>
               </div>
               <motion.button
                 onClick={() => {
@@ -705,48 +690,48 @@ const Login = () => {
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
               >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
                 </svg>
               </motion.button>
             </div>
 
-            {/* Step indicators */}
-            <div className="flex items-center justify-center py-4 bg-green-50">
+            {/* Step indicators - more compact */}
+            <div className="flex items-center justify-center py-2 bg-green-50">
               <motion.div
-                className={`w-8 h-8 rounded-full flex items-center justify-center font-medium ${resetStep >= 1 ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-600'}`}
+                className={`w-6 h-6 rounded-full flex items-center justify-center font-medium text-xs ${resetStep >= 1 ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-600'}`}
                 animate={{ scale: resetStep === 1 ? 1.1 : 1 }}
                 transition={{ duration: 0.3 }}
               >1</motion.div>
               <motion.div
-                className={`h-1 w-10 ${resetStep >= 2 ? 'bg-green-500' : 'bg-gray-200'}`}
+                className={`h-1 w-8 ${resetStep >= 2 ? 'bg-green-500' : 'bg-gray-200'}`}
                 animate={{
-                  width: resetStep >= 2 ? "2.5rem" : "2rem",
+                  width: resetStep >= 2 ? "2rem" : "1.5rem",
                   backgroundColor: resetStep >= 2 ? "#22c55e" : "#e5e7eb"
                 }}
                 transition={{ duration: 0.4 }}
               ></motion.div>
               <motion.div
-                className={`w-8 h-8 rounded-full flex items-center justify-center font-medium ${resetStep >= 2 ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-600'}`}
+                className={`w-6 h-6 rounded-full flex items-center justify-center font-medium text-xs ${resetStep >= 2 ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-600'}`}
                 animate={{ scale: resetStep === 2 ? 1.1 : 1 }}
                 transition={{ duration: 0.3 }}
               >2</motion.div>
               <motion.div
-                className={`h-1 w-10 ${resetStep >= 3 ? 'bg-green-500' : 'bg-gray-200'}`}
+                className={`h-1 w-8 ${resetStep >= 3 ? 'bg-green-500' : 'bg-gray-200'}`}
                 animate={{
-                  width: resetStep >= 3 ? "2.5rem" : "2rem",
+                  width: resetStep >= 3 ? "2rem" : "1.5rem",
                   backgroundColor: resetStep >= 3 ? "#22c55e" : "#e5e7eb"
                 }}
                 transition={{ duration: 0.4 }}
               ></motion.div>
               <motion.div
-                className={`w-8 h-8 rounded-full flex items-center justify-center font-medium ${resetStep >= 3 ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-600'}`}
+                className={`w-6 h-6 rounded-full flex items-center justify-center font-medium text-xs ${resetStep >= 3 ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-600'}`}
                 animate={{ scale: resetStep === 3 ? 1.1 : 1 }}
                 transition={{ duration: 0.3 }}
               >3</motion.div>
             </div>
 
-            {/* Dynamic content based on current step */}
+            {/* Modify the renderResetModalContent function to have more compact padding */}
             <AnimatePresence mode="wait">
               <motion.div
                 key={resetStep}
