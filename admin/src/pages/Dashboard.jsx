@@ -489,6 +489,13 @@ const Dashboard = () => {
           >
             Sold Items Count Report
           </button>
+
+          <button
+            onClick={() => navigate('/user-activity-report')}
+            className="flex items-center px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+          >
+            User Activity Report
+          </button>
         </div>
       </div>
 

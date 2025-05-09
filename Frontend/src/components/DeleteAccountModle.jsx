@@ -42,10 +42,12 @@ const DeleteAccountModle = ({ isOpen, onClose }) => {
         setIsSubmitting(true);
 
         try {
-            const response = await axios.post(
+            const response = await axios.delete(
                 `${backendUrl}/api/user/delete-account`,
-                { password },
-                { headers: { Authorization: `Bearer ${token}` } }
+                {
+                    headers: { Authorization: `Bearer ${token}` },
+                    data: { password }
+                }
             );
 
             if (response.data.success) {

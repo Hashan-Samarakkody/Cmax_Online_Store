@@ -13,10 +13,12 @@ import AdminManagement from './pages/AdminManagement'
 import SalesReport from './pages/SalesReport'
 import Orders from './pages/Orders'
 import ReturnRequests from './pages/ReturnRequests'
+import CategoryManager from './pages/CategoryManager'
+import ReturnAnalysis from './pages/ReturnAnalysis'
+import UserActivityReport from './pages/UserActivityReport'
 import { useState } from 'react'
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css'
-import CategoryManager from './pages/CategoryManager'
 
 export const backendUrl = import.meta.env.VITE_BACKEND_URL
 export const currency = "Rs."
@@ -64,6 +66,8 @@ const App = () => {
             <Route path='/login' element={<Navigate to="/" replace />} />
             <Route path='/signup' element={<AdminSignup />} />
             <Route path='/return-requests' element={<ReturnRequests token={token} />} />
+            <Route path='/return-analysis' element={<ReturnAnalysis token={token} />} />
+            <Route path='/user-activity-report' element={<UserActivityReport token={token} />} />
             <Route path='*' element={<Navigate to="/" replace />} />
           </Routes>
         </div>
