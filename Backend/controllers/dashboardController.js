@@ -584,6 +584,91 @@ const getRevenuePrediction = async (req, res) => {
     }
 };
 
+// Get detailed user activity data for reporting
+const getUserActivityReport = async (req, res) => {
+    try {
+        const { period = 'monthly', startDate, endDate } = req.query;
+
+        // Log the received parameters to debug
+        console.log(`Received params: period=${period}, startDate=${startDate}, endDate=${endDate}`);
+
+        let dateFilter = {};
+
+        // Apply date range filter if provided 
+        if (startDate && endDate) {
+            // Make sure to properly format the date range to include the entire day
+            const endDateWithTime = new Date(endDate);
+            endDateWithTime.setHours(23, 59, 59, 999);
+
+            dateFilter = {
+                createdAt: {
+                    $gte: new Date(startDate),
+                    $lte: endDateWithTime
+                }
+            };
+
+            // Log the date filter being used
+            console.log('Date filter:', JSON.stringify(dateFilter));
+        }
+
+        // For debugging, count total documents that match the filter
+        const totalMatchingDocs = await userModel.countDocuments(dateFilter);
+        console.log(`Total documents matching filter: ${totalMatchingDocs}`);
+
+        // Rest of your aggregation logic...
+        let groupBy;
+        if (period === 'daily') {
+            groupBy = {
+                $dateToString: { format: "%Y-%m-%d", date: "$createdAt" }
+            };
+        } else if (period === 'weekly') {
+            groupBy = {
+                year: { $year: "$createdAt" },
+                week: { $week: "$createdAt" }
+            };
+        } else { // monthly
+            groupBy = {
+                $dateToString: { format: "%Y-%m", date: "$createdAt" }
+            };
+        }
+
+        const registrationData = await userModel.aggregate([
+            { $match: dateFilter },
+            {
+                $group: {
+                    _id: groupBy,
+                    count: { $sum: 1 }
+                }
+            },
+            { $sort: { "_id": 1 } }
+        ]);
+
+        // Log the raw aggregation result
+        console.log('Aggregation result:', JSON.stringify(registrationData));
+
+        // Format data for response
+        const formattedData = registrationData.map(item => {
+            if (period === 'weekly') {
+                return {
+                    period: `${item._id.year}-W${item._id.week.toString().padStart(2, '0')}`,
+                    registrations: item.count
+                };
+            }
+            return {
+                period: item._id,
+                registrations: item.count
+            };
+        });
+
+        res.json({
+            success: true,
+            userActivity: formattedData
+        });
+    } catch (error) {
+        console.error('Error in getUserActivityReport:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
 export {
     getDashboardStats,
     getSalesTrends,
@@ -592,5 +677,6 @@ export {
     getCartAnalytics,
     getCategoryDistribution,
     generateReport,
-    getRevenuePrediction
+    getRevenuePrediction,
+    getUserActivityReport
 };
