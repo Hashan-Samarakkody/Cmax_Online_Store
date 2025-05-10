@@ -48,7 +48,7 @@ const App = () => {
         <Route path='/profile' element={<Profile />} />
         <Route path='/returns' element={<Returns />} />
         <Route path='/wishlist' element={<Wishlist />} />
-        <Route path='/oauth/callback' element={<OAuthCallback />} />
+        <Route path='/oauth-callback' element={<OAuthCallback />} />
       </Routes>
       <Footer />
       <ChatBot />

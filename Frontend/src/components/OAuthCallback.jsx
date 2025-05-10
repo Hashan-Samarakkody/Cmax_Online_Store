@@ -23,13 +23,13 @@ const OAuthCallback = () => {
             toast.success('Successfully logged in!');
 
             // Redirect to home page or dashboard
-            navigate('/');
+            navigate('/home');
         } else if (error) {
             toast.error('Authentication failed. Please try again.');
-            navigate('/login');
+            navigate('/');
         } else {
             toast.error('Something went wrong. Please try again.');
-            navigate('/login');
+            navigate('/');
         }
     }, [location, navigate, setToken]);
 
