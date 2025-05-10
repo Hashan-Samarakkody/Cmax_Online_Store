@@ -9,7 +9,7 @@ const Navbar = () => {
 	const { setShowSearch, getCartCount, navigate, token, setToken, setCartItems } = useContext(ShopContext);
 
 	const logout = () => {
-		navigate('/login')
+		navigate('/')
 		localStorage.removeItem('token')
 		setToken('')
 		setCartItems({})
@@ -21,7 +21,7 @@ const Navbar = () => {
 
 			{/* Desktop Navigation */}
 			<ul className='w-2/4 sm:flex gap-5 text-sm text-gray-700 hidden'>
-				<NavLink to='/' className='flex flex-col items-center gap-2 px-1x text-[16px]'>
+				<NavLink to='/home' className='flex flex-col items-center gap-2 px-1x text-[16px]'>
 					<p>HOME</p>
 					<hr className='w-3/4 border-none h-[2px] bg-gray-700 hidden' />
 				</NavLink>
@@ -93,7 +93,7 @@ const Navbar = () => {
 						<p>Back</p>
 					</div>
 
-					<NavLink onClick={() => setVisible(false)} className='py-2 pl-5 hover:bg-gray-50' to='/'>
+					<NavLink onClick={() => setVisible(false)} className='py-2 pl-5 hover:bg-gray-50' to='/home'>
 						HOME
 					</NavLink>
 

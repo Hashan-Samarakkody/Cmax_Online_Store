@@ -16,16 +16,17 @@ import SignUpLoginNavbar from './components/SigupLoginNavbar'
 import Footer from './components/Footer'
 import SearchBar from './components/SearchBar'
 import Returns from './pages/Returns'
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
 import Verify from './pages/Verify'
 import ChatBot from './components/ChatBot'
 import Wishlist from './pages/Wishlist'
+import OAuthCallback from './components/OAuthCallback'
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 
 const App = () => {
   const location = useLocation();
-  const isAuthPage = location.pathname === '/login' || location.pathname === '/signup';
+  const isAuthPage = location.pathname === '/' || location.pathname === '/signup';
 
   return (
     <div className='px-2 py-0 smnpx-[5vw] md:px-[7vw] lg:px[9vw]'>
@@ -33,10 +34,10 @@ const App = () => {
       {isAuthPage ? <SignUpLoginNavbar /> : <Navbar />}
       {!isAuthPage && <SearchBar />}
       <Routes>
-        <Route path='/' element={<Home />} />
+        <Route path='/home' element={<Home />} />
         <Route path='/about' element={<About />} />
         <Route path='/contact' element={<Contact />} />
-        <Route path="/login" element={<Login />} />
+        <Route path="/" element={<Login />} />
         <Route path="/signup" element={<SignUp />} />
         <Route path='/product/:productId' element={<Product />} />
         <Route path='/cart' element={<Cart />} />
@@ -47,6 +48,7 @@ const App = () => {
         <Route path='/profile' element={<Profile />} />
         <Route path='/returns' element={<Returns />} />
         <Route path='/wishlist' element={<Wishlist />} />
+        <Route path='/oauth/callback' element={<OAuthCallback />} />
       </Routes>
       <Footer />
       <ChatBot />

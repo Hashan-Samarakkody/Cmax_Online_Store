@@ -7,6 +7,7 @@ import DOMPurify from 'dompurify'
 import { assets } from '../assets/assets';
 import { FiMail, FiLock, FiLoader, FiArrowRight, FiArrowLeft, FiShoppingBag, FiShield, FiTruck } from 'react-icons/fi';
 import { FcGoogle } from 'react-icons/fc';
+import { FaFacebook } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 
 const Login = () => {
@@ -90,6 +91,15 @@ const Login = () => {
   // Sanitize all inputs with DOMPurify
   const sanitizeInput = (input) => {
     return DOMPurify.sanitize(input.trim());
+  };
+
+  // Social login functions
+  const handleGoogleLogin = () => {
+    window.location.href = `${backendUrl}/api/user/auth/google`;
+  };
+
+  const handleFacebookLogin = () => {
+    window.location.href = `${backendUrl}/api/user/auth/facebook`;
   };
 
   // Validate email
@@ -554,15 +564,25 @@ const Login = () => {
                   <div className="flex-1 h-px bg-gray-300"></div>
                 </div>
 
-                <motion.button
-                  type="button"
-                  className="w-full flex items-center justify-center gap-2 p-2 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-all duration-300 shadow-sm text-sm"
-                  whileHover={{ scale: 1.01 }}
-                  whileTap={{ scale: 0.99 }}
-                >
-                  <FcGoogle size={18} />
-                  <span>Continue with Google</span>
-                </motion.button>
+                <div className="space-y-3 mb-6">
+                  <button
+                    type="button"
+                    onClick={handleGoogleLogin}
+                    className="w-full flex items-center justify-center gap-2 bg-white text-gray-700 border border-gray-300 rounded-md py-2.5 hover:bg-gray-50 transition-all"
+                  >
+                    <FcGoogle className="text-red-500" />
+                    <span>Continue with Google</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleFacebookLogin}
+                    className="w-full flex items-center justify-center gap-2 bg-[#1877F2] text-white rounded-md py-2.5 hover:bg-[#166FE5] transition-all"
+                  >
+                    <FaFacebook />
+                    <span>Continue with Facebook</span>
+                  </button>
+                </div>
 
                 <div className="text-center mt-3">
                   <span className="text-gray-600 text-sm">Don't have an account? </span>

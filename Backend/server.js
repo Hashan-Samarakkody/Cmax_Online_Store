@@ -15,7 +15,8 @@ import reviewRouter from './routes/reviewRoute.js';
 import returnRouter from './routes/returnRoute.js';
 import chatbotRouter from './routes/chatbotRoute.js';
 import wishlistRouter from './routes/wishlistRoute.js';
-import { WebSocketServer } from 'ws'; 
+import { WebSocketServer } from 'ws';
+import passport from './config/passport.js';
 
 // App Config
 const app = express();
@@ -26,6 +27,7 @@ connectCloudinary();
 app.use(cors());
 app.use(express.json());
 app.use('/uploads', express.static('uploads'));
+app.use(passport.initialize());
 
 // api endpoints
 app.use('/api/reviews', reviewRouter);

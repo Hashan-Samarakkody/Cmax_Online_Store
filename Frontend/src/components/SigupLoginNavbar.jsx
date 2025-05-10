@@ -14,7 +14,7 @@ const SignUpLoginNavbar = () => {
 
             <div className='flex items-center gap-6'>
                 <NavLink
-                    to='/login'
+                    to='/'
                     className={({ isActive }) =>
                         `relative flex items-center gap-2 font-medium transition-all duration-300 overflow-hidden group
                         ${isActive ? 'text-cyan-500 border-b-2 border-cyan-400' : 'text-green-400 hover:text-cyan-400'}`
