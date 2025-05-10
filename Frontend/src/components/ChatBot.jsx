@@ -22,7 +22,7 @@ const ChatBot = () => {
         '/cart',
         '/returns',
         '/profile',
-        '/' 
+        '/home' 
     ];
 
     // Function to format message text with line breaks and clickable links

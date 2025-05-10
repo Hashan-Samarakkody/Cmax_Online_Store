@@ -15,6 +15,7 @@ import reviewRouter from './routes/reviewRoute.js';
 import returnRouter from './routes/returnRoute.js';
 import chatbotRouter from './routes/chatbotRoute.js';
 import wishlistRouter from './routes/wishlistRoute.js';
+import recommendationRouter from './routes/recommendationRoute.js';
 import { WebSocketServer } from 'ws';
 import passport from './config/passport.js';
 
@@ -42,6 +43,7 @@ app.use('/api/returns', returnRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/chatbot', chatbotRouter);
 app.use('/api/wishlist', wishlistRouter);
+app.use('/api/recommendations', recommendationRouter);
 app.get('/', (req, res) => {
     res.send('API is working');
 });

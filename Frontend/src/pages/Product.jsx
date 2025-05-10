@@ -9,6 +9,7 @@ import { toast } from 'react-toastify';
 import { backendUrl } from '../../../admin/src/App';
 import WebSocketService from '../services/WebSocketService';
 import { FiHeart } from 'react-icons/fi';
+import RecommendedProducts from '../components/RecommendedProducts';
 
 const Product = () => {
   const { productId } = useParams();
@@ -22,6 +23,7 @@ const Product = () => {
   const [activeTab, setActiveTab] = useState('description');
   const { wishlistItems, addToWishlist, removeFromWishlist } = useContext(ShopContext);
   const isInWishlist = wishlistItems.includes(productId);
+  const [token, setToken] = useState(localStorage.getItem('token') || '');
 
   // Fetch product data
   const fetchProductData = async () => {
@@ -101,7 +103,91 @@ const Product = () => {
         console.error("Error cleaning up WebSocket listeners:", err);
       }
     };
-  }, [productId, products]); // Remove dependencies that shouldn't trigger data refetch: image, size, color
+  }, [productId, products]);
+
+  useEffect(() => {
+    // Record product view interaction when a user views a product
+    const recordProductView = async () => {
+      if (token && productId) {
+        try {
+          await axios.post(
+            `${backendUrl}/api/recommendations/interactions`,
+            {
+              productId,
+              interactionType: 'view'
+            },
+            {
+              headers: { Authorization: `Bearer ${token}` }
+            }
+          );
+        } catch (error) {
+          console.error('Error recording product view:', error);
+          // Don't show error to user as this is a background operation
+        }
+      }
+    };
+
+    recordProductView();
+  }, [productId, token]);
+
+  const handleAddToCart = () => {
+    if (productData.hasSizes && !size) {
+      toast.error('Please select a size');
+      return;
+    }
+    if (productData.hasColors && !color) {
+      toast.error('Please select a color');
+      return;
+    }
+
+    // Add to cart functionality
+    addToCart(productData._id, size, color);
+    toast.success('Product added to cart!', { autoClose: 800 });
+
+    // Record cart interaction
+    if (token) {
+      try {
+        axios.post(
+          `${backendUrl}/api/recommendations/interactions`,
+          {
+            productId: productData._id,
+            interactionType: 'cart'
+          },
+          {
+            headers: { Authorization: `Bearer ${token}` }
+          }
+        );
+      } catch (error) {
+        console.error('Error recording cart interaction:', error);
+      }
+    }
+  };
+
+  const handleWishlistToggle = () => {
+    if (isInWishlist) {
+      removeFromWishlist(productId);
+    } else {
+      addToWishlist(productId);
+
+      // Record wishlist interaction
+      if (token) {
+        try {
+          axios.post(
+            `${backendUrl}/api/recommendations/interactions`,
+            {
+              productId,
+              interactionType: 'wishlist'
+            },
+            {
+              headers: { Authorization: `Bearer ${token}` }
+            }
+          );
+        } catch (error) {
+          console.error('Error recording wishlist interaction:', error);
+        }
+      }
+    }
+  };
 
   // If loading or no product data, show fancy loading indicator
   if (isLoading || !productData) {
@@ -143,7 +229,7 @@ const Product = () => {
         {/* Product Details */}
         <div className='flex-1'>
           <h1 className='text-3xl font-medium'>{productData.name}</h1>
-  
+
           <p className='text-xl mt-5 font-medium'>{currency}{productData.price}</p>
           <p className='mt-5 text-gray-600 md:w-4/5 text-justify'>{productData.description}</p>
           {/* Size selection */}
@@ -194,16 +280,8 @@ const Product = () => {
           <br />
           <button
             onClick={() => {
-              if (productData.hasSizes && !size) {
-                toast.error('Please select a size');
-                return;
-              }
-              if (productData.hasColors && !color) {
-                toast.error('Please select a color');
-                return;
-              }
-              addToCart(productData._id, size, color);
-              toast.success('Product added to cart!', { autoClose: 800 });
+              handleAddToCart()
+            toast.success('Product added to cart!', { autoClose: 800 });
             }}
             className='bg-black text-white px-8 py-3 text-sm active:bg-gray-700 rounded-lg cursor-pointer hover:bg-gray-800 transition-colors duration-200 ease-in-out'
           >
@@ -211,11 +289,7 @@ const Product = () => {
           </button>
           <button
             onClick={() => {
-              if (isInWishlist) {
-                removeFromWishlist(productId);
-              } else {
-                addToWishlist(productId);
-              }
+              handleWishlistToggle()
             }}
             className={`cursor-pointer mt-4 border border-black px-8 py-3 text-sm rounded-lg flex items-center gap-2 ${isInWishlist ? 'bg-red-50 border-red-300' : 'bg-white'
               } hover:bg-green-200 transition-colors duration-200 ease-in-out`}
@@ -248,6 +322,7 @@ const Product = () => {
           </button>
         </div>
 
+
         {/* Tab content */}
         <div className='border p-6'>
           {activeTab === 'description' ? (
@@ -271,6 +346,11 @@ const Product = () => {
           )}
         </div>
       </div>
+
+      <div className="mt-12">
+        <RecommendedProducts productId={productId} type="alsoBought" />
+      </div>
+      
       {/* Related Products */}
       <RelatedProducts category={productData.category} subCategory={productData.subCategory} />
     </div>
