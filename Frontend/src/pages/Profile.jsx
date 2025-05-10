@@ -15,7 +15,7 @@ const Profile = () => {
   const location = useLocation();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [token, setToken] = useState(sessionStorage.getItem('token'));
+  const [token, setToken] = useState(localStorage.getItem('token'));
 
   // Get section from URL if available
   const queryParams = new URLSearchParams(location.search);
@@ -64,7 +64,7 @@ const Profile = () => {
   // Fetch user data
   const fetchUserData = async () => {
     if (!token) {
-      navigate('/');
+      navigate('/login');
       return;
     }
 
@@ -78,18 +78,18 @@ const Profile = () => {
         setUser(response.data.user);
       } else {
         toast.error('Failed to load profile');
-        sessionStorage.removeItem('token');
+        localStorage.removeItem('token');
         setToken('');
-        navigate('/');
+        navigate('/login');
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
       toast.error('Error loading profile data');
 
       if (error.response?.status === 401) {
-        sessionStorage.removeItem('token');
+        localStorage.removeItem('token');
         setToken('');
-        navigate('/');
+        navigate('/login');
       }
     } finally {
       setLoading(false);
@@ -212,9 +212,9 @@ const Profile = () => {
 
   // Handle logout
   const handleLogout = () => {
-    sessionStorage.removeItem('token');
+    localStorage.removeItem('token');
     setToken('');
-    navigate('/');
+    navigate('/login');
     toast.info('You have been logged out');
   };
 

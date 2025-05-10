@@ -9,7 +9,7 @@ const Navbar = () => {
 	const { setShowSearch, getCartCount, navigate, token, setToken, setCartItems } = useContext(ShopContext);
 
 	const logout = () => {
-		navigate('/')
+		navigate('/login')
 		localStorage.removeItem('token')
 		setToken('')
 		setCartItems({})
@@ -21,7 +21,7 @@ const Navbar = () => {
 
 			{/* Desktop Navigation */}
 			<ul className='w-2/4 sm:flex gap-5 text-sm text-gray-700 hidden'>
-				<NavLink to='/home' className='flex flex-col items-center gap-2 px-1x text-[16px]'>
+				<NavLink to='/' className='flex flex-col items-center gap-2 px-1x text-[16px]'>
 					<p>HOME</p>
 					<hr className='w-3/4 border-none h-[2px] bg-gray-700 hidden' />
 				</NavLink>
@@ -48,7 +48,7 @@ const Navbar = () => {
 				<img onClick={() => setShowSearch(true)} src={assets.search_icon} alt="" className='w-5 cursor-pointer' />
 
 				<div className='group relative'>
-					<img onClick={() => token ? null : navigate('/')} src={assets.profile_icon} alt="" className='w-5 cursor-pointer' />
+					<img onClick={() => token ? null : navigate('/login')} src={assets.profile_icon} alt="" className='w-5 cursor-pointer' />
 
 					{/* Dropdown Menu */}
 					{token &&

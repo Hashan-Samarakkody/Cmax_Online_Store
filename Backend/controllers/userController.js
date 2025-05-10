@@ -8,7 +8,7 @@ import nodemailer from 'nodemailer';
 import mongoose from 'mongoose';
 
 const createToken = (id) => {
-    return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '24h' });
+    return jwt.sign({ id }, process.env.JWT_SECRET);
 }
 
 // Route for user login
