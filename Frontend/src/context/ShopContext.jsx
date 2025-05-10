@@ -62,6 +62,31 @@ const ShopContextProvider = (props) => {
         }
     };
 
+    const recordPurchaseInteractions = async (items) => {
+        if (!token) return;
+
+        try {
+            // Extract product IDs from the purchased items
+            const productIds = Object.keys(items);
+
+            // Record each purchase as an interaction
+            for (const productId of productIds) {
+                await axios.post(
+                    `${backendUrl}/api/recommendations/interactions`,
+                    {
+                        productId,
+                        interactionType: 'purchase'
+                    },
+                    {
+                        headers: { Authorization: `Bearer ${token}` }
+                    }
+                );
+            }
+        } catch (error) {
+            console.error('Error recording purchase interactions:', error);
+        }
+      };
+
     // Add to useEffect that runs on login/token change
     useEffect(() => {
         if (token) {
@@ -294,7 +319,8 @@ const ShopContextProvider = (props) => {
         setWishlistItems,
         addToWishlist,
         removeFromWishlist,
-        getWishlist
+        getWishlist,
+        recordPurchaseInteractions
     }
 
     return (

@@ -9,7 +9,7 @@ import DOMPurify from 'dompurify';
 
 const PlaceOrder = () => {
   const [method, setMethod] = useState('cod');
-  const { navigate, backendUrl, token, cartItems, setCartItems, getCartAmount, deliveryCharge, products } = useContext(ShopContext);
+  const { navigate, backendUrl, token, cartItems, setCartItems, getCartAmount, deliveryCharge, products, recordPurchaseInteractions } = useContext(ShopContext);
   const [addressOption, setAddressOption] = useState('new'); // 'new', 'default', or 'saved'
   const [userAddresses, setUserAddresses] = useState([]);
   const [selectedAddress, setSelectedAddress] = useState(null);
@@ -354,6 +354,7 @@ const PlaceOrder = () => {
         case 'cod':
           const response = await axios.post(backendUrl + '/api/order/place', orderData, { headers: { token } });
           if (response.data.success) {
+            shopContext.recordPurchaseInteractions(shopContext.cartItems);
             setCartItems({});
             navigate('/orders');
           } else {
