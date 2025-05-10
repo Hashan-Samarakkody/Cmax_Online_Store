@@ -48,7 +48,7 @@ const ProfileSidebar = ({ user, setActiveSection, activeSection, onShowPasswordM
         const token = localStorage.getItem('token');
         if (!token) {
             toast.error('You must be logged in to update your profile');
-            navigate('/login');
+            navigate('/');
             return;
         }
 

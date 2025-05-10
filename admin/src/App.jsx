@@ -25,10 +25,10 @@ export const backendUrl = import.meta.env.VITE_BACKEND_URL
 export const currency = "Rs."
 
 const App = () => {
-  const [token, setToken] = useState(localStorage.getItem('token') ? localStorage.getItem('token') : "")
+  const [token, setToken] = useState(localStorage.getItem('adminToken') ? localStorage.getItem('adminToken') : "")
 
   useEffect(() => {
-    localStorage.setItem('token', token)
+    localStorage.setItem('adminToken', token)
   }, [token])
 
   // If no token, redirect to login page
@@ -37,9 +37,9 @@ const App = () => {
       <div className='bg-gray-50 min-h-screen'>
         <ToastContainer />
         <Routes>
-          <Route path='/login' element={<LoginPage setToken={setToken} />} />
+          <Route path='/' element={<LoginPage setToken={setToken} />} />
           <Route path='/signup' element={<AdminSignup />} />
-          <Route path='*' element={<Navigate to="/login" replace />} />
+          <Route path='*' element={<Navigate to="/" replace />} />
         </Routes>
       </div>
     )
@@ -54,7 +54,7 @@ const App = () => {
         <Sidebar />
         <div className='w-[70%] mx-auto ml-[max(5vw,25px)] my-8 text-gray-600 text-base'>
           <Routes>
-            <Route path='/' element={<Dashboard token={token} />} />
+            <Route path='/dashboard' element={<Dashboard token={token} />} />
             <Route path='/sales' element={<SalesReport token={token} />} />
             <Route path='/add' element={<Add token={token} />} />
             <Route path='/list' element={<List token={token} />} />
@@ -68,7 +68,6 @@ const App = () => {
             <Route path='/return-requests' element={<ReturnRequests token={token} />} />
             <Route path='/return-analysis' element={<ReturnAnalysis token={token} />} />
             <Route path='/user-activity-report' element={<UserActivityReport token={token} />} />
-            <Route path='*' element={<Navigate to="/" replace />} />
           </Routes>
         </div>
       </div>

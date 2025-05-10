@@ -64,7 +64,7 @@ const Profile = () => {
   // Fetch user data
   const fetchUserData = async () => {
     if (!token) {
-      navigate('/login');
+      navigate('/');
       return;
     }
 
@@ -80,7 +80,7 @@ const Profile = () => {
         toast.error('Failed to load profile');
         localStorage.removeItem('token');
         setToken('');
-        navigate('/login');
+        navigate('/');
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
@@ -89,7 +89,7 @@ const Profile = () => {
       if (error.response?.status === 401) {
         localStorage.removeItem('token');
         setToken('');
-        navigate('/login');
+        navigate('/');
       }
     } finally {
       setLoading(false);
@@ -214,7 +214,7 @@ const Profile = () => {
   const handleLogout = () => {
     localStorage.removeItem('token');
     setToken('');
-    navigate('/login');
+    navigate('/');
     toast.info('You have been logged out');
   };
 
