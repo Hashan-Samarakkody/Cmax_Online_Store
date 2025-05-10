@@ -318,7 +318,7 @@ const SignUp = () => {
     ];
 
     return (
-        <div className="min-h-screen overflow-hidden relative">
+        <div className="h-fit overflow-hidden relative">
             <div className="max-w-7xl mx-auto">
                 <div className="flex flex-col md:flex-row">
                     {/* Left side - Form */}

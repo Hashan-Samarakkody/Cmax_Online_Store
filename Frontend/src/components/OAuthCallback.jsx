@@ -19,12 +19,8 @@ const OAuthCallback = () => {
         if (token) {
             localStorage.setItem('token', token);
             setToken(token);
-
-            // Show success message
             toast.success('Successfully logged in with Google!');
-
-            // Redirect to profile page to immediately show their account
-            navigate('/profile');
+            navigate('/home');
         } else if (error) {
             toast.error('Authentication failed. Please try again.');
             navigate('/login');

@@ -452,7 +452,7 @@ const Login = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden h-5/6">
+    <div className="flex bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden h-fit">
       <div className="w-full md:w-1/2 flex items-center justify-center p-4">
         <motion.div
           className="w-full max-w-md"
