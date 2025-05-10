@@ -5,7 +5,7 @@ import Title from '../components/Title';
 import ProductItem from '../components/ProductItem';
 import axios from 'axios';
 import { backendUrl } from '../../../admin/src/App';
-import WebSocketService from '../services/WebSocketService'; // Make sure the path is correct
+import WebSocketService from '../services/WebSocketService';
 
 const Collection = () => {
   const { search, showSearch } = useContext(ShopContext);
@@ -18,7 +18,8 @@ const Collection = () => {
   const [subCategory, setSubCategory] = useState([]);
   const [sortType, setSortType] = useState('relavant');
   const [showFilter, setShowFilter] = useState(false);
-  const [isLoading, setIsLoading] = useState(true); // Add loading state
+  const [isLoading, setIsLoading] = useState(true);
+  const [relevantSubCategories, setRelevantSubCategories] = useState([]);
 
   useEffect(() => {
     const fetchAllData = async () => {
@@ -85,6 +86,40 @@ const Collection = () => {
       WebSocketService.disconnect();
     };
   }, []);
+
+  // Update relevant subcategories when category selection changes
+  useEffect(() => {
+    if (category.length > 0) {
+      // Filter products that match selected categories
+      const productsInSelectedCategories = originalProducts.filter(
+        product => category.includes(String(product.category._id))
+      );
+
+      // Get unique subcategory IDs from these products
+      const relevantSubCategoryIds = [...new Set(
+        productsInSelectedCategories
+          .map(product => product.subcategory?._id)
+          .filter(Boolean)
+      )];
+
+      // Filter subcategories to only show the relevant ones
+      const relevant = subCategories.filter(sub =>
+        relevantSubCategoryIds.includes(sub._id)
+      );
+
+      setRelevantSubCategories(relevant);
+
+      // Clear subcategory selections that are no longer relevant
+      setSubCategory(prev => prev.filter(subCatId =>
+        relevantSubCategoryIds.includes(subCatId)
+      ));
+    } else {
+      // If no category is selected, don't show any subcategories
+      setRelevantSubCategories([]);
+      // Clear all subcategory selections
+      setSubCategory([]);
+    }
+  }, [category, originalProducts, subCategories]);
 
   const applyFilters = () => {
     let filtered = originalProducts;
@@ -172,59 +207,77 @@ const Collection = () => {
           <p className="mt-4 text-gray-600 font-medium">Loading collection...</p>
         </div>
       ) : (
-        <div className='flex flex-col sm:flex-row gap-1 sm:gap-10 border-t'>
-          <div className='min-w-60'>
-            <p onClick={() => setShowFilter(!showFilter)} className='my-2 text-xl flex items-center cursor-pointer gap-2'>
+        <div className='relative'>
+          {/* Filter Toggle Button */}
+          <div className='border-t py-2'>
+            <button
+              onClick={() => setShowFilter(!showFilter)}
+              className='flex items-center gap-2 text-xl font-medium px-4'
+            >
               FILTERS
-              <img className={`h-3 sm:hidden ${showFilter ? 'rotate-90' : ''}`} src={assets.dropdown_icon} alt="" />
-            </p>
-
-            <div className={`border rounded-xl border-gray-300 pl-5 my-5 py-3 ${showFilter ? 'block' : 'hidden'} sm:block`}>
-              <p className='text-gray-700 cursor-pointer mb-3 text-sm font-semibold'>CATEGORIES</p>
-              <div className='flex flex-col gap-2 text-sm font-light text-gray-700'>
-                {categories.map((cat) => (
-                  <p key={cat._id} className='flex gap-2'>
-                    <input
-                      className='w-3'
-                      type='checkbox'
-                      value={cat._id}
-                      checked={category.includes(cat._id)}
-                      onChange={toggleCategory}
-                    /> {cat.name}
-                  </p>
-                ))}
-              </div>
-            </div>
-
-            <div className={`border rounded-xl border-gray-300 pl-5 py-3 mt-6 ${showFilter ? 'block' : 'hidden'} sm:block`}>
-              <p className='text-gray-700 cursor-pointer mb-3 text-sm font-semibold'>SUBCATEGORIES</p>
-              <div className='flex flex-col gap-2 text-sm font-light text-gray-700'>
-                {subCategories.map((sub) => (
-                  <p key={sub._id} className='flex gap-2'>
-                    <input
-                      className='w-3'
-                      type='checkbox'
-                      value={sub._id}
-                      checked={subCategory.includes(sub._id)}
-                      onChange={toggleSubCategory}
-                    /> {sub.name}
-                  </p>
-                ))}
-              </div>
-            </div>
+              <img
+                className={`h-3 transition-transform ${showFilter ? 'rotate-90' : ''}`}
+                src={assets.dropdown_icon}
+                alt=""
+              />
+            </button>
           </div>
 
-          <div className='flex-1'>
-            <div className='flex mt-2 justify-between text-base sm:text-xl mb-4'>
-              <Title text1={'ALL'} text2={'COLLECTIONS'} />
-              <select onChange={(e) => setSortType(e.target.value)} className='rounded-sm border border-gray-400 text-sm px-2'>
-                <option value="relavant">Sort by: Relevant</option>
-                <option value="low-high">Sort by: Low to High</option>
-                <option value="high-low">Sort by: High to Low</option>
-              </select>
-            </div>
+          <div className='flex'>
+            {/* Filter Section - Only takes space when visible */}
+            {showFilter && (
+              <div className='w-60 px-4 transition-all duration-300 ease-in-out'>
+                <div className='border rounded-xl border-gray-300 pl-5 my-2 py-3'>
+                  <p className='text-gray-700 cursor-pointer mb-3 text-sm font-semibold'>CATEGORIES</p>
+                  <div className='flex flex-col gap-2 text-sm font-light text-gray-700'>
+                    {categories.map((cat) => (
+                      <p key={cat._id} className='flex gap-2'>
+                        <input
+                          className='w-3'
+                          type='checkbox'
+                          value={cat._id}
+                          checked={category.includes(cat._id)}
+                          onChange={toggleCategory}
+                        /> {cat.name}
+                      </p>
+                    ))}
+                  </div>
+                </div>
 
-              <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 gap-y-6'>
+                {/* Only show subcategories section if there are relevant subcategories */}
+                {relevantSubCategories.length > 0 && (
+                  <div className='border rounded-xl border-gray-300 pl-5 py-3 mt-6'>
+                    <p className='text-gray-700 cursor-pointer mb-3 text-sm font-semibold'>SUBCATEGORIES</p>
+                    <div className='flex flex-col gap-2 text-sm font-light text-gray-700'>
+                      {relevantSubCategories.map((sub) => (
+                        <p key={sub._id} className='flex gap-2'>
+                          <input
+                            className='w-3'
+                            type='checkbox'
+                            value={sub._id}
+                            checked={subCategory.includes(sub._id)}
+                            onChange={toggleSubCategory}
+                          /> {sub.name}
+                        </p>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Products Section - Takes full width when filter is collapsed */}
+            <div className='flex-1'>
+              <div className='flex mt-2 justify-between text-base sm:text-xl mb-4 px-4'>
+                <Title text1={'ALL'} text2={'COLLECTIONS'} />
+                <select onChange={(e) => setSortType(e.target.value)} className='rounded-sm border border-gray-400 text-sm px-2'>
+                  <option value="relavant">Sort by: Relevant</option>
+                  <option value="low-high">Sort by: Low to High</option>
+                  <option value="high-low">Sort by: High to Low</option>
+                </select>
+              </div>
+
+              <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 gap-y-6 px-4'>
                 {filterProducts.length > 0 ? (
                   filterProducts.map((item) => (
                     <ProductItem key={item._id} id={item._id} image={item.images} name={item.name} price={item.price} />
@@ -240,6 +293,7 @@ const Collection = () => {
                   </div>
                 )}
               </div>
+            </div>
           </div>
         </div>
       )}
