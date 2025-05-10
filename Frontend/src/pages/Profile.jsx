@@ -64,7 +64,7 @@ const Profile = () => {
   // Fetch user data
   const fetchUserData = async () => {
     if (!token) {
-      navigate('/login');
+      navigate('/');
       return;
     }
 
@@ -80,7 +80,7 @@ const Profile = () => {
         toast.error('Failed to load profile');
         localStorage.removeItem('token');
         setToken('');
-        navigate('/login');
+        navigate('/');
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
@@ -89,7 +89,7 @@ const Profile = () => {
       if (error.response?.status === 401) {
         localStorage.removeItem('token');
         setToken('');
-        navigate('/login');
+        navigate('/');
       }
     } finally {
       setLoading(false);
@@ -214,7 +214,7 @@ const Profile = () => {
   const handleLogout = () => {
     localStorage.removeItem('token');
     setToken('');
-    navigate('/login');
+    navigate('/');
     toast.info('You have been logged out');
   };
 
@@ -357,6 +357,36 @@ const Profile = () => {
                       <p className="mt-1 text-xs text-gray-500">Format: 0XXXXXXXXX (10 digits)</p>
                     )}
                   </div>
+
+                  {/* Authentication Provider - Add this section */}
+                  {user?.authProvider && user.authProvider !== 'local' && (
+                    <div className="col-span-2">
+                      <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200 flex items-center">
+                        <div className="mr-4 bg-blue-50 p-3 rounded-full">
+                          {user.authProvider === 'google' ? (
+                            <svg className="w-8 h-8" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M12.24 10.285V14.4h6.806c-.275 1.765-2.056 5.174-6.806 5.174-4.095 0-7.439-3.389-7.439-7.574s3.345-7.574 7.439-7.574c2.33 0 3.891.989 4.785 1.849l3.254-3.138C18.189 1.186 15.479 0 12.24 0c-6.635 0-12 5.365-12 12s5.365 12 12 12c6.926 0 11.52-4.869 11.52-11.726 0-.788-.085-1.39-.189-1.989H12.24z"
+                                fill="#4285F4" />
+                            </svg>
+                          ) : user.authProvider === 'facebook' ? (
+                            <svg className="w-8 h-8" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                              <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"
+                                fill="#1877F2" />
+                            </svg>
+                          ) : null}
+                        </div>
+                        <div>
+                          <p className="text-base font-medium text-gray-800">
+                            Connected with {user.authProvider === 'google' ? 'Google' : 'Facebook'}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            Your account is linked to your {user.authProvider === 'google' ? 'Google' : 'Facebook'} account.
+                            Password changes must be made through your {user.authProvider === 'google' ? 'Google' : 'Facebook'} account.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="mt-6">

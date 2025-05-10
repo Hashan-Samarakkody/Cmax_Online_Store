@@ -34,7 +34,7 @@ const Profile = ({ token, setToken }) => {
     // Function to handle actual logout
     const handleLogout = () => {
         setToken('');
-        navigate('/login');
+        navigate('/');
     };
 
     // Fetch admin profile data
@@ -62,7 +62,7 @@ const Profile = ({ token, setToken }) => {
                     // If token is invalid, logout
                     if (response.data.message === 'Invalid token') {
                         setToken('');
-                        navigate('/login');
+                        navigate('/');
                     }
                 }
             } catch (error) {
@@ -71,7 +71,7 @@ const Profile = ({ token, setToken }) => {
                 // If unauthorized error, logout
                 if (error.response && error.response.status === 401) {
                     setToken('');
-                    navigate('/login');
+                    navigate('/');
                 }
             } finally {
                 setLoading(false);
@@ -81,7 +81,7 @@ const Profile = ({ token, setToken }) => {
         if (token) {
             fetchProfile();
         } else {
-            navigate('/login');
+            navigate('/');
         }
     }, [token, navigate, setToken]);
 
@@ -301,7 +301,7 @@ const Profile = ({ token, setToken }) => {
                 }
 
                 setShowDeleteModal(false);
-                navigate('/login'); // Redirect to login page
+                navigate('/');
             } else {
                 toast.error(response.data.message || 'Failed to delete account');
                 setShowDeleteModal(false);

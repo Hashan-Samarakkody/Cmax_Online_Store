@@ -4,9 +4,12 @@ import axios from 'axios';
 import { assets } from '../assets/assets';
 import { backendUrl } from '../App';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import DOMPurify from 'dompurify';
 
 const AdminSignup = ({ setShowSignup, setToken }) => {
+    const navigate = useNavigate();
+
     // Form states
     const [name, setName] = useState('');
     const [username, setUsername] = useState('');
@@ -111,13 +114,22 @@ const AdminSignup = ({ setShowSignup, setToken }) => {
             });
 
             if (response.data.success) {
-                toast.success('Admin account created successfully!');
+                // Set token in localStorage first
                 localStorage.setItem('adminToken', response.data.token);
 
-                // Delay setting token to show success message
-                setTimeout(() => {
-                    setToken(response.data.token);
-                }, 1000);
+                // Store role if available
+                if (response.data.admin && response.data.admin.role) {
+                    localStorage.setItem('adminRole', response.data.admin.role);
+                }
+
+                // Notify user
+                toast.success('Admin account created successfully!');
+
+                // Set token in parent component
+                setToken(response.data.token);
+
+                // Navigate after a short delay - directly using navigate instead of setTimeout
+                navigate('/dashboard');
             } else {
                 toast.error(response.data.message);
             }

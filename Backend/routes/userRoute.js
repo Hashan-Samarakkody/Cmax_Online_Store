@@ -16,10 +16,13 @@ import {
     setDefaultAddress,
     verifyPassword,
     sendChangePasswordCode,
-    verifyChangePasswordCode
+    verifyChangePasswordCode,
+    googleAuthCallback,
+    facebookAuthCallback
 } from '../controllers/userController.js';
 import { userAuth } from '../middleware/userAuth.js';
 import uploadMiddleware from '../middleware/upload.js';
+import passport from '../config/passport.js';
 
 const userRouter = express.Router();
 
@@ -29,6 +32,23 @@ userRouter.post('/login', loginUser);
 userRouter.post('/send-reset-code', sendResetCode);
 userRouter.post('/verify-reset-code', verifyResetCode);
 userRouter.post('/reset-password', resetPassword);
+
+// OAuth routes
+userRouter.get('/auth/google',
+    passport.authenticate('google', { scope: ['profile', 'email'] })
+);
+userRouter.get('/auth/google/callback',
+    passport.authenticate('google', { session: false }),
+    googleAuthCallback
+);
+
+userRouter.get('/auth/facebook',
+    passport.authenticate('facebook', { scope: ['email'] })
+);
+userRouter.get('/auth/facebook/callback',
+    passport.authenticate('facebook', { session: false }),
+    facebookAuthCallback
+);
 
 // Protected routes (require authentication)
 userRouter.get('/profile', userAuth, getUserProfile);

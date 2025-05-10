@@ -6,8 +6,12 @@ import { backendUrl } from '../App';
 import { motion } from 'framer-motion';
 import AdminSignup from './SignUp';
 import DOMPurify from 'dompurify';
+import { useNavigate } from 'react-router-dom';
 
 const LoginPage = ({ setToken }) => {
+  // State for login form
+  const navigate = useNavigate();
+
   const [showSignup, setShowSignup] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -103,6 +107,7 @@ const LoginPage = ({ setToken }) => {
         toast.success('Login successful!');
         setTimeout(() => {
           setToken(response.data.token);
+          navigate('/dashboard');
         }, 800);
       } else {
         toast.error(response.data.message);
