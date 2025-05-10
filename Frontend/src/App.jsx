@@ -25,7 +25,7 @@ import Wishlist from './pages/Wishlist'
 
 const App = () => {
   const location = useLocation();
-  const isAuthPage = location.pathname === '/' || location.pathname === '/signup';
+  const isAuthPage = location.pathname === '/login' || location.pathname === '/signup';
 
   return (
     <div className='px-2 py-0 smnpx-[5vw] md:px-[7vw] lg:px[9vw]'>
@@ -33,10 +33,10 @@ const App = () => {
       {isAuthPage ? <SignUpLoginNavbar /> : <Navbar />}
       {!isAuthPage && <SearchBar />}
       <Routes>
-        <Route path='/home' element={<Home />} />
+        <Route path='/' element={<Home />} />
         <Route path='/about' element={<About />} />
         <Route path='/contact' element={<Contact />} />
-        <Route path="/" element={<Login />} />
+        <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<SignUp />} />
         <Route path='/product/:productId' element={<Product />} />
         <Route path='/cart' element={<Cart />} />

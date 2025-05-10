@@ -25,36 +25,6 @@ const Add = ({ token }) => {
   const [colors, setColors] = useState([]);
   const [currentColor, setCurrentColor] = useState('');
 
-  // Save form state to sessionStorage whenever the component unmounts
-  useEffect(() => {
-    const saveFormState = () => {
-      const formData = {
-        productId,
-        name,
-        description,
-        price,
-        bestseller,
-        selectedCategory,
-        selectedSubCategory,
-        hasSizes,
-        hasColors,
-        sizes,
-        colors
-      };
-      sessionStorage.setItem('addProductFormState', JSON.stringify(formData));
-    };
-
-    // Add event listener for when the component unmounts or page changes
-    window.addEventListener('beforeunload', saveFormState);
-
-    return () => {
-      // Also save when component unmounts within the app
-      saveFormState();
-      window.removeEventListener('beforeunload', saveFormState);
-    };
-  }, [productId, name, description, price, bestseller, selectedCategory,
-    selectedSubCategory, hasSizes, hasColors, sizes, colors]);
-
   useEffect(() => {
     const fetchCategories = async () => {
       try {
@@ -66,27 +36,6 @@ const Add = ({ token }) => {
       }
     };
     fetchCategories();
-
-    // Load saved form state when component mounts
-    const savedFormState = sessionStorage.getItem('addProductFormState');
-    if (savedFormState) {
-      try {
-        const parsedData = JSON.parse(savedFormState);
-        setProductId(parsedData.productId || '');
-        setName(parsedData.name || '');
-        setDescription(parsedData.description || '');
-        setPrice(parsedData.price || '');
-        setBestseller(parsedData.bestseller || false);
-        setSelectedCategory(parsedData.selectedCategory || '');
-        setSelectedSubCategory(parsedData.selectedSubCategory || '');
-        setHasSizes(parsedData.hasSizes || false);
-        setHasColors(parsedData.hasColors || false);
-        setSizes(parsedData.sizes || []);
-        setColors(parsedData.colors || []);
-      } catch (error) {
-        console.error('Error loading saved form state:', error);
-      }
-    }
   }, []);
 
   useEffect(() => {
@@ -97,26 +46,6 @@ const Add = ({ token }) => {
       setSubcategories([]);
     }
   }, [selectedCategory, categories]);
-
-  useEffect(() => {
-    const handleBeforeUnload = (e) => {
-      const formHasData = productId || name || description || price || image1 ||
-        selectedCategory || selectedSubCategory ||
-        colors.length > 0 || sizes.length > 0;
-
-      if (formHasData) {
-        e.preventDefault();
-        e.returnValue = '';
-      }
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-    };
-  }, [productId, name, description, price, image1, selectedCategory,
-    selectedSubCategory, colors, sizes]);
 
   const onSubmitHandler = async (e) => {
     e.preventDefault();
@@ -223,7 +152,7 @@ const Add = ({ token }) => {
       const response = await axios.post(`${backendUrl}/api/product/add`, formData, { headers: { token } });
 
       if (response.data.success) {
-        toast.success('Product added successfully!', { autoClose: 8000 });
+        toast.success('Product added successfully!', { autoClose: 1000 });
         // Reset form
         setProductId('');
         setName('');
@@ -240,9 +169,6 @@ const Add = ({ token }) => {
         setSelectedSubCategory('');
         setHasSizes(false);
         setHasColors(false);
-
-        // Clear sessionStorage
-        sessionStorage.removeItem('addProductFormState');
       } else {
         toast.error(response.data.message);
       }
@@ -271,11 +197,12 @@ const Add = ({ token }) => {
   };
 
   return (
+
     <div>
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Add Items</h1>
+      <h1 className="text-2xl font-bold">Add Items</h1>
       </div>
-
+      
       <form onSubmit={onSubmitHandler} className="flex flex-col w-full items-start gap-3">
         {/* Product ID Input */}
         <div className="w-full">
@@ -302,29 +229,29 @@ const Add = ({ token }) => {
           />
         </div>
         {/* Product Description */}
-        <div className="w-full">
-          <p className="font-semibold mb-2">Product Description</p>
-          <textarea
-            onChange={(e) => {
-              setDescription(e.target.value);
-              e.target.style.height = "auto"; // Reset height to auto to calculate new height
-              e.target.style.height = `${e.target.scrollHeight}px`; // Adjust height based on scrollHeight
-              // Adjust width if there are more than 10 lines
-              const lineCount = e.target.value.split("\0").length;
-              if (lineCount > 10) {
-                e.target.style.width = "150%"; // Increase width to 1.5 times
-              } else {
-                e.target.style.width = "100%"; // Reset width to default
-              }
-            }}
-            value={description}
-            className="w-full max-w-[590px] px-3 py-2 overflow-hidden"
-            placeholder="Write description here"
-            required
-            style={{ resize: "none" }} // Prevent manual resizing
-          />
-        </div>
-        {/* Category and Subcategory */}
+          <div className="w-full">
+            <p className="font-semibold mb-2">Product Description</p>
+            <textarea
+              onChange={(e) => {
+                setDescription(e.target.value);
+                e.target.style.height = "auto"; // Reset height to auto to calculate new height
+                e.target.style.height = `${e.target.scrollHeight}px`; // Adjust height based on scrollHeight
+                // Adjust width if there are more than 10 lines
+                const lineCount = e.target.value.split("\0").length;
+                if (lineCount > 10) {
+            e.target.style.width = "150%"; // Increase width to 1.5 times
+                } else {
+            e.target.style.width = "100%"; // Reset width to default
+                }
+              }}
+              value={description}
+              className="w-full max-w-[590px] px-3 py-2 overflow-hidden"
+              placeholder="Write description here"
+              required
+              style={{ resize: "none" }} // Prevent manual resizing
+            />
+          </div>
+          {/* Category and Subcategory */}
         <div className="flex flex-col sm:flex-row gap-2 w-full sm:gap-8">
           <div>
             <p className="font-semibold mb-2">Product Category</p>

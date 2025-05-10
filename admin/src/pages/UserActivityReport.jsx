@@ -40,7 +40,7 @@ const UserActivityReport = () => {
             const token = localStorage.getItem('adminToken');
 
             if (!token) {
-                navigate('/');
+                navigate('/login');
                 return;
             }
 
@@ -169,13 +169,13 @@ const UserActivityReport = () => {
             <div className="flex items-center justify-between mb-6">
                 <h1 className="text-2xl font-bold">User Activity Report</h1>
                 <button
-                    onClick={() => navigate('/dashboard')}
+                    onClick={() => navigate('/')}
                     className="flex items-center text-blue-600 hover:text-blue-800"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                     </svg>
-                    <span className="ml-1">Back to Dashboard</span>
+                    <span className="ml-1">Back to Dashbord</span>
                 </button>
             </div>
 
