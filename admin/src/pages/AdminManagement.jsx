@@ -47,7 +47,7 @@ const AdminManagement = ({ token }) => {
 
                 // Handle unauthorized access
                 if (error.response && error.response.status === 401) {
-                    navigate('/login');
+                    navigate('/');
                 }
             } finally {
                 setLoading(false);

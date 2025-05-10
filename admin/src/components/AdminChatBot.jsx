@@ -107,7 +107,7 @@ const AdminChatBot = ({ token }) => {
             // Get contextual response based on current page
             let pageContext;
 
-            if (location.pathname === '/') pageContext = 'admin_dashboard';
+            if (location.pathname === '/') pageContext = 'login';
             else if (location.pathname.includes('/dashboard')) pageContext = 'admin_dashboard';
             else if (location.pathname.includes('/orders')) pageContext = 'admin_orders';
             else if (location.pathname.includes('/list')) pageContext = 'admin_products';

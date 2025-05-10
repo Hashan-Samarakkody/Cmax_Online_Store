@@ -11,14 +11,15 @@ const userSchema = new mongoose.Schema({
     },
     firstName: { type: String },
     lastName: { type: String },
+    authProvider: { type: String, enum: ['local', 'google', 'facebook'], default: 'local' },
 
     addresses: [{
         _id: { type: mongoose.Schema.Types.ObjectId, auto: true },
-        addressName: { type: String, required: true },  
-        street: String,
-        city: String,
-        state: String,
-        postalCode: String,
+        addressName: { type: String, required: true },
+        street: { type: String, required: true },
+        city: { type: String, required: true },
+        state: { type: String, required: true },
+        postalCode: { type: String, required: true },
         isDefault: { type: Boolean, default: false }
     }],
 

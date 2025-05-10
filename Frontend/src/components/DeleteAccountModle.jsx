@@ -54,7 +54,7 @@ const DeleteAccountModle = ({ isOpen, onClose }) => {
                 toast.success('Your account has been deleted');
                 localStorage.removeItem('token');
                 setToken('');
-                navigate('/login');
+                navigate('/signup');
             } else {
                 setError(response.data.message || 'Failed to delete account');
             }

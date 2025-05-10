@@ -25,10 +25,12 @@ export const backendUrl = import.meta.env.VITE_BACKEND_URL
 export const currency = "Rs."
 
 const App = () => {
-  const [token, setToken] = useState(localStorage.getItem('token') ? localStorage.getItem('token') : "")
+  // Use adminToken consistently throughout the app
+  const [token, setToken] = useState(localStorage.getItem('adminToken') || "")
 
   useEffect(() => {
-    localStorage.setItem('token', token)
+    // Make sure we save to adminToken consistently
+    localStorage.setItem('adminToken', token)
   }, [token])
 
   // If no token, redirect to login page
@@ -37,9 +39,9 @@ const App = () => {
       <div className='bg-gray-50 min-h-screen'>
         <ToastContainer />
         <Routes>
-          <Route path='/login' element={<LoginPage setToken={setToken} />} />
-          <Route path='/signup' element={<AdminSignup />} />
-          <Route path='*' element={<Navigate to="/login" replace />} />
+          <Route path='/' element={<LoginPage setToken={setToken} />} />
+          <Route path='/signup' element={<AdminSignup setToken={setToken} />} />
+          <Route path='*' element={<Navigate to="/" replace />} />
         </Routes>
       </div>
     )
@@ -54,7 +56,8 @@ const App = () => {
         <Sidebar />
         <div className='w-[70%] mx-auto ml-[max(5vw,25px)] my-8 text-gray-600 text-base'>
           <Routes>
-            <Route path='/' element={<Dashboard token={token} />} />
+            <Route path='/' element={<Navigate to="/dashboard" replace />} />
+            <Route path='/dashboard' element={<Dashboard token={token} />} />
             <Route path='/sales' element={<SalesReport token={token} />} />
             <Route path='/add' element={<Add token={token} />} />
             <Route path='/list' element={<List token={token} />} />
@@ -63,12 +66,11 @@ const App = () => {
             <Route path='/orders' element={<Orders token={token} />} />
             <Route path='/profile' element={<Profile token={token} setToken={setToken} />} />
             <Route path='/admin-management' element={<AdminManagement token={token} />} />
-            <Route path='/login' element={<Navigate to="/" replace />} />
-            <Route path='/signup' element={<AdminSignup />} />
+            <Route path='/signup' element={<AdminSignup setToken={setToken} />} />
             <Route path='/return-requests' element={<ReturnRequests token={token} />} />
             <Route path='/return-analysis' element={<ReturnAnalysis token={token} />} />
             <Route path='/user-activity-report' element={<UserActivityReport token={token} />} />
-            <Route path='*' element={<Navigate to="/" replace />} />
+            <Route path='*' element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </div>
       </div>

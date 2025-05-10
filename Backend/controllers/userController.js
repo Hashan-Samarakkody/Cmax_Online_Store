@@ -866,6 +866,32 @@ const verifyChangePasswordCode = async (req, res) => {
     }
 };
 
+// Google OAuth callback
+const googleAuthCallback = (req, res) => {
+    try {
+        const { user, token } = req.user;
+
+        // Redirect to frontend with token
+        res.redirect(`${process.env.FRONTEND_URL}/oauth-callback?token=${token}`);
+    } catch (error) {
+        console.error('Google auth callback error:', error);
+        res.redirect(`${process.env.FRONTEND_URL}/login?error=auth_failed`);
+    }
+};
+
+// Facebook OAuth callback
+const facebookAuthCallback = (req, res) => {
+    try {
+        const { user, token } = req.user;
+
+        // Redirect to frontend with token
+        res.redirect(`${process.env.FRONTEND_URL}/oauth-callback?token=${token}`);
+    } catch (error) {
+        console.error('Facebook auth callback error:', error);
+        res.redirect(`${process.env.FRONTEND_URL}/login?error=auth_failed`);
+    }
+};
+
 export {
     loginUser,
     registerUser,
@@ -883,5 +909,7 @@ export {
     setDefaultAddress,
     verifyPassword,
     sendChangePasswordCode,
-    verifyChangePasswordCode
+    verifyChangePasswordCode,
+    googleAuthCallback,
+    facebookAuthCallback
 };
