@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import Navbar from './components/Navbar'
 import Sidebar from './components/Sidebar'
 import { Route, Routes, Navigate } from 'react-router-dom'
@@ -17,9 +17,9 @@ import CategoryManager from './pages/CategoryManager'
 import ReturnAnalysis from './pages/ReturnAnalysis'
 import UserActivityReport from './pages/UserActivityReport'
 import AdminChatBot from './components/AdminChatBot'
-import { useState } from 'react'
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css'
+import axios from 'axios'
 
 export const backendUrl = import.meta.env.VITE_BACKEND_URL
 export const currency = "Rs."
@@ -27,26 +27,89 @@ export const currency = "Rs."
 const App = () => {
   // Use adminToken consistently throughout the app
   const [token, setToken] = useState(localStorage.getItem('adminToken') || "")
+  const [isValidToken, setIsValidToken] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     // Make sure we save to adminToken consistently
     localStorage.setItem('adminToken', token)
+
+    // Validate token when it changes
+    const validateToken = async () => {
+      if (!token) {
+        setIsValidToken(false)
+        setIsLoading(false)
+        return
+      }
+
+      try {
+        // First, check if the token validate endpoint exists
+        try {
+          const response = await axios.get(`${backendUrl}/api/admin/validate-token`, {
+            headers: { Authorization: `Bearer ${token}` },
+            timeout: 5000 // Add timeout to prevent hanging
+          })
+
+          setIsValidToken(response.data.valid === true)
+        } catch (error) {
+          // If 404 error, the endpoint doesn't exist, so try alternative validation
+          if (error.response && error.response.status === 404) {
+            console.log("Validate token endpoint not found, using alternative validation")
+
+            // Try an alternative endpoint that requires authentication
+            const profileResponse = await axios.get(`${backendUrl}/api/admin/profile`, {
+              headers: { Authorization: `Bearer ${token}` }
+            })
+
+            // If we can access the profile, then token is valid
+            if (profileResponse.status === 200) {
+              setIsValidToken(true)
+            } else {
+              setIsValidToken(false)
+              setToken('')
+            }
+          } else {
+            // For other errors, token is invalid
+            console.error("Token validation error:", error)
+            setIsValidToken(false)
+            setToken('')
+          }
+        }
+      } catch (error) {
+        console.error('Final token validation error:', error)
+        setIsValidToken(false)
+        setToken('')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    validateToken()
   }, [token])
 
-  // If no token, redirect to login page
-  if (token === "") {
+  // Show loading state while validating token
+  if (isLoading) {
+    return (
+      <div className="bg-gray-50 min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
+      </div>
+    )
+  }
+
+  // If no valid token, show login/signup pages
+  if (!isValidToken) {
     return (
       <div className='bg-gray-50 min-h-screen'>
         <ToastContainer />
         <Routes>
-          <Route path='/' element={<LoginPage setToken={setToken} />} />
-          <Route path='/signup' element={<AdminSignup setToken={setToken} />} />
-          <Route path='*' element={<Navigate to="/" replace />} />
+          <Route path="/" element={<LoginPage setToken={setToken} />} />
+          <Route path="/signup" element={<AdminSignup setToken={setToken} />} />
         </Routes>
       </div>
     )
   }
-  // If token exists, show the main application
+
+  // If token exists and is valid, show the main application
   return (
     <div className='bg-gray-50 min-h-screen'>
       <ToastContainer />
@@ -56,7 +119,6 @@ const App = () => {
         <Sidebar />
         <div className='w-[70%] mx-auto ml-[max(5vw,25px)] my-8 text-gray-600 text-base'>
           <Routes>
-            <Route path='/' element={<Navigate to="/dashboard" replace />} />
             <Route path='/dashboard' element={<Dashboard token={token} />} />
             <Route path='/sales' element={<SalesReport token={token} />} />
             <Route path='/add' element={<Add token={token} />} />
@@ -70,7 +132,6 @@ const App = () => {
             <Route path='/return-requests' element={<ReturnRequests token={token} />} />
             <Route path='/return-analysis' element={<ReturnAnalysis token={token} />} />
             <Route path='/user-activity-report' element={<UserActivityReport token={token} />} />
-            <Route path='*' element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </div>
       </div>
