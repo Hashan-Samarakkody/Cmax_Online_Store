@@ -25,10 +25,10 @@ export const backendUrl = import.meta.env.VITE_BACKEND_URL
 export const currency = "Rs."
 
 const App = () => {
-  const [token, setToken] = useState(localStorage.getItem('adminToken') ? localStorage.getItem('adminToken') : "")
+  const [token, setToken] = useState(sessionStorage.getItem('adminToken') ? sessionStorage.getItem('adminToken') : "")
 
   useEffect(() => {
-    localStorage.setItem('adminToken', token)
+    sessionStorage.setItem('adminToken', token)
   }, [token])
 
   // If no token, redirect to login page

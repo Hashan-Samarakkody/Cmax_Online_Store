@@ -248,7 +248,7 @@ const SignUp = () => {
             if (response.data.success) {
                 toast.success('Account created successfully!');
                 setToken(response.data.token);
-                localStorage.setItem('token', response.data.token);
+                sessionStorage.setItem('token', response.data.token);
                 navigate('/home');
             } else {
                 setFormError(response.data.message || 'Registration failed');

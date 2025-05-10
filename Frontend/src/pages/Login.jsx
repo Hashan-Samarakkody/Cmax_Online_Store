@@ -5,7 +5,7 @@ import { toast } from 'react-toastify'
 import { motion, AnimatePresence } from 'framer-motion';
 import DOMPurify from 'dompurify'
 import { assets } from '../assets/assets';
-import { FiMail, FiLock, FiLoader, FiArrowRight, FiArrowLeft, FiShoppingBag, FiShield, FiTruck } from 'react-icons/fi';
+import { FiMail, FiLock, FiLoader, FiArrowRight, FiArrowLeft } from 'react-icons/fi';
 import { FcGoogle } from 'react-icons/fc';
 import { Link } from 'react-router-dom';
 
@@ -19,6 +19,7 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
 
   // Password reset states
   const [showResetModal, setShowResetModal] = useState(false);
@@ -154,7 +155,7 @@ const Login = () => {
       if (response.data.success) {
         toast.success('Logged in successfully!');
         setToken(response.data.token);
-        localStorage.setItem('token', response.data.token);
+        sessionStorage.setItem('token', response.data.token);
       } else {
         setFormError(response.data.message || 'Login failed');
         toast.error(response.data.message);
