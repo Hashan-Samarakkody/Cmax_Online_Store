@@ -19,6 +19,19 @@ passport.use(new GoogleStrategy({
 },
     async (accessToken, refreshToken, profile, done) => {
         try {
+            // Debug logging
+            console.log("Google profile:", {
+                id: profile.id,
+                displayName: profile.displayName,
+                emails: profile.emails,
+                photos: profile.photos
+            });
+
+            // Make sure we have email
+            if (!profile.emails || profile.emails.length === 0) {
+                return done(new Error('No email found in Google profile'), null);
+            }
+
             // Check if user exists
             let user = await userModel.findOne({ email: profile.emails[0].value });
 
@@ -37,8 +50,8 @@ passport.use(new GoogleStrategy({
                     profileImage: profile.photos[0]?.value || '',
                     authProvider: 'google'
                 });
-            } else if (!user.authProvider) {
-                // If user exists but hasn't used OAuth before, update provider
+            } else if (user.authProvider !== 'google') {
+                // If user exists but hasn't used Google OAuth before, update provider
                 user.authProvider = 'google';
                 await user.save();
             }
@@ -47,6 +60,7 @@ passport.use(new GoogleStrategy({
             const token = createToken(user._id);
             return done(null, { user, token });
         } catch (error) {
+            console.error("Google auth error:", error);
             return done(error);
         }
     }

@@ -1,163 +1,132 @@
-import React, { useState, useContext } from 'react';
-import { ShopContext } from '../context/ShopContext';
-import { toast } from 'react-toastify';
+import React, { useState } from 'react';
+import Modal from 'react-modal';
 import axios from 'axios';
-import DOMPurify from 'dompurify';
-import { FiLoader, FiArrowRight, FiArrowLeft } from 'react-icons/fi';
-import { motion } from 'framer-motion';
+import { toast } from 'react-toastify';
+import { FiEye, FiEyeOff, FiLoader } from 'react-icons/fi';
 
-const PasswordChangeModle = ({ isOpen, onClose }) => {
-    const { backendUrl, token, user } = useContext(ShopContext);
+// Set app element for accessibility
+Modal.setAppElement('#root');
+
+const PasswordChangeModle = ({ isOpen, onClose, token, backendUrl, user, setToken, navigate }) => {
     const [step, setStep] = useState(1);
-    const [isLoading, setIsLoading] = useState(false);
+
+    // Check if user is OAuth user
+    const isOAuthUser = user?.authProvider && user.authProvider !== 'local';
+
+    // Password visibility
+    const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+    const [showNewPassword, setShowNewPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     // Form fields
     const [currentPassword, setCurrentPassword] = useState('');
+    const [verificationCode, setVerificationCode] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
-    const [verificationCode, setVerificationCode] = useState('');
-    const [codeSent, setCodeSent] = useState(false);
 
-    // Errors
-    const [errors, setErrors] = useState({
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: '',
-        verificationCode: ''
-    });
+    // Loading states
+    const [verifyingPassword, setVerifyingPassword] = useState(false);
+    const [sendingCode, setSendingCode] = useState(false);
+    const [verifyingCode, setVerifyingCode] = useState(false);
+    const [changingPassword, setChangingPassword] = useState(false);
 
-    // Reset all form fields
-    const resetForm = () => {
-        setCurrentPassword('');
-        setNewPassword('');
-        setConfirmPassword('');
-        setVerificationCode('');
-        setCodeSent(false);
-        setErrors({});
-        setStep(1);
-    };
-
-    // Close modal and reset form
-    const handleClose = () => {
-        resetForm();
-        onClose();
-    };
-
-    // Sanitize inputs
-    const sanitizeInput = (input) => {
-        return DOMPurify.sanitize(input.trim());
-    };
-
-    // Handle input changes
-    const handleInputChange = (e, setter, field) => {
-        const sanitized = sanitizeInput(e.target.value);
-        setter(sanitized);
-
-        // Clear error when user starts typing again
-        if (errors[field]) {
-            setErrors({ ...errors, [field]: '' });
-        }
-    };
-
-    // Verify current password and send verification code
-    const validateCurrentPassword = async () => {
+    // Verify password
+    const handleVerifyPassword = async () => {
         if (!currentPassword) {
-            setErrors({ ...errors, currentPassword: 'Current password is required' });
+            toast.error('Please enter your current password');
             return;
         }
 
-        setIsLoading(true);
-
+        setVerifyingPassword(true);
         try {
-            // First verify the current password
-            const verifyResponse = await axios.post(
+            const response = await axios.post(
                 `${backendUrl}/api/user/verify-password`,
                 { password: currentPassword },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
 
-            if (!verifyResponse.data.success) {
-                setErrors({ ...errors, currentPassword: 'Current password is incorrect' });
-                setIsLoading(false);
-                return;
+            if (response.data.success) {
+                toast.success('Password verified');
+                setStep(2);
+                // Automatically send verification code
+                handleSendVerificationCode();
+            } else {
+                toast.error('Incorrect password');
             }
+        } catch (error) {
+            console.error('Error verifying password:', error);
+            toast.error('Error verifying password');
+        } finally {
+            setVerifyingPassword(false);
+        }
+    };
 
-            // Then send a verification code to user's email using the new endpoint
+    // Send verification code
+    const handleSendVerificationCode = async () => {
+        setSendingCode(true);
+        try {
             const response = await axios.post(
                 `${backendUrl}/api/user/send-change-password-code`,
-                {},  // No need to send email, it will use the authenticated user
+                {},
                 { headers: { Authorization: `Bearer ${token}` } }
             );
 
             if (response.data.success) {
-                setCodeSent(true);
-                toast.info('A verification code has been sent to your email');
-                setStep(2);
+                toast.success('Verification code sent to your email');
+                setStep(3);
             } else {
                 toast.error(response.data.message || 'Failed to send verification code');
             }
         } catch (error) {
-            const errorMessage = error.response?.data?.message || 'Failed to send verification code';
-            toast.error(errorMessage);
+            console.error('Error sending verification code:', error);
+            toast.error('Error sending verification code');
         } finally {
-            setIsLoading(false);
+            setSendingCode(false);
         }
     };
 
-
-    // Verify the code and proceed
-    const verifyCode = async () => {
+    // Verify code
+    const handleVerifyCode = async () => {
         if (!verificationCode) {
-            setErrors({ ...errors, verificationCode: 'Verification code is required' });
+            toast.error('Please enter the verification code');
             return;
         }
 
-        setIsLoading(true);
-
+        setVerifyingCode(true);
         try {
             const response = await axios.post(
                 `${backendUrl}/api/user/verify-change-password-code`,
-                {
-                    code: verificationCode
-                },
+                { code: verificationCode },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
 
             if (response.data.success) {
-                setStep(3);
+                toast.success('Code verified successfully');
+                setStep(4);
             } else {
                 toast.error(response.data.message || 'Invalid verification code');
-                setErrors({ ...errors, verificationCode: 'Invalid verification code' });
             }
         } catch (error) {
-            const errorMessage = error.response?.data?.message || 'Failed to verify code';
-            toast.error(errorMessage);
-            setErrors({ ...errors, verificationCode: errorMessage });
+            console.error('Error verifying code:', error);
+            toast.error('Error verifying code');
         } finally {
-            setIsLoading(false);
+            setVerifyingCode(false);
         }
     };
 
-    // Change password (final step)
-    const changePassword = async () => {
-        // Validate passwords
-        if (!newPassword) {
-            setErrors({ ...errors, newPassword: 'New password is required' });
-            return;
-        }
-
-        if (newPassword.length < 8) {
-            setErrors({ ...errors, newPassword: 'Password must be at least 8 characters' });
+    // Change password
+    const handleChangePassword = async () => {
+        if (!newPassword || newPassword.length < 8) {
+            toast.error('Password must be at least 8 characters long');
             return;
         }
 
         if (newPassword !== confirmPassword) {
-            setErrors({ ...errors, confirmPassword: 'Passwords do not match' });
+            toast.error('Passwords do not match');
             return;
         }
 
-        setIsLoading(true);
-
+        setChangingPassword(true);
         try {
             const response = await axios.put(
                 `${backendUrl}/api/user/change-password`,
@@ -171,176 +140,295 @@ const PasswordChangeModle = ({ isOpen, onClose }) => {
 
             if (response.data.success) {
                 toast.success('Password changed successfully');
-                handleClose();
+                // Clear all fields
+                setCurrentPassword('');
+                setVerificationCode('');
+                setNewPassword('');
+                setConfirmPassword('');
+                setStep(1);
+                onClose();
             } else {
                 toast.error(response.data.message || 'Failed to change password');
-
-                // Handle specific errors
-                if (response.data.message?.toLowerCase().includes('current password')) {
-                    setStep(1);
-                    setErrors({ ...errors, currentPassword: response.data.message });
-                } else if (response.data.message?.toLowerCase().includes('verify')) {
-                    setStep(2);
-                    setErrors({ ...errors, verificationCode: response.data.message });
-                }
             }
         } catch (error) {
-            const errorMessage = error.response?.data?.message || 'Failed to change password';
-            toast.error(errorMessage);
-
-            // Handle specific errors
-            if (errorMessage.toLowerCase().includes('current password')) {
-                setStep(1);
-                setErrors({ ...errors, currentPassword: errorMessage });
-            } else if (errorMessage.toLowerCase().includes('verify')) {
-                setStep(2);
-                setErrors({ ...errors, verificationCode: errorMessage });
-            }
+            console.error('Error changing password:', error);
+            toast.error('Error changing password');
         } finally {
-            setIsLoading(false);
+            setChangingPassword(false);
         }
     };
 
-    // Render step content
-    const renderStepContent = () => {
-        switch (step) {
-            case 1:
-                return (
-                    <div className="p-6">
-                        <h3 className="text-xl font-semibold mb-4">Change Password</h3>
-                        <p className="mb-4 text-gray-600">Enter your current password</p>
+    // Handle close and reset form
+    const handleClose = () => {
+        // Reset form state
+        setCurrentPassword('');
+        setVerificationCode('');
+        setNewPassword('');
+        setConfirmPassword('');
+        setStep(1);
+        onClose();
+    };
 
-                        <div className="mb-4">
-                            <input
-                                type="password"
-                                className={`w-full p-3 rounded-lg border ${errors.currentPassword ? 'border-red-500' : 'border-gray-300'} bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-500`}
-                                placeholder="Current Password"
-                                value={currentPassword}
-                                onChange={(e) => handleInputChange(e, setCurrentPassword, 'currentPassword')}
-                            />
-                            {errors.currentPassword && (
-                                <p className="text-red-500 text-xs mt-1">{errors.currentPassword}</p>
-                            )}
+    // Special view for OAuth users
+    if (isOAuthUser) {
+        return (
+            <Modal
+                isOpen={isOpen}
+                onRequestClose={handleClose}
+                className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-xl w-full max-w-md"
+                overlayClassName="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+            >
+                <div className="p-6">
+                    <div className="flex items-center justify-between mb-6">
+                        <h2 className="text-xl font-semibold">OAuth Account</h2>
+                        <button onClick={handleClose} className="text-gray-500 hover:text-gray-700">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div className="flex items-center bg-blue-50 rounded-lg p-4 mb-6">
+                        <div className="mr-4 bg-white p-2 rounded-full">
+                            {user.authProvider === 'google' ? (
+                                <svg className="w-10 h-10" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M12.24 10.285V14.4h6.806c-.275 1.765-2.056 5.174-6.806 5.174-4.095 0-7.439-3.389-7.439-7.574s3.345-7.574 7.439-7.574c2.33 0 3.891.989 4.785 1.849l3.254-3.138C18.189 1.186 15.479 0 12.24 0c-6.635 0-12 5.365-12 12s5.365 12 12 12c6.926 0 11.52-4.869 11.52-11.726 0-.788-.085-1.39-.189-1.989H12.24z"
+                                        fill="#4285F4" />
+                                </svg>
+                            ) : user.authProvider === 'facebook' ? (
+                                <svg className="w-10 h-10" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"
+                                        fill="#1877F2" />
+                                </svg>
+                            ) : null}
                         </div>
+                        <div>
+                            <h3 className="text-lg font-medium text-gray-800">
+                                {user.authProvider === 'google' ? 'Google Account' : 'Facebook Account'}
+                            </h3>
+                            <p className="text-sm text-gray-600">
+                                Connected as {user.email}
+                            </p>
+                        </div>
+                    </div>
 
-                        <div className="flex justify-between">
+                    <div className="bg-gray-50 p-4 border border-gray-200 rounded-lg mb-6">
+                        <p className="text-gray-700 mb-2">
+                            Your account uses {user.authProvider === 'google' ? 'Google' : 'Facebook'} for authentication.
+                        </p>
+                        <p className="text-gray-700">
+                            To change your password, please visit your {user.authProvider === 'google' ? 'Google' : 'Facebook'} account settings directly.
+                        </p>
+                    </div>
+
+                    <div className="flex justify-end">
+                        <button
+                            onClick={handleClose}
+                            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                        >
+                            Close
+                        </button>
+                    </div>
+                </div>
+            </Modal>
+        );
+    }
+
+    // Regular password change flow for non-OAuth users
+    return (
+        <Modal
+            isOpen={isOpen}
+            onRequestClose={handleClose}
+            className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-xl w-full max-w-md"
+            overlayClassName="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+        >
+            <div className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-xl font-semibold">Change Password</h2>
+                    <button onClick={handleClose} className="text-gray-500 hover:text-gray-700">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                {step === 1 && (
+                    <div className="space-y-4">
+                        <p className="text-gray-600 mb-4">
+                            Please enter your current password to continue
+                        </p>
+
+                        <div className="relative">
+                            <input
+                                type={showCurrentPassword ? "text" : "password"}
+                                placeholder="Current Password"
+                                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                                value={currentPassword}
+                                onChange={(e) => setCurrentPassword(e.target.value)}
+                            />
                             <button
                                 type="button"
-                                className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                                className="absolute top-1/2 right-3 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                                onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                            >
+                                {showCurrentPassword ? <FiEyeOff /> : <FiEye />}
+                            </button>
+                        </div>
+
+                        <div className="flex justify-between mt-6">
+                            <button
+                                type="button"
                                 onClick={handleClose}
+                                className="px-4 py-2 text-gray-700 hover:text-gray-900"
                             >
                                 Cancel
                             </button>
                             <button
                                 type="button"
-                                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center"
-                                onClick={validateCurrentPassword}
-                                disabled={isLoading}
+                                onClick={handleVerifyPassword}
+                                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center"
+                                disabled={verifyingPassword}
                             >
-                                {isLoading ? (
-                                    <>
-                                        <FiLoader className="animate-spin mr-2" />
-                                        Sending...
-                                    </>
-                                ) : (
-                                    <>Next <FiArrowRight className="ml-1" /></>
-                                )}
-                            </button>
-                        </div>
-                    </div>
-                );
-
-            case 2:
-                return (
-                    <div className="p-6">
-                        <h3 className="text-xl font-semibold mb-4">Verify Your Email</h3>
-                        <p className="mb-4 text-gray-600">Enter the verification code sent to your email</p>
-
-                        <div className="mb-4">
-                            <input
-                                type="text"
-                                className={`w-full p-3 rounded-lg border ${errors.verificationCode ? 'border-red-500' : 'border-gray-300'} bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-500`}
-                                placeholder="Verification Code"
-                                value={verificationCode}
-                                onChange={(e) => handleInputChange(e, setVerificationCode, 'verificationCode')}
-                            />
-                            {errors.verificationCode && (
-                                <p className="text-red-500 text-xs mt-1">{errors.verificationCode}</p>
-                            )}
-                        </div>
-
-                        <div className="flex justify-between">
-                            <button
-                                type="button"
-                                className="px-4 py-2 flex items-center text-gray-600 hover:text-gray-800"
-                                onClick={() => setStep(1)}
-                            >
-                                <FiArrowLeft className="mr-1" /> Back
-                            </button>
-                            <button
-                                type="button"
-                                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center"
-                                onClick={verifyCode}
-                                disabled={isLoading}
-                            >
-                                {isLoading ? (
+                                {verifyingPassword ? (
                                     <>
                                         <FiLoader className="animate-spin mr-2" />
                                         Verifying...
                                     </>
                                 ) : (
-                                    <>Next <FiArrowRight className="ml-1" /></>
+                                    "Verify Password"
                                 )}
                             </button>
                         </div>
                     </div>
-                );
+                )}
 
-            case 3:
-                return (
-                    <div className="p-6">
-                        <h3 className="text-xl font-semibold mb-4">Create New Password</h3>
-                        <p className="mb-4 text-gray-600">Enter your new password</p>
+                {step === 2 && (
+                    <div className="space-y-4">
+                        <p className="text-gray-600 mb-4">
+                            We're sending a verification code to your email address.
+                        </p>
 
-                        <div className="mb-4">
-                            <input
-                                type="password"
-                                className={`w-full p-3 rounded-lg border ${errors.newPassword ? 'border-red-500' : 'border-gray-300'} bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-500 mb-3`}
-                                placeholder="New Password"
-                                value={newPassword}
-                                onChange={(e) => handleInputChange(e, setNewPassword, 'newPassword')}
-                            />
-                            {errors.newPassword && (
-                                <p className="text-red-500 text-xs mt-1">{errors.newPassword}</p>
-                            )}
-
-                            <input
-                                type="password"
-                                className={`w-full p-3 rounded-lg border ${errors.confirmPassword ? 'border-red-500' : 'border-gray-300'} bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-500`}
-                                placeholder="Confirm New Password"
-                                value={confirmPassword}
-                                onChange={(e) => handleInputChange(e, setConfirmPassword, 'confirmPassword')}
-                            />
-                            {errors.confirmPassword && (
-                                <p className="text-red-500 text-xs mt-1">{errors.confirmPassword}</p>
-                            )}
+                        <div className="h-8 flex justify-center items-center">
+                            <FiLoader className="animate-spin text-green-600 text-xl" />
                         </div>
 
-                        <div className="flex justify-between">
+                        <p className="text-sm text-gray-500 text-center">
+                            Please wait...
+                        </p>
+                    </div>
+                )}
+
+                {step === 3 && (
+                    <div className="space-y-4">
+                        <p className="text-gray-600 mb-4">
+                            Enter the verification code sent to your email
+                        </p>
+
+                        <input
+                            type="text"
+                            placeholder="Verification Code"
+                            className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                            value={verificationCode}
+                            onChange={(e) => setVerificationCode(e.target.value)}
+                        />
+
+                        <div className="flex justify-between mt-6">
                             <button
                                 type="button"
-                                className="px-4 py-2 flex items-center text-gray-600 hover:text-gray-800"
-                                onClick={() => setStep(2)}
+                                onClick={handleClose}
+                                className="px-4 py-2 text-gray-700 hover:text-gray-900"
                             >
-                                <FiArrowLeft className="mr-1" /> Back
+                                Cancel
                             </button>
                             <button
                                 type="button"
-                                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center"
-                                onClick={changePassword}
-                                disabled={isLoading}
+                                onClick={handleVerifyCode}
+                                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center"
+                                disabled={verifyingCode}
                             >
-                                {isLoading ? (
+                                {verifyingCode ? (
+                                    <>
+                                        <FiLoader className="animate-spin mr-2" />
+                                        Verifying...
+                                    </>
+                                ) : (
+                                    "Verify Code"
+                                )}
+                            </button>
+                        </div>
+
+                        <div className="text-center mt-4">
+                            <button
+                                type="button"
+                                onClick={handleSendVerificationCode}
+                                className="text-green-600 text-sm hover:underline"
+                                disabled={sendingCode}
+                            >
+                                {sendingCode ? "Sending..." : "Resend code"}
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {step === 4 && (
+                    <div className="space-y-4">
+                        <p className="text-gray-600 mb-4">
+                            Enter your new password
+                        </p>
+
+                        <div className="relative">
+                            <input
+                                type={showNewPassword ? "text" : "password"}
+                                placeholder="New Password"
+                                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                                value={newPassword}
+                                onChange={(e) => setNewPassword(e.target.value)}
+                            />
+                            <button
+                                type="button"
+                                className="absolute top-1/2 right-3 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                                onClick={() => setShowNewPassword(!showNewPassword)}
+                            >
+                                {showNewPassword ? <FiEyeOff /> : <FiEye />}
+                            </button>
+                        </div>
+
+                        <div className="relative">
+                            <input
+                                type={showConfirmPassword ? "text" : "password"}
+                                placeholder="Confirm Password"
+                                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                                value={confirmPassword}
+                                onChange={(e) => setConfirmPassword(e.target.value)}
+                            />
+                            <button
+                                type="button"
+                                className="absolute top-1/2 right-3 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                            >
+                                {showConfirmPassword ? <FiEyeOff /> : <FiEye />}
+                            </button>
+                        </div>
+
+                        <p className="text-xs text-gray-500">
+                            Password must be at least 8 characters long
+                        </p>
+
+                        <div className="flex justify-between mt-6">
+                            <button
+                                type="button"
+                                onClick={handleClose}
+                                className="px-4 py-2 text-gray-700 hover:text-gray-900"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleChangePassword}
+                                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center"
+                                disabled={changingPassword}
+                            >
+                                {changingPassword ? (
                                     <>
                                         <FiLoader className="animate-spin mr-2" />
                                         Changing...
@@ -351,52 +439,9 @@ const PasswordChangeModle = ({ isOpen, onClose }) => {
                             </button>
                         </div>
                     </div>
-                );
-
-            default:
-                return null;
-        }
-    };
-
-    if (!isOpen) return null;
-
-    return (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm">
-            <motion.div
-                className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3 }}
-            >
-                <div className="flex justify-between items-center p-4 border-b">
-                    <div className="text-green-600">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                        </svg>
-                    </div>
-                    <button
-                        onClick={handleClose}
-                        className="text-gray-400 hover:text-gray-600"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                        </svg>
-                    </button>
-                </div>
-
-                {/* Step indicators */}
-                <div className="flex items-center justify-center pt-4">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-medium ${step >= 1 ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-600'}`}>1</div>
-                    <div className={`h-1 w-10 ${step >= 2 ? 'bg-green-500' : 'bg-gray-200'}`}></div>
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-medium ${step >= 2 ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-600'}`}>2</div>
-                    <div className={`h-1 w-10 ${step >= 3 ? 'bg-green-500' : 'bg-gray-200'}`}></div>
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-medium ${step >= 3 ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-600'}`}>3</div>
-                </div>
-
-                {/* Dynamic content based on current step */}
-                {renderStepContent()}
-            </motion.div>
-        </div>
+                )}
+            </div>
+        </Modal>
     );
 };
 
