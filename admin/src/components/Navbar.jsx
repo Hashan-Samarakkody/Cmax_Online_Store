@@ -18,7 +18,6 @@ const Navbar = ({ setToken }) => {
           headers: { Authorization: `Bearer ${token}` }
         });
 
-        console.log('Admin profile fetched:', response.data);
 
         if (response.data && response.data.admin && response.data.admin.name) {
           setAdminName(response.data.admin.name);
@@ -31,7 +30,7 @@ const Navbar = ({ setToken }) => {
         // Store admin ID in localStorage if not already stored
         if (response.data && response.data.admin && response.data.admin._id) {
           localStorage.setItem('adminId', response.data.admin._id);
-          console.log('Admin ID stored in localStorage:', response.data.admin._id);
+
         }
       }
     } catch (error) {
@@ -45,24 +44,16 @@ const Navbar = ({ setToken }) => {
 
     // Connect to WebSocket if not already connected
     if (!WebSocketService.isConnected()) {
-      console.log('Connecting to WebSocket...');
       WebSocketService.connect(() => {
-        console.log('WebSocket connected successfully');
       });
-    } else {
-      console.log('WebSocket already connected');
     }
 
     // Setup profile update listener
     const handleProfileUpdate = (data) => {
-      console.log('Profile update received:', data);
 
       // Only update if the profile update is for the current admin
       const currentAdminId = localStorage.getItem('adminId');
-      console.log('Current admin ID from localStorage:', currentAdminId);
-
       if (currentAdminId && data.admin) {
-        console.log('Comparing IDs:', data.admin.id, currentAdminId);
 
         // Check both string and ObjectId format
         const isCurrentAdmin =
@@ -70,7 +61,6 @@ const Navbar = ({ setToken }) => {
           data.admin._id === currentAdminId;
 
         if (isCurrentAdmin) {
-          console.log('Updating admin profile in navbar');
           if (data.admin.name) {
             setAdminName(data.admin.name);
           }
@@ -83,12 +73,10 @@ const Navbar = ({ setToken }) => {
     };
 
     // Register WebSocket event listener
-    console.log('Registering profileUpdate event listener');
     WebSocketService.on('profileUpdate', handleProfileUpdate);
 
     // Cleanup WebSocket listener when component unmounts
     return () => {
-      console.log('Removing profileUpdate event listener');
       WebSocketService.off('profileUpdate', handleProfileUpdate);
     };
   }, []);

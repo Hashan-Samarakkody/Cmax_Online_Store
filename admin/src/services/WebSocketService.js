@@ -45,11 +45,9 @@ class WebSocketService {
                 wsUrl = 'ws://localhost:5000';
             }
 
-            console.log('Connecting to WebSocket:', wsUrl);
             this.socket = new WebSocket(wsUrl);
 
             this.socket.onopen = () => {
-                console.log('WebSocket connected successfully');
                 this.isConnecting = false;
                 this.reconnectAttempts = 0;
                 if (onOpenCallback) {
@@ -63,13 +61,10 @@ class WebSocketService {
 
             this.socket.onclose = (event) => {
                 this.isConnecting = false;
-                console.log(`WebSocket closed: ${event.code} - ${event.reason}`);
 
                 // Only attempt reconnect if not a normal closure
                 if (event.code !== 1000 && this.reconnectAttempts < this.maxReconnectAttempts) {
                     this.reconnectAttempts++;
-                    console.log(`Reconnecting... Attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts}`);
-
                     // Exponential backoff for reconnection
                     const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1);
                     setTimeout(() => this.connect(), delay);

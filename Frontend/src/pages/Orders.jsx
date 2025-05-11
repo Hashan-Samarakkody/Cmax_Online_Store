@@ -70,12 +70,11 @@ const Orders = () => {
     if (token) {
       // Connect to WebSocket
       WebSocketService.connect(() => {
-        console.log('WebSocket connected in Orders component')
+        console.log("WebSocket connected");
       })
 
       // Register callback for new orders
       const handleNewOrder = (data) => {
-        console.log('New order received via WebSocket:', data)
         // Reload orders when a new one arrives
         loadOrderData()
         toast.info('New order has been added!')
@@ -83,7 +82,6 @@ const Orders = () => {
 
       // Handle order status updates
       const handleStatusUpdate = (data) => {
-        console.log('Order status update received:', data);
         // Only update if this update is for the current user
         loadOrderData();
         toast.info(`Order status updated: ${data.status}`);

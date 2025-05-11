@@ -45,11 +45,9 @@ class WebSocketService {
                 wsUrl = 'ws://localhost:5000';
             }
 
-            console.log('Connecting to WebSocket:', wsUrl);
             this.socket = new WebSocket(wsUrl);
 
             this.socket.onopen = () => {
-                console.log('WebSocket connected successfully');
                 this.isConnecting = false;
                 this.reconnectAttempts = 0;
                 if (onOpenCallback) {
@@ -63,12 +61,10 @@ class WebSocketService {
 
             this.socket.onclose = (event) => {
                 this.isConnecting = false;
-                console.log(`WebSocket closed: ${event.code} - ${event.reason}`);
 
                 // Only attempt reconnect if not a normal closure
                 if (event.code !== 1000 && this.reconnectAttempts < this.maxReconnectAttempts) {
                     this.reconnectAttempts++;
-                    console.log(`Reconnecting... Attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts}`);
 
                     // Exponential backoff for reconnection
                     const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1);
@@ -104,17 +100,14 @@ class WebSocketService {
 
     handleMessage(message) {
         try {
-            console.log('Raw WebSocket message received:', message);
             const messageObj = JSON.parse(message);
             const { type, ...data } = messageObj;
 
-            console.log(`WebSocket message parsed - TYPE: ${type}`, data);
 
             if (this.callbacks[type]) {
-                console.log(`Found ${this.callbacks[type].length} handlers for type: ${type}`);
                 this.callbacks[type].forEach(callback => callback(data));
             } else {
-                console.log(`No handlers registered for message type: ${type}`);
+                console.warn(`No callback registered for message type: ${type}`);
             }
         } catch (error) {
             console.error('Error parsing WebSocket message:', error);

@@ -117,8 +117,10 @@ const registerUser = async (req, res) => {
 
                 profileImageUrl = result.secure_url;
             } catch (uploadError) {
-                console.log("Error uploading to Cloudinary:", uploadError);
-                // Continue with registration using the default image
+                return res.status(500).json({
+                    success: false,
+                    message: "Error uploading profile image to Cloudinary"
+                });
             }
         }
 

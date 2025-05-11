@@ -47,14 +47,13 @@ const App = () => {
         try {
           const response = await axios.get(`${backendUrl}/api/admin/validate-token`, {
             headers: { Authorization: `Bearer ${token}` },
-            timeout: 5000 // Add timeout to prevent hanging
+            timeout: 5000
           })
 
           setIsValidToken(response.data.valid === true)
         } catch (error) {
           // If 404 error, the endpoint doesn't exist, so try alternative validation
           if (error.response && error.response.status === 404) {
-            console.log("Validate token endpoint not found, using alternative validation")
 
             // Try an alternative endpoint that requires authentication
             const profileResponse = await axios.get(`${backendUrl}/api/admin/profile`, {

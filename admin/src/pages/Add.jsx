@@ -46,7 +46,7 @@ const Add = ({ token }) => {
       sessionStorage.setItem('addProductFormState', JSON.stringify(formData));
     };
 
-    // Add event listener for when the component unmounts or page changes
+    //Event listener for when the component unmounts or page changes
     window.addEventListener('beforeunload', saveFormState);
 
     return () => {

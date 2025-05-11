@@ -54,9 +54,6 @@ const UserActivityReport = () => {
                 queryParams.append('endDate', dateRange.endDate);
             }
 
-            // Log what we're requesting to help debug
-            console.log(`Fetching data with params: ${queryParams.toString()}`);
-
             // Fetch user activity data
             const response = await axios.get(
                 `${backendUrl}/api/dashboard/user-activity-report?${queryParams.toString()}`,
@@ -64,8 +61,6 @@ const UserActivityReport = () => {
             );
 
             if (response.data.success) {
-                // Log the response to help debug
-                console.log('Received data:', response.data.userActivity);
 
                 if (response.data.userActivity.length === 0) {
                     toast.info('No user activity data found for the selected period');
