@@ -301,7 +301,7 @@ const Profile = ({ token, setToken }) => {
                 }
 
                 setShowDeleteModal(false);
-                navigate('/');
+                navigate('/signup');
             } else {
                 toast.error(response.data.message || 'Failed to delete account');
                 setShowDeleteModal(false);
