@@ -5,6 +5,7 @@ import { toast } from 'react-toastify';
 import { assets } from '../assets/assets';
 import DOMPurify from 'dompurify';
 import { useParams, useNavigate } from 'react-router-dom';
+import { processImage } from '../utils/imageProcessor';
 
 const Edit = ({ token }) => {
     const { id } = useParams();
@@ -27,6 +28,7 @@ const Edit = ({ token }) => {
     const [currentColor, setCurrentColor] = useState('');
     const [loading, setLoading] = useState(true);
     const [initialLoad, setInitialLoad] = useState(true);
+    const [processingImage, setProcessingImage] = useState(false);
 
     // Fetch categories
     useEffect(() => {
@@ -112,6 +114,31 @@ const Edit = ({ token }) => {
             setSelectedSubCategory('');
         } else {
             setFilteredSubcategories([]);
+        }
+    };
+
+    // Handle image upload with processing
+    const handleImageUpload = async (e, index) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        try {
+            setProcessingImage(true);
+
+            // Process the image
+            const processedImage = await processImage(file);
+
+            // Update images array with the processed image
+            const newImages = [...images];
+            newImages[index] = processedImage;
+            setImages(newImages);
+
+            toast.success('Image processed successfully');
+        } catch (error) {
+            toast.error(error.message || 'Failed to process image');
+            console.error('Image processing error:', error);
+        } finally {
+            setProcessingImage(false);
         }
     };
 
@@ -251,21 +278,21 @@ const Edit = ({ token }) => {
         <div>
             <div className="mb-6 flex items-center justify-between">
                 <h1 className="text-2xl font-bold">Edit Items</h1>
-                    <div className='px-110'>
-                        <button
-                            onClick={() => navigate('/list')}
-                            className="flex items-center text-blue-600 hover:text-blue-800 text-sm"
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                            </svg>
-                            Back to Products
-                        </button>
-                    </div>
+                <div className='px-110'>
+                    <button
+                        onClick={() => navigate('/list')}
+                        className="flex items-center text-blue-600 hover:text-blue-800 text-sm"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                        </svg>
+                        Back to Products
+                    </button>
+                </div>
             </div>
-            
+
             <form onSubmit={onSubmitHandler} className="flex flex-col w-full items-start gap-3">
-            
+
                 {/* Product Name */}
                 <div className="w-full">
                     <p className="font-semibold mb-2">Product Name</p>
@@ -458,31 +485,42 @@ const Edit = ({ token }) => {
                 {/* Image Upload */}
                 <div>
                     <p className="font-semibold mb-2">Upload Images</p>
-                    <p className='text-sm text-red-500 mb-2'><i>* Only 700 × 700 images are allowed</i></p>
+                    <p className='text-sm text-red-500 mb-2'>
+                        <i>* Images will be automatically resized to 700 × 700 pixels</i>
+                    </p>
                     <div className="flex gap-2">
                         {[0, 1, 2, 3].map((index) => (
-                            <label key={index} htmlFor={`image${index + 1}`} className="cursor-pointer">
+                            <label
+                                key={index}
+                                htmlFor={`image${index + 1}`}
+                                className={`cursor-pointer ${processingImage ? 'opacity-50 pointer-events-none' : ''}`}
+                            >
                                 <img
                                     className="w-40 h-40 object-cover rounded-sm border border-gray-300"
                                     src={images[index] instanceof File ? URL.createObjectURL(images[index]) : (images[index] || assets.upload_area)}
                                     alt={`Preview ${index + 1}`}
                                 />
                                 <input
-                                    onChange={(e) => {
-                                        const newImages = [...images];
-                                        newImages[index] = e.target.files[0];
-                                        setImages(newImages);
-                                    }}
+                                    onChange={(e) => handleImageUpload(e, index)}
                                     type="file"
                                     id={`image${index + 1}`}
                                     hidden
+                                    disabled={processingImage}
+                                    accept="image/png, image/jpeg, image/jpg"
                                 />
                             </label>
                         ))}
                     </div>
+                    {processingImage && (
+                        <p className="text-blue-500 mt-2">Processing image, please wait...</p>
+                    )}
                 </div>
                 {/* Submit Button */}
-                <button type="submit" className="w-28 py-3 mt-4 bg-black text-white rounded-sm">
+                <button
+                    type="submit"
+                    className="w-28 py-3 mt-4 bg-black text-white rounded-sm"
+                    disabled={processingImage}
+                >
                     UPDATE
                 </button>
             </form>

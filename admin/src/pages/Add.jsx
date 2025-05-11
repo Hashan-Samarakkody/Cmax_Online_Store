@@ -4,6 +4,7 @@ import { backendUrl } from '../App';
 import { toast } from 'react-toastify';
 import { assets } from '../assets/assets';
 import DOMPurify from 'dompurify';
+import { processImage } from '../utils/imageProcessor';
 
 const Add = ({ token }) => {
   const [categories, setCategories] = useState([]);
@@ -24,6 +25,7 @@ const Add = ({ token }) => {
   const [sizes, setSizes] = useState([]);
   const [colors, setColors] = useState([]);
   const [currentColor, setCurrentColor] = useState('');
+  const [processingImage, setProcessingImage] = useState(false);
 
   // Save form state to sessionStorage whenever the component unmounts
   useEffect(() => {
@@ -118,6 +120,33 @@ const Add = ({ token }) => {
   }, [productId, name, description, price, image1, selectedCategory,
     selectedSubCategory, colors, sizes]);
 
+  /**
+   * Handles image upload with processing
+   * @param {Event} e - The change event from the file input
+   * @param {Function} setImage - The state setter function for the image
+   */
+  const handleImageUpload = async (e, setImage) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    try {
+      setProcessingImage(true);
+
+      // Process the image
+      const processedImage = await processImage(file);
+
+      // Set the processed image
+      setImage(processedImage);
+
+      toast.success('Image processed successfully');
+    } catch (error) {
+      toast.error(error.message || 'Failed to process image');
+      console.error('Image processing error:', error);
+    } finally {
+      setProcessingImage(false);
+    }
+  };
+
   const onSubmitHandler = async (e) => {
     e.preventDefault();
 
@@ -167,23 +196,6 @@ const Add = ({ token }) => {
     if (images.length === 0) {
       toast.error('Please upload at least one image.');
       return;
-    }
-
-    // Validate Image Dimensions
-    for (const image of images) {
-      const img = new Image();
-      img.src = URL.createObjectURL(image);
-
-      const isValidSize = await new Promise((resolve) => {
-        img.onload = () => {
-          resolve(img.width === 700 && img.height === 700);
-        };
-      });
-
-      if (!isValidSize) {
-        toast.error('Each image must be exactly 700 × 700 pixels.');
-        return;
-      }
     }
 
     // Validate Colors (if enabled)
@@ -475,30 +487,42 @@ const Add = ({ token }) => {
         {/* Image Upload */}
         <div>
           <p className="font-semibold mb-2">Upload Images</p>
-          <p className='text-sm text-red-500 mb-2'><i>* Only 700 × 700 images are allowed</i></p>
+          <p className='text-sm text-red-500 mb-2'>
+            <i>* Images will be automatically resized to 700 × 700 pixels</i>
+          </p>
           <div className="flex gap-2">
             {[image1, image2, image3, image4].map((image, index) => (
-              <label key={index} htmlFor={`image${index + 1}`} className="cursor-pointer">
+              <label
+                key={index}
+                htmlFor={`image${index + 1}`}
+                className={`cursor-pointer ${processingImage ? 'opacity-50 pointer-events-none' : ''}`}
+              >
                 <img
                   className="w-40 h-40 object-cover rounded-sm border border-gray-300"
                   src={!image ? assets.upload_area : URL.createObjectURL(image)}
                   alt={`Preview ${index + 1}`}
                 />
                 <input
-                  onChange={(e) => {
-                    const setImage = [setImage1, setImage2, setImage3, setImage4][index];
-                    setImage(e.target.files[0]);
-                  }}
+                  onChange={(e) => handleImageUpload(e, [setImage1, setImage2, setImage3, setImage4][index])}
                   type="file"
                   id={`image${index + 1}`}
+                  accept="image/png, image/jpeg, image/jpg"
                   hidden
+                  disabled={processingImage}
                 />
               </label>
             ))}
           </div>
+          {processingImage && (
+            <p className="text-blue-500 mt-2">Processing image, please wait...</p>
+          )}
         </div>
         {/* Submit Button */}
-        <button type="submit" className="w-28 py-3 mt-4 bg-black text-white rounded-sm">
+        <button
+          type="submit"
+          className="w-28 py-3 mt-4 bg-black text-white rounded-sm"
+          disabled={processingImage}
+        >
           ADD
         </button>
       </form>
