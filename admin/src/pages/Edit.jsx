@@ -5,6 +5,7 @@ import { toast } from 'react-toastify';
 import { assets } from '../assets/assets';
 import DOMPurify from 'dompurify';
 import { useParams, useNavigate } from 'react-router-dom';
+import { processImage } from '../utils/imageProcessor';
 
 const Edit = ({ token }) => {
     const { id } = useParams();
@@ -16,6 +17,7 @@ const Edit = ({ token }) => {
     const [selectedCategory, setSelectedCategory] = useState('');
     const [selectedSubCategory, setSelectedSubCategory] = useState('');
     const [images, setImages] = useState([]);
+    const [imagesToDelete, setImagesToDelete] = useState([]); // Track images to delete
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
     const [price, setPrice] = useState('');
@@ -27,6 +29,7 @@ const Edit = ({ token }) => {
     const [currentColor, setCurrentColor] = useState('');
     const [loading, setLoading] = useState(true);
     const [initialLoad, setInitialLoad] = useState(true);
+    const [processingImage, setProcessingImage] = useState(false);
 
     // Fetch categories
     useEffect(() => {
@@ -115,6 +118,53 @@ const Edit = ({ token }) => {
         }
     };
 
+    // Handle image upload with processing
+    const handleImageUpload = async (e, index) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        try {
+            setProcessingImage(true);
+
+            // Process the image
+            const processedImage = await processImage(file);
+
+            // Update images array with the processed image
+            const newImages = [...images];
+
+            // If this is replacing an existing image URL, add it to imagesToDelete
+            if (typeof newImages[index] === 'string' && !imagesToDelete.includes(newImages[index])) {
+                setImagesToDelete(prev => [...prev, newImages[index]]);
+            }
+
+            newImages[index] = processedImage;
+            setImages(newImages);
+
+            toast.success('Image processed successfully');
+        } catch (error) {
+            toast.error(error.message || 'Failed to process image');
+            console.error('Image processing error:', error);
+        } finally {
+            setProcessingImage(false);
+        }
+    };
+
+    // Handle image removal
+    const removeImage = (index) => {
+        const newImages = [...images];
+
+        // If removing a URL image (not a File object), add to imagesToDelete
+        if (typeof newImages[index] === 'string') {
+            setImagesToDelete(prev => [...prev, newImages[index]]);
+        }
+
+        // Remove the image from the array
+        newImages[index] = null;
+        setImages(newImages);
+
+        toast.info('Image removed');
+    };
+
     const addColor = () => {
         const trimmedColor = currentColor.trim().toLowerCase();
         if (trimmedColor && !colors.includes(trimmedColor)) {
@@ -166,6 +216,13 @@ const Edit = ({ token }) => {
             return;
         }
 
+        // Make sure at least one image remains
+        const remainingImages = images.filter(img => img !== null);
+        if (remainingImages.length === 0) {
+            toast.error('Please include at least one product image.');
+            return;
+        }
+
         // Validate Colors (if enabled)
         if (hasColors && colors.length === 0) {
             toast.error('Please add at least one color.');
@@ -194,11 +251,26 @@ const Edit = ({ token }) => {
             formData.append('colors', JSON.stringify(colors));
         }
 
-        // Add new uploaded images if any
-        const newImages = Array.from(images).filter(img => img instanceof File);
-        newImages.forEach((image, index) => {
-            formData.append(`image${index + 1}`, image);
+        // Add images to keep (URLs) and newly uploaded images (Files)
+        let imageIndex = 0;
+        images.forEach((image) => {
+            if (image) {
+                if (typeof image === 'string') {
+                    // This is an existing image URL we want to keep
+                    formData.append(`existingImages[${imageIndex}]`, image);
+                    imageIndex++;
+                } else if (image instanceof File) {
+                    // This is a new image file
+                    formData.append(`newImages[${imageIndex}]`, image);
+                    imageIndex++;
+                }
+            }
         });
+
+        // Add list of images to delete
+        if (imagesToDelete.length > 0) {
+            formData.append('imagesToDelete', JSON.stringify(imagesToDelete));
+        }
 
         try {
             const response = await axios.put(`${backendUrl}/api/product/update`, formData, {
@@ -251,21 +323,21 @@ const Edit = ({ token }) => {
         <div>
             <div className="mb-6 flex items-center justify-between">
                 <h1 className="text-2xl font-bold">Edit Items</h1>
-                    <div className='px-110'>
-                        <button
-                            onClick={() => navigate('/list')}
-                            className="flex items-center text-blue-600 hover:text-blue-800 text-sm"
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                            </svg>
-                            Back to Products
-                        </button>
-                    </div>
+                <div className='px-110'>
+                    <button
+                        onClick={() => navigate('/list')}
+                        className="flex items-center text-blue-600 hover:text-blue-800 text-sm"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                        </svg>
+                        Back to Products
+                    </button>
+                </div>
             </div>
-            
+
             <form onSubmit={onSubmitHandler} className="flex flex-col w-full items-start gap-3">
-            
+
                 {/* Product Name */}
                 <div className="w-full">
                     <p className="font-semibold mb-2">Product Name</p>
@@ -457,32 +529,61 @@ const Edit = ({ token }) => {
                 </div>
                 {/* Image Upload */}
                 <div>
-                    <p className="font-semibold mb-2">Upload Images</p>
-                    <p className='text-sm text-red-500 mb-2'><i>* Only 700 × 700 images are allowed</i></p>
+                    <p className="font-semibold mb-2">Product Images</p>
+                    <p className='text-sm text-red-500 mb-2'>
+                        <i>✸ Only PNG, JPEG, and JPG files are allowed</i>
+                    </p>
+                    <p className='text-sm text-red-500 mb-2'>
+                        <i>✸ Images will be automatically resized to 700 × 700 pixels</i>
+                    </p>
                     <div className="flex gap-2">
                         {[0, 1, 2, 3].map((index) => (
-                            <label key={index} htmlFor={`image${index + 1}`} className="cursor-pointer">
-                                <img
-                                    className="w-40 h-40 object-cover rounded-sm border border-gray-300"
-                                    src={images[index] instanceof File ? URL.createObjectURL(images[index]) : (images[index] || assets.upload_area)}
-                                    alt={`Preview ${index + 1}`}
-                                />
-                                <input
-                                    onChange={(e) => {
-                                        const newImages = [...images];
-                                        newImages[index] = e.target.files[0];
-                                        setImages(newImages);
-                                    }}
-                                    type="file"
-                                    id={`image${index + 1}`}
-                                    hidden
-                                />
-                            </label>
+                            <div key={index} className="relative">
+                                <label
+                                    htmlFor={`image${index + 1}`}
+                                    className={`cursor-pointer block ${processingImage ? 'opacity-50 pointer-events-none' : ''}`}
+                                >
+                                    <img
+                                        className="w-40 h-40 object-cover rounded-sm border border-gray-300"
+                                        src={
+                                            images[index] instanceof File
+                                                ? URL.createObjectURL(images[index])
+                                                : (images[index] || assets.upload_area)
+                                        }
+                                        alt={`Preview ${index + 1}`}
+                                    />
+                                    <input
+                                        onChange={(e) => handleImageUpload(e, index)}
+                                        type="file"
+                                        id={`image${index + 1}`}
+                                        hidden
+                                        disabled={processingImage}
+                                        accept="image/png, image/jpeg, image/jpg"
+                                    />
+                                </label>
+                                {images[index] && (
+                                    <button
+                                        type="button"
+                                        onClick={() => removeImage(index)}
+                                        className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center shadow-md"
+                                        title="Remove image"
+                                    >
+                                        ✕
+                                    </button>
+                                )}
+                            </div>
                         ))}
                     </div>
+                    {processingImage && (
+                        <p className="text-blue-500 mt-2">Processing image, please wait...</p>
+                    )}
                 </div>
                 {/* Submit Button */}
-                <button type="submit" className="w-28 py-3 mt-4 bg-black text-white rounded-sm">
+                <button
+                    type="submit"
+                    className="w-28 py-3 mt-4 bg-black text-white rounded-sm"
+                    disabled={processingImage}
+                >
                     UPDATE
                 </button>
             </form>

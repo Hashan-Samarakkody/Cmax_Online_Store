@@ -11,14 +11,14 @@ const ConfirmationModal = ({ isOpen, onClose, onConfirm, title, message }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0  bg-blue-900/30 backdrop-blur-sm z-50 flex items-center justify-center">
-      <div className="bg-white bg-opacity-90 backdrop-filter backdrop-blur-md p-6 rounded-lg shadow-xl max-w-sm w-full border border-gray-200">
-        <h2 className="text-xl font-bold mb-4">{title}</h2>
-        <p className="mb-6">{message}</p>
+    <div className="fixed inset-0 bg-blue-900/30 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-white bg-opacity-90 backdrop-filter backdrop-blur-md p-4 sm:p-6 rounded-lg shadow-xl max-w-sm w-full border border-gray-200">
+        <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">{title}</h2>
+        <p className="mb-5 sm:mb-6 text-sm sm:text-base">{message}</p>
         <div className="flex justify-end gap-3">
           <button
             onClick={onClose}
-            className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-100 transition-colors"
+            className="px-3 sm:px-4 py-2 border border-gray-300 rounded text-sm sm:text-base hover:bg-gray-100 transition-colors"
           >
             Cancel
           </button>
@@ -27,7 +27,7 @@ const ConfirmationModal = ({ isOpen, onClose, onConfirm, title, message }) => {
               onConfirm();
               onClose();
             }}
-            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+            className="px-3 sm:px-4 py-2 bg-red-600 text-white rounded text-sm sm:text-base hover:bg-red-700 transition-colors"
           >
             Delete
           </button>
@@ -36,7 +36,6 @@ const ConfirmationModal = ({ isOpen, onClose, onConfirm, title, message }) => {
     </div>
   );
 };
-
 
 const ProductReviews = ({ productId }) => {
   const { token, backendUrl } = useContext(ShopContext);
@@ -152,7 +151,7 @@ const ProductReviews = ({ productId }) => {
       }
     };
 
-    // Handle deleted review - this was missing
+    // Handle deleted review
     const handleReviewDeleted = (data) => {
       if (data && data.reviewId && data.productId === productId) {
         setReviews(prevReviews => prevReviews.filter(review => review._id !== data.reviewId));
@@ -183,14 +182,14 @@ const ProductReviews = ({ productId }) => {
     if (WebSocketService.isConnected()) {
       WebSocketService.on('newReview', handleNewReview);
       WebSocketService.on('updateReview', handleUpdateReview);
-      WebSocketService.on('deleteReview', handleReviewDeleted); // Changed handler name
+      WebSocketService.on('deleteReview', handleReviewDeleted);
       WebSocketService.on('newReply', handleNewReply);
-      WebSocketService.on('deleteReply', handleNewReply); // Use same handler as it does the same thing
+      WebSocketService.on('deleteReply', handleNewReply);
     } else {
       WebSocketService.connect(() => {
         WebSocketService.on('newReview', handleNewReview);
         WebSocketService.on('updateReview', handleUpdateReview);
-        WebSocketService.on('deleteReview', handleReviewDeleted); // Changed handler name
+        WebSocketService.on('deleteReview', handleReviewDeleted);
         WebSocketService.on('newReply', handleNewReply);
         WebSocketService.on('deleteReply', handleNewReply);
       });
@@ -199,11 +198,12 @@ const ProductReviews = ({ productId }) => {
     return () => {
       WebSocketService.off('newReview', handleNewReview);
       WebSocketService.off('updateReview', handleUpdateReview);
-      WebSocketService.off('deleteReview', handleReviewDeleted); // Changed handler name
+      WebSocketService.off('deleteReview', handleReviewDeleted);
       WebSocketService.off('newReply', handleNewReply);
       WebSocketService.off('deleteReply', handleNewReply);
     };
   }, [productId, reviews]);
+
   // Submit a new review
   const handleSubmitReview = async (e) => {
     e.preventDefault();
@@ -368,14 +368,14 @@ const ProductReviews = ({ productId }) => {
 
   if (loading) {
     return (
-      <div className="flex justify-center py-8">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-900"></div>
+      <div className="flex justify-center py-6 sm:py-8">
+        <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-t-2 border-b-2 border-gray-900"></div>
       </div>
     );
   }
 
   return (
-    <div className="mt-4">
+    <div className="mt-2 sm:mt-4">
       {/* Confirmation Modal */}
       <ConfirmationModal
         isOpen={confirmModal.isOpen}
@@ -386,25 +386,25 @@ const ProductReviews = ({ productId }) => {
       />
 
       {/* Rating Summary */}
-      <div className="flex items-center gap-4 mb-6">
+      <div className="flex items-center flex-wrap gap-3 sm:gap-4 mb-4 sm:mb-6">
         <div className="flex items-center">
-          <span className="text-3xl font-bold mr-2">{averageRating.toFixed(1)}</span>
+          <span className="text-2xl sm:text-3xl font-bold mr-2">{averageRating.toFixed(1)}</span>
           <div className="flex items-center">
             {renderStarRating(Math.round(averageRating))}
           </div>
         </div>
-        <div className="text-gray-500">
+        <div className="text-gray-500 text-sm sm:text-base">
           Based on {reviewCount} {reviewCount === 1 ? 'review' : 'reviews'}
         </div>
       </div>
 
       {/* Review Form */}
       {!editingReview && (
-        <div className="bg-gray-50 p-6 rounded-lg mb-8">
-          <h3 className="font-medium mb-4">Write a Review</h3>
+        <div className="bg-gray-50 p-4 sm:p-6 rounded-lg mb-6 sm:mb-8">
+          <h3 className="font-medium mb-3 sm:mb-4 text-sm sm:text-base">Write a Review</h3>
           <form onSubmit={handleSubmitReview}>
             <div className="mb-4">
-              <label className="block mb-2">Rating</label>
+              <label className="block mb-2 text-sm sm:text-base">Rating</label>
               <div className="flex gap-2">
                 {[1, 2, 3, 4, 5].map((star) => (
                   <button
@@ -416,19 +416,19 @@ const ProductReviews = ({ productId }) => {
                     <img
                       src={star <= userReview.rating ? assets.star_icon : assets.star_dull_icon}
                       alt={`${star} star`}
-                      className="w-6 h-6"
+                      className="w-5 h-5 sm:w-6 sm:h-6"
                     />
                   </button>
                 ))}
               </div>
             </div>
             <div className="mb-4">
-              <label htmlFor="reviewContent" className="block mb-2">Your Review</label>
+              <label htmlFor="reviewContent" className="block mb-2 text-sm sm:text-base">Your Review</label>
               <textarea
                 id="reviewContent"
                 value={userReview.content}
                 onChange={(e) => setUserReview({ ...userReview, content: e.target.value })}
-                className="w-full p-2 border rounded-md min-h-[100px]"
+                className="w-full p-2 border rounded-md min-h-[80px] sm:min-h-[100px] text-sm sm:text-base"
                 placeholder={token ? "Share your experience with this product..." : "Please login to write a review"}
                 disabled={!token}
               ></textarea>
@@ -436,7 +436,7 @@ const ProductReviews = ({ productId }) => {
             <button
               type="submit"
               disabled={!token}
-              className={`px-4 py-2 rounded-md ${token
+              className={`px-4 py-2 rounded-md text-sm sm:text-base ${token
                 ? 'bg-black text-white hover:bg-gray-800'
                 : 'bg-gray-300 cursor-not-allowed'}`}
             >
@@ -448,11 +448,11 @@ const ProductReviews = ({ productId }) => {
 
       {/* Edit Review Form */}
       {editingReview && (
-        <div className="bg-gray-50 p-6 rounded-lg mb-8">
-          <h3 className="font-medium mb-4">Edit Your Review</h3>
+        <div className="bg-gray-50 p-4 sm:p-6 rounded-lg mb-6 sm:mb-8">
+          <h3 className="font-medium mb-3 sm:mb-4 text-sm sm:text-base">Edit Your Review</h3>
           <form onSubmit={handleUpdateReview}>
             <div className="mb-4">
-              <label className="block mb-2">Rating</label>
+              <label className="block mb-2 text-sm sm:text-base">Rating</label>
               <div className="flex gap-2">
                 {[1, 2, 3, 4, 5].map((star) => (
                   <button
@@ -464,25 +464,25 @@ const ProductReviews = ({ productId }) => {
                     <img
                       src={star <= userReview.rating ? assets.star_icon : assets.star_dull_icon}
                       alt={`${star} star`}
-                      className="w-6 h-6"
+                      className="w-5 h-5 sm:w-6 sm:h-6"
                     />
                   </button>
                 ))}
               </div>
             </div>
             <div className="mb-4">
-              <label htmlFor="editReviewContent" className="block mb-2">Your Review</label>
+              <label htmlFor="editReviewContent" className="block mb-2 text-sm sm:text-base">Your Review</label>
               <textarea
                 id="editReviewContent"
                 value={userReview.content}
                 onChange={(e) => setUserReview({ ...userReview, content: e.target.value })}
-                className="w-full p-2 border rounded-md min-h-[100px]"
+                className="w-full p-2 border rounded-md min-h-[80px] sm:min-h-[100px] text-sm sm:text-base"
               ></textarea>
             </div>
             <div className="flex gap-2">
               <button
                 type="submit"
-                className="px-4 py-2 rounded-md bg-black text-white hover:bg-gray-800"
+                className="px-3 sm:px-4 py-2 rounded-md bg-black text-white hover:bg-gray-800 text-xs sm:text-sm"
               >
                 Update Review
               </button>
@@ -492,7 +492,7 @@ const ProductReviews = ({ productId }) => {
                   setEditingReview(null);
                   setUserReview({ rating: 5, content: '' });
                 }}
-                className="px-4 py-2 rounded-md border border-gray-300 hover:bg-gray-100"
+                className="px-3 sm:px-4 py-2 rounded-md border border-gray-300 hover:bg-gray-100 text-xs sm:text-sm"
               >
                 Cancel
               </button>
@@ -503,32 +503,32 @@ const ProductReviews = ({ productId }) => {
 
       {/* Reply Form */}
       {replyToReview && (
-        <div className="bg-gray-50 p-6 rounded-lg mb-8">
-          <h3 className="font-medium mb-4">Reply to Review</h3>
-          <div className="mb-4 p-4 bg-white rounded-lg">
+        <div className="bg-gray-50 p-4 sm:p-6 rounded-lg mb-6 sm:mb-8">
+          <h3 className="font-medium mb-3 sm:mb-4 text-sm sm:text-base">Reply to Review</h3>
+          <div className="mb-4 p-3 sm:p-4 bg-white rounded-lg">
             <div className="flex gap-2 mb-2">
               <div className="flex">{renderStarRating(replyToReview.rating)}</div>
             </div>
-            <p className="text-gray-700">{replyToReview.content}</p>
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="text-gray-700 text-sm sm:text-base">{replyToReview.content}</p>
+            <p className="text-xs text-gray-500 mt-1">
               By {replyToReview.userId.name} on {format(new Date(replyToReview.createdAt), 'MMM dd, yyyy')}
             </p>
           </div>
           <form onSubmit={handleSubmitReply}>
             <div className="mb-4">
-              <label htmlFor="replyContent" className="block mb-2">Your Reply</label>
+              <label htmlFor="replyContent" className="block mb-2 text-sm sm:text-base">Your Reply</label>
               <textarea
                 id="replyContent"
                 value={replyContent}
                 onChange={(e) => setReplyContent(e.target.value)}
-                className="w-full p-2 border rounded-md min-h-[100px]"
+                className="w-full p-2 border rounded-md min-h-[80px] sm:min-h-[100px] text-sm sm:text-base"
                 placeholder="Write your reply here..."
               ></textarea>
             </div>
             <div className="flex gap-2">
               <button
                 type="submit"
-                className="px-4 py-2 rounded-md bg-black text-white hover:bg-gray-800"
+                className="px-3 sm:px-4 py-2 rounded-md bg-black text-white hover:bg-gray-800 text-xs sm:text-sm"
               >
                 Submit Reply
               </button>
@@ -538,7 +538,7 @@ const ProductReviews = ({ productId }) => {
                   setReplyToReview(null);
                   setReplyContent('');
                 }}
-                className="px-4 py-2 rounded-md border border-gray-300 hover:bg-gray-100"
+                className="px-3 sm:px-4 py-2 rounded-md border border-gray-300 hover:bg-gray-100 text-xs sm:text-sm"
               >
                 Cancel
               </button>
@@ -549,18 +549,18 @@ const ProductReviews = ({ productId }) => {
 
       {/* Reviews List */}
       <div>
-        <h3 className="font-medium text-lg mb-4">Customer Reviews ({reviewCount})</h3>
+        <h3 className="font-medium text-base sm:text-lg mb-3 sm:mb-4">Customer Reviews ({reviewCount})</h3>
 
         {reviews.length === 0 ? (
-          <div className="text-gray-500 italic">No reviews yet. Be the first to review this product!</div>
+          <div className="text-gray-500 italic text-sm sm:text-base">No reviews yet. Be the first to review this product!</div>
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-5 sm:space-y-6">
             {reviews.map((review) => (
-              <div key={review._id} className="border-b pb-6">
-                <div className="flex justify-between items-start">
+              <div key={review._id} className="border-b pb-5 sm:pb-6">
+                <div className="flex justify-between items-start flex-wrap gap-2">
                   <div>
                     <div className="flex items-center gap-2">
-                      <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200">
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full overflow-hidden bg-gray-200">
                         <img
                           src={review.userId.profileImage}
                           alt={review.userId.name}
@@ -571,11 +571,11 @@ const ProductReviews = ({ productId }) => {
                         />
                       </div>
                       <div>
-                        <p className="font-medium">{review.userId.name}</p>
+                        <p className="font-medium text-sm sm:text-base">{review.userId.name}</p>
                         <div className="flex">{renderStarRating(review.rating)}</div>
                       </div>
                     </div>
-                    <p className="text-sm text-gray-500 mt-1">
+                    <p className="text-xs sm:text-sm text-gray-500 mt-1">
                       {format(new Date(review.createdAt), 'MMM dd, yyyy')}
                       {review.updatedAt > review.createdAt && ' (Edited)'}
                     </p>
@@ -583,7 +583,7 @@ const ProductReviews = ({ productId }) => {
 
                   {/* Review Actions */}
                   {currentUser && currentUser._id === review.userId._id && (
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 text-xs sm:text-sm">
                       <button
                         onClick={() => handleEditReview(review)}
                         className="text-gray-600 hover:text-gray-900"
@@ -601,16 +601,16 @@ const ProductReviews = ({ productId }) => {
                 </div>
 
                 <div className="mt-2">
-                  <p className="text-gray-700">{review.content}</p>
+                  <p className="text-gray-700 text-sm sm:text-base">{review.content}</p>
                 </div>
 
                 {/* Reply Button */}
                 {token && (
                   <button
                     onClick={() => setReplyToReview(review)}
-                    className="text-sm text-blue-600 hover:text-blue-800 mt-2 flex items-center gap-1"
+                    className="text-xs sm:text-sm text-blue-600 hover:text-blue-800 mt-2 flex items-center gap-1"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 sm:h-4 sm:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
                     </svg>
                     Reply
@@ -619,13 +619,13 @@ const ProductReviews = ({ productId }) => {
 
                 {/* Replies */}
                 {review.replies && review.replies.length > 0 && (
-                  <div className="mt-4 pl-8 space-y-4">
-                    <h4 className="text-sm font-medium text-gray-700">Replies</h4>
+                  <div className="mt-3 sm:mt-4 pl-4 sm:pl-8 space-y-3 sm:space-y-4">
+                    <h4 className="text-xs sm:text-sm font-medium text-gray-700">Replies</h4>
                     {review.replies.map((reply) => (
-                      <div key={reply._id} className="border-l-2 border-gray-200 pl-4">
-                        <div className="flex justify-between items-start">
-                          <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-200">
+                      <div key={reply._id} className="border-l-2 border-gray-200 pl-3 sm:pl-4">
+                        <div className="flex justify-between items-start flex-wrap gap-2">
+                          <div className="flex items-center gap-1 sm:gap-2">
+                            <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full overflow-hidden bg-gray-200">
                               <img
                                 src={reply.userId.profileImage}
                                 alt={reply.userId.name}
@@ -636,7 +636,7 @@ const ProductReviews = ({ productId }) => {
                               />
                             </div>
                             <div>
-                              <p className="font-medium text-sm">{reply.userId.name}</p>
+                              <p className="font-medium text-xs sm:text-sm">{reply.userId.name}</p>
                               <p className="text-xs text-gray-500">
                                 {format(new Date(reply.createdAt), 'MMM dd, yyyy')}
                               </p>
@@ -647,7 +647,7 @@ const ProductReviews = ({ productId }) => {
                           {currentUser && currentUser._id === reply.userId._id && (
                             <button
                               onClick={() => handleDeleteReply(review._id, reply._id)}
-                              className="text-red-600 hover:text-red-800 text-sm"
+                              className="text-red-600 hover:text-red-800 text-xs sm:text-sm"
                             >
                               Delete
                             </button>
@@ -655,7 +655,7 @@ const ProductReviews = ({ productId }) => {
                         </div>
 
                         <div className="mt-1">
-                          <p className="text-gray-700 text-sm">{reply.content}</p>
+                          <p className="text-gray-700 text-xs sm:text-sm">{reply.content}</p>
                         </div>
                       </div>
                     ))}

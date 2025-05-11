@@ -155,7 +155,7 @@ const AdminSignup = ({ setShowSignup, setToken }) => {
             >
                 <div className="w-full max-w-md">
                     <motion.h2
-                        className="text-2xl font-semibold mb-6 text-gray-700"
+                        className="text-2xl font-semibold mb-6 text-gray-700 text-center"
                         initial={{ opacity: 0, y: -20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.2, duration: 0.5 }}

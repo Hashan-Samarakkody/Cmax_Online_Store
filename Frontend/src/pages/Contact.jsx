@@ -53,15 +53,9 @@ const Contact = () => {
             animate={{ opacity: 1 }}
             transition={{ delay: 1.0, duration: 0.5 }}
           >
-            1 lane,<br />New York, USA
-          </motion.p>
-          <motion.p
-            className='text-gray-500'
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1.2, duration: 0.5 }}
-          >
-            Tel: (+1) 234 567 890 <br />Email: z2bX0@example.com
+            <p onClick={() => window.open('https://maps.app.goo.gl/hVnYzQiTcsq4Z9Bk6')}><strong>Address</strong>: 22/B, Kandy - Colombo Rd, Kiribathkumbura</p>
+            <p onClick={() => window.open('tel:+94716263856')}><strong>Tel:</strong> (+94) 71 626 3856</p>
+            <p onClick={() => window.open('mailto:cmaxinfohelp@gmail.com')}><strong>Email:</strong> cmaxinfohelp@gmail.com</p>
           </motion.p>
           <motion.p
             className='font-semibold text-xl text-gray-600'
@@ -77,7 +71,8 @@ const Contact = () => {
             animate={{ opacity: 1 }}
             transition={{ delay: 1.6, duration: 0.5 }}
           >
-            1 Lorem ipsum dolor sit amet consectetur adipisicing elit.<br />New York, USA
+            We are always looking for talented individuals to join our team. If you are
+            interested in a career with us, please send your resume and cover letter to <a href="mailto:cmaxinfohelp@gmail.com">cmaxinfohelp@gmail.com</a>
           </motion.p>
           <motion.button
             className='border border-black px-8 py-4 text-sm hover:bg-black hover:text-white transition-all duration-300 rounded-sm'

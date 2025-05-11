@@ -4,6 +4,7 @@ import { backendUrl } from '../App';
 import { toast } from 'react-toastify';
 import { assets } from '../assets/assets';
 import DOMPurify from 'dompurify';
+import { processImage } from '../utils/imageProcessor';
 
 const Add = ({ token }) => {
   const [categories, setCategories] = useState([]);
@@ -24,6 +25,7 @@ const Add = ({ token }) => {
   const [sizes, setSizes] = useState([]);
   const [colors, setColors] = useState([]);
   const [currentColor, setCurrentColor] = useState('');
+  const [processingImage, setProcessingImage] = useState(false);
 
   // Save form state to sessionStorage whenever the component unmounts
   useEffect(() => {
@@ -118,6 +120,55 @@ const Add = ({ token }) => {
   }, [productId, name, description, price, image1, selectedCategory,
     selectedSubCategory, colors, sizes]);
 
+  /**
+   * Handles image upload with processing
+   * @param {Event} e - The change event from the file input
+   * @param {Function} setImage - The state setter function for the image
+   */
+  const handleImageUpload = async (e, setImage) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    try {
+      setProcessingImage(true);
+
+      // Process the image
+      const processedImage = await processImage(file);
+
+      // Set the processed image
+      setImage(processedImage);
+
+      toast.success('Image processed successfully');
+    } catch (error) {
+      toast.error(error.message || 'Failed to process image');
+      console.error('Image processing error:', error);
+    } finally {
+      setProcessingImage(false);
+    }
+  };
+
+  // Function to remove an image
+  const removeImage = (index) => {
+    switch (index) {
+      case 0:
+        setImage1(false);
+        break;
+      case 1:
+        setImage2(false);
+        break;
+      case 2:
+        setImage3(false);
+        break;
+      case 3:
+        setImage4(false);
+        break;
+      default:
+        break;
+    }
+
+    toast.info('Image removed');
+  };
+
   const onSubmitHandler = async (e) => {
     e.preventDefault();
 
@@ -167,23 +218,6 @@ const Add = ({ token }) => {
     if (images.length === 0) {
       toast.error('Please upload at least one image.');
       return;
-    }
-
-    // Validate Image Dimensions
-    for (const image of images) {
-      const img = new Image();
-      img.src = URL.createObjectURL(image);
-
-      const isValidSize = await new Promise((resolve) => {
-        img.onload = () => {
-          resolve(img.width === 700 && img.height === 700);
-        };
-      });
-
-      if (!isValidSize) {
-        toast.error('Each image must be exactly 700 × 700 pixels.');
-        return;
-      }
     }
 
     // Validate Colors (if enabled)
@@ -277,6 +311,7 @@ const Add = ({ token }) => {
       </div>
 
       <form onSubmit={onSubmitHandler} className="flex flex-col w-full items-start gap-3">
+        
         {/* Product ID Input */}
         <div className="w-full">
           <p className="font-semibold mb-2">Product ID</p>
@@ -289,6 +324,7 @@ const Add = ({ token }) => {
             required
           />
         </div>
+
         {/* Product Name */}
         <div className="w-full">
           <p className="font-semibold mb-2">Product Name</p>
@@ -301,6 +337,7 @@ const Add = ({ token }) => {
             required
           />
         </div>
+
         {/* Product Description */}
         <div className="w-full">
           <p className="font-semibold mb-2">Product Description</p>
@@ -324,6 +361,7 @@ const Add = ({ token }) => {
             style={{ resize: "none" }} // Prevent manual resizing
           />
         </div>
+
         {/* Category and Subcategory */}
         <div className="flex flex-col sm:flex-row gap-2 w-full sm:gap-8">
           <div>
@@ -371,6 +409,7 @@ const Add = ({ token }) => {
             />
           </div>
         </div>
+
         {/* Sizes Toggle */}
         <div className="flex gap-2 mt-2">
           <input
@@ -383,6 +422,7 @@ const Add = ({ token }) => {
             Enable Sizes
           </label>
         </div>
+
         {/* Sizes Selection (only if hasSizes is true) */}
         {hasSizes && (
           <div>
@@ -408,6 +448,7 @@ const Add = ({ token }) => {
             </div>
           </div>
         )}
+
         {/* Colors Toggle */}
         <div className="flex gap-2 mt-2">
           <input
@@ -420,6 +461,7 @@ const Add = ({ token }) => {
             Enable Colors
           </label>
         </div>
+
         {/* Color Input (only if hasColors is true) */}
         {hasColors && (
           <div className="w-full max-w-[590px]">
@@ -460,6 +502,7 @@ const Add = ({ token }) => {
             </div>
           </div>
         )}
+
         {/* Bestseller Toggle */}
         <div className="flex gap-2 mt-2">
           <input
@@ -472,33 +515,64 @@ const Add = ({ token }) => {
             Add to bestseller
           </label>
         </div>
+
         {/* Image Upload */}
         <div>
           <p className="font-semibold mb-2">Upload Images</p>
-          <p className='text-sm text-red-500 mb-2'><i>* Only 700 × 700 images are allowed</i></p>
+          <p className='text-sm text-red-500 mb-2'>
+            <i>✸ First image will always be the main image (display image)</i>
+          </p>
+          <p className='text-sm text-red-500 mb-2'>
+            <i>✸ Only PNG, JPEG, and JPG files are allowed</i>
+          </p>
+          <p className='text-sm text-red-500 mb-2'>
+            <i>✸ Images will be automatically resized to 700 × 700 pixels</i>
+          </p>
           <div className="flex gap-2">
             {[image1, image2, image3, image4].map((image, index) => (
-              <label key={index} htmlFor={`image${index + 1}`} className="cursor-pointer">
-                <img
-                  className="w-40 h-40 object-cover rounded-sm border border-gray-300"
-                  src={!image ? assets.upload_area : URL.createObjectURL(image)}
-                  alt={`Preview ${index + 1}`}
-                />
-                <input
-                  onChange={(e) => {
-                    const setImage = [setImage1, setImage2, setImage3, setImage4][index];
-                    setImage(e.target.files[0]);
-                  }}
-                  type="file"
-                  id={`image${index + 1}`}
-                  hidden
-                />
-              </label>
+              <div key={index} className="relative">
+                <label
+                  htmlFor={`image${index + 1}`}
+                  className={`cursor-pointer block ${processingImage ? 'opacity-50 pointer-events-none' : ''}`}
+                >
+                  <img
+                    className="w-40 h-40 object-cover rounded-sm border border-gray-300"
+                    src={!image ? assets.upload_area : URL.createObjectURL(image)}
+                    alt={`Preview ${index + 1}`}
+                  />
+                  <input
+                    onChange={(e) => handleImageUpload(e, [setImage1, setImage2, setImage3, setImage4][index])}
+                    type="file"
+                    id={`image${index + 1}`}
+                    accept="image/png, image/jpeg, image/jpg"
+                    hidden
+                    disabled={processingImage}
+                  />
+                </label>
+                {image && (
+                  <button
+                    type="button"
+                    onClick={() => removeImage(index)}
+                    className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center shadow-md"
+                    title="Remove image"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
             ))}
           </div>
+          {processingImage && (
+            <p className="text-blue-500 mt-2">Processing image, please wait...</p>
+          )}
         </div>
+
         {/* Submit Button */}
-        <button type="submit" className="w-28 py-3 mt-4 bg-black text-white rounded-sm">
+        <button
+          type="submit"
+          className="w-28 py-3 mt-4 bg-black text-white rounded-sm"
+          disabled={processingImage}
+        >
           ADD
         </button>
       </form>
