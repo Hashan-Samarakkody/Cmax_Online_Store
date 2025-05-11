@@ -11,15 +11,20 @@ const ProfileSidebar = ({ user, setActiveSection, activeSection, onShowPasswordM
     const [uploading, setUploading] = useState(false);
     const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
-    // Debug logging
-    console.log("ProfileSidebar user data:", user);
-
     // Get profile image URL with fallback to default avatar
     const getProfileImageUrl = () => {
         if (user?.profileImage) {
             return user.profileImage;
         }
         return assets.user_placeholder;
+    };
+
+    // Get user initials for avatar fallback
+    const getUserInitial = () => {
+        if (user?.firstName) {
+            return user.firstName.charAt(0).toUpperCase();
+        }
+        return user?.email?.charAt(0).toUpperCase() || '?';
     };
 
     // Handle image change
@@ -94,15 +99,24 @@ const ProfileSidebar = ({ user, setActiveSection, activeSection, onShowPasswordM
             <div className="flex justify-center py-6 bg-gray-50">
                 <div className="relative">
                     <div className="h-24 w-24 rounded-full overflow-hidden border-4 border-white shadow-md">
-                        <img
-                            src={getProfileImageUrl()}
-                            alt={user?.firstName || "Profile"}
-                            className="h-full w-full object-cover"
-                            onError={(e) => {
-                                e.target.onerror = null;
-                                e.target.src = assets.user_placeholder;
-                            }}
-                        />
+                        {user?.profileImage ? (
+                            <img
+                                src={user.profileImage}
+                                alt={user?.firstName || "Profile"}
+                                className="h-full w-full object-cover"
+                                onError={(e) => {
+                                    e.target.onerror = null;
+                                    // Instead of using placeholder, show initial
+                                    e.target.style.display = 'none';
+                                    e.target.parentNode.classList.add('bg-green-600');
+                                    e.target.parentNode.innerHTML = `<div class="h-full w-full flex items-center justify-center text-white text-3xl font-bold">${getUserInitial()}</div>`;
+                                }}
+                            />
+                        ) : (
+                            <div className="h-full w-full flex items-center justify-center bg-green-300 text-white text-3xl font-bold">
+                                {getUserInitial()}
+                            </div>
+                        )}
                         {uploading && (
                             <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
                                 <div className="loader animate-spin rounded-full h-8 w-8 border-t-2 border-white"></div>
