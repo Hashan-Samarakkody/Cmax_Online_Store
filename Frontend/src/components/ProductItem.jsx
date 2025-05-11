@@ -57,15 +57,17 @@ const ProductItem = ({ id, image, name, price }) => {
                     key={i}
                     src={i <= roundedRating ? assets.star_icon : assets.star_dull_icon}
                     alt={`${i <= roundedRating ? "filled" : "empty"} star`}
-                    className="w-5 h-5" // Made stars slightly bigger
+                    className="w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5" // Responsive star sizes
                 />
             );
         }
 
         return (
-            <div className="flex items-center">
-                {stars}
-                <span className="text-sm ml-1">({roundedRating.toFixed(1)})</span>
+            <div className="flex items-center flex-wrap">
+                <div className="flex">
+                    {stars}
+                </div>
+                <span className="text-xs sm:text-sm ml-1">({roundedRating.toFixed(1)})</span>
             </div>
         );
     };
@@ -75,9 +77,9 @@ const ProductItem = ({ id, image, name, price }) => {
             <div className='overflow-hidden rounded-lg'>
                 <img className='h-fit hover:scale-115 transition ease-in-out' src={productImage} alt={name} />
             </div>
-            <p className='pt-2 pb-1 text-lg text-wrap px-2 font-semibold'>{name}</p>
-            <div className='flex justify-between items-center px-2 pb-2'>
-                <p className='text-md'>{currency}{price}</p>
+            <p className='pt-2 pb-1 text-base sm:text-lg text-wrap px-2 font-semibold'>{name}</p>
+            <div className='flex flex-col sm:flex-row sm:justify-between sm:items-center px-2 pb-2 gap-1'>
+                <p className='text-sm sm:text-md font-medium'>{currency}{price}</p>
                 {renderStars(rating)}
             </div>
         </Link>

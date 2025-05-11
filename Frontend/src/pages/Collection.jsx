@@ -229,7 +229,7 @@ const Collection = () => {
           <div className='border-t py-2'>
             <button
               onClick={() => setShowFilter(!showFilter)}
-              className='flex items-center gap-2 text-xl font-medium px-4'
+              className='flex items-center gap-2 text-base sm:text-xl font-medium px-4'
             >
               FILTERS
               <img
@@ -240,10 +240,23 @@ const Collection = () => {
             </button>
           </div>
 
-          <div className='flex'>
-            {/* Filter Section - Only takes space when visible */}
+          <div className='flex flex-col md:flex-row'>
+            {/* Filter Section - Mobile overlay on small screens, sidebar on larger screens */}
             {showFilter && (
-              <div className='w-60 px-4 transition-all duration-300 ease-in-out'>
+              <div className={`
+              md:w-60 px-4 transition-all duration-300 ease-in-out
+              fixed md:static top-0 left-0 z-50 h-full md:h-auto w-full md:w-60
+              bg-white md:bg-transparent pt-16 md:pt-0
+              md:border-0 overflow-y-auto
+            `}>
+                {/* Close button for mobile only */}
+                <button
+                  className="absolute top-2 right-4 text-2xl md:hidden"
+                  onClick={() => setShowFilter(false)}
+                >
+                  ✕
+                </button>
+
                 <div className='border rounded-xl border-gray-300 pl-5 my-2 py-3'>
                   <p className='text-gray-700 cursor-pointer mb-3 text-sm font-semibold'>CATEGORIES</p>
                   <div className='flex flex-col gap-2 text-sm font-light text-gray-700'>
@@ -280,21 +293,29 @@ const Collection = () => {
                     </div>
                   </div>
                 )}
+
+                {/* Apply button for mobile only */}
+                <button
+                  className="w-full bg-gray-800 text-white py-2 rounded-lg mt-4 md:hidden"
+                  onClick={() => setShowFilter(false)}
+                >
+                  Apply Filters
+                </button>
               </div>
             )}
 
             {/* Products Section - Takes full width when filter is collapsed */}
             <div className='flex-1'>
-              <div className='flex mt-2 justify-between text-base sm:text-xl mb-4 px-4'>
+              <div className='flex mt-2 justify-between items-center text-base sm:text-xl mb-4 px-4 flex-wrap gap-2'>
                 <Title text1={'ALL'} text2={'COLLECTIONS'} />
-                <select onChange={(e) => setSortType(e.target.value)} className='rounded-sm border border-gray-400 text-sm px-2'>
+                <select onChange={(e) => setSortType(e.target.value)} className='rounded-sm border border-gray-400 text-xs sm:text-sm px-2 py-1'>
                   <option value="relavant">Sort by: Relevant</option>
                   <option value="low-high">Sort by: Low to High</option>
                   <option value="high-low">Sort by: High to Low</option>
                 </select>
               </div>
 
-              <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 gap-y-6 px-4'>
+              <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4 gap-y-4 sm:gap-y-6 px-2 sm:px-4'>
                 {filterProducts.length > 0 ? (
                   filterProducts.map((item) => (
                     <ProductItem key={item._id} id={item._id} image={item.images} name={item.name} price={item.price} />
@@ -312,6 +333,14 @@ const Collection = () => {
               </div>
             </div>
           </div>
+
+          {/* Overlay backdrop when filter is open on mobile */}
+          {showFilter && (
+            <div
+              className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
+              onClick={() => setShowFilter(false)}
+            ></div>
+          )}
         </div>
       )}
     </>
