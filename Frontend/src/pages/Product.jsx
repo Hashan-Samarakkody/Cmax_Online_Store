@@ -290,8 +290,10 @@ const Product = () => {
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-4">
             <button
               onClick={() => {
-                handleAddToCart()
-                toast.success('Product added to cart!', { autoClose: 800 });
+                handleAddToCart();
+                if(response.data.success) {
+                  toast.success('Product added to cart!')
+                }
               }}
               className='bg-black text-white px-6 sm:px-8 py-3 text-sm active:bg-gray-700 rounded-lg cursor-pointer hover:bg-gray-800 transition-colors duration-200 ease-in-out w-full sm:w-auto'
             >
