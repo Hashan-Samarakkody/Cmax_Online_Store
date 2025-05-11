@@ -722,7 +722,7 @@ const Dashboard = () => {
                     {product.quantitySold !== undefined ? product.quantitySold : 'N/A'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    ${product.revenue !== undefined ? Number(product.revenue).toFixed(2) : '0.00'}
+                    Rs.{product.revenue !== undefined ? Number(product.revenue).toFixed(2) : '0.00'}
                   </td>
                 </tr>
               ))}

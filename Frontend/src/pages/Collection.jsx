@@ -245,7 +245,7 @@ const Collection = () => {
             {showFilter && (
               <div className={`
               md:w-60 px-4 transition-all duration-300 ease-in-out
-              fixed md:static top-0 left-0 z-50 h-full md:h-auto w-full md:w-60
+              fixed md:static top-0 left-0 h-full md:h-auto w-full
               bg-white md:bg-transparent pt-16 md:pt-0
               md:border-0 overflow-y-auto
             `}>
