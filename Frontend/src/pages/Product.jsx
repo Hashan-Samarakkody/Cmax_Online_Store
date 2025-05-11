@@ -211,36 +211,44 @@ const Product = () => {
   }
 
   return (
-    <div className='border-t-2 pt-10 transition-opacity ease-in duration-500 opacity-100'>
+    <div className='border-t-2 pt-6 md:pt-10 px-4 sm:px-6 md:px-8 lg:px-0 transition-opacity ease-in duration-500 opacity-100'>
       {/* Product Data */}
-      <div className='flex gap-12 sm:gap-12 flex-col sm:flex-row'>
+      <div className='flex flex-col sm:flex-row gap-6 sm:gap-12'>
         {/* Product Images */}
         <div className='flex-1 flex flex-col-reverse gap-3 sm:flex-row'>
-          <div className='flex sm:flex-col overflow-x-auto sm:overflow-y-scroll justify-between sm:justify-normal sm:w-[18.7%] w-full'>
+          <div className='flex sm:flex-col overflow-x-auto sm:overflow-y-auto max-h-[500px] pb-2 sm:pb-0 scrollbar-hide sm:scrollbar-default sm:w-[18.7%] w-full'>
             {productData.images.map((item, index) => (
-              <img onClick={() => setImage(item)} className='w-[24%] sm:w-full sm:mb-3 flex-shrink-0 cursor-pointer' src={item} alt="" key={index} />
+              <img
+                onClick={() => setImage(item)}
+                className={`w-[24%] sm:w-full sm:mb-3 flex-shrink-0 cursor-pointer border rounded ${image === item ? 'border-blue-500' : 'border-transparent'}`}
+                src={item}
+                alt={`${productData.name} - view ${index + 1}`}
+                key={index}
+              />
             ))}
           </div>
           <div className='w-full sm:w-[80%]'>
-            <img className='w-full h-auto' src={image} alt="" />
+            <img className='w-full h-auto rounded-lg' src={image} alt={productData.name} />
           </div>
         </div>
+
         {/* Product Details */}
         <div className='flex-1'>
-          <h1 className='text-3xl font-medium'>{productData.name}</h1>
+          <h1 className='text-2xl sm:text-3xl font-medium'>{productData.name}</h1>
 
-          <p className='text-xl mt-5 font-medium'>{currency}{productData.price}</p>
-          <p className='mt-5 text-gray-600 md:w-4/5 text-justify'>{productData.description}</p>
+          <p className='text-xl mt-3 sm:mt-5 font-medium'>{currency}{productData.price}</p>
+          <p className='mt-3 sm:mt-5 text-gray-600 text-sm sm:text-base text-justify'>{productData.description}</p>
+
           {/* Size selection */}
           {productData.hasSizes && (
-            <div className='flex flex-col gap-4 my-8'>
-              <p>Select Size</p>
-              <div className='flex gap-2'>
+            <div className='flex flex-col gap-3 my-6 sm:my-8'>
+              <p className='font-semibold'>Select Size</p>
+              <div className='flex flex-wrap gap-2'>
                 {productData.sizes.map((item, index) => (
                   <button
                     onClick={() => setSize(item)}
                     key={index}
-                    className={`border border-gray-400 py-2 px-4 rounded-lg ${item === size ? 'bg-gray-400 text-white' : ''}`}
+                    className={`border border-gray-400 py-2 px-4 rounded-lg ${item === size ? 'bg-gray-400 text-white' : ''} text-sm sm:text-base`}
                   >
                     {item}
                   </button>
@@ -248,11 +256,12 @@ const Product = () => {
               </div>
             </div>
           )}
+
           {/* Color selection */}
           {productData.hasColors && (
-            <div className='flex flex-col gap-4 my-8'>
+            <div className='flex flex-col gap-3 my-6 sm:my-8'>
               <p className='font-semibold'>Select Color</p>
-              <div className='flex gap-4'>
+              <div className='flex flex-wrap gap-4'>
                 {productData.colors.map((colorItem, index) => (
                   <div
                     key={index}
@@ -276,54 +285,58 @@ const Product = () => {
               </div>
             </div>
           )}
-          <br />
-          <button
-            onClick={() => {
-              handleAddToCart()
-            toast.success('Product added to cart!', { autoClose: 800 });
-            }}
-            className='bg-black text-white px-8 py-3 text-sm active:bg-gray-700 rounded-lg cursor-pointer hover:bg-gray-800 transition-colors duration-200 ease-in-out'
-          >
-            Add to Cart
-          </button>
-          <button
-            onClick={() => {
-              handleWishlistToggle()
-            }}
-            className={`cursor-pointer mt-4 border border-black px-8 py-3 text-sm rounded-lg flex items-center gap-2 ${isInWishlist ? 'bg-red-50 border-red-300' : 'bg-white'
-              } hover:bg-green-200 transition-colors duration-200 ease-in-out`}
-          >
-            <FiHeart className={isInWishlist ? 'fill-red-500 text-red-500' : ''} />
-            {isInWishlist ? 'Remove from Wishlist' : 'Add to Wishlist'}
-          </button>
-          <hr className='mt-8 sm:w-4/5' />
-          <div className='text-sm text-gray-500 mt-5 flex flex-col gap-1'>
+
+          {/* Action Buttons */}
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-4">
+            <button
+              onClick={() => {
+                handleAddToCart()
+                toast.success('Product added to cart!', { autoClose: 800 });
+              }}
+              className='bg-black text-white px-6 sm:px-8 py-3 text-sm active:bg-gray-700 rounded-lg cursor-pointer hover:bg-gray-800 transition-colors duration-200 ease-in-out w-full sm:w-auto'
+            >
+              Add to Cart
+            </button>
+            <button
+              onClick={() => {
+                handleWishlistToggle()
+              }}
+              className={`cursor-pointer border border-black px-6 sm:px-8 py-3 text-sm rounded-lg flex items-center justify-center gap-2 ${isInWishlist ? 'bg-red-50 border-red-300' : 'bg-white'
+                } hover:bg-green-200 transition-colors duration-200 ease-in-out w-full sm:w-auto`}
+            >
+              <FiHeart className={isInWishlist ? 'fill-red-500 text-red-500' : ''} />
+              {isInWishlist ? 'Remove from Wishlist' : 'Add to Wishlist'}
+            </button>
+          </div>
+
+          <hr className='mt-6 sm:mt-8 w-full sm:w-4/5' />
+          <div className='text-xs sm:text-sm text-gray-500 mt-4 sm:mt-5 flex flex-col gap-1'>
             <p>100% Original Product.</p>
             <p>Cash on delivery is available on this product.</p>
             <p>Easy return and exchange policy within 7 days.</p>
           </div>
         </div>
       </div>
+
       {/* Description and Reviews Tabs */}
-      <div className='mt-20'>
-        <div className='flex'>
+      <div className='mt-12 sm:mt-20'>
+        <div className='flex w-full overflow-hidden'>
           <button
             onClick={() => setActiveTab('description')}
-            className={`px-5 py-3 text-sm border ${activeTab === 'description' ? 'font-bold' : ''}`}
+            className={`px-3 sm:px-5 py-2 sm:py-3 text-sm border flex-1 ${activeTab === 'description' ? 'font-bold bg-gray-50' : ''}`}
           >
             Description
           </button>
           <button
             onClick={() => setActiveTab('reviews')}
-            className={`px-5 py-3 text-sm border ${activeTab === 'reviews' ? 'font-bold' : ''}`}
+            className={`px-3 sm:px-5 py-2 sm:py-3 text-sm border flex-1 ${activeTab === 'reviews' ? 'font-bold bg-gray-50' : ''}`}
           >
             Reviews
           </button>
         </div>
 
-
         {/* Tab content */}
-        <div className='border p-6'>
+        <div className='border p-4 sm:p-6'>
           {activeTab === 'description' ? (
             <div className='flex flex-col gap-4 text-sm text-gray-500 text-justify'>
               <p>
@@ -346,10 +359,10 @@ const Product = () => {
         </div>
       </div>
 
-      <div className="mt-12">
+      <div className="mt-8 sm:mt-12">
         <RecommendedProducts productId={productId} type="alsoBought" />
       </div>
-      
+
       {/* Related Products */}
       <RelatedProducts category={productData.category} subCategory={productData.subCategory} />
     </div>

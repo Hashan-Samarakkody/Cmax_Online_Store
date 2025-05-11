@@ -354,7 +354,7 @@ const PlaceOrder = () => {
         case 'cod':
           const response = await axios.post(backendUrl + '/api/order/place', orderData, { headers: { token } });
           if (response.data.success) {
-            shopContext.recordPurchaseInteractions(shopContext.cartItems);
+            recordPurchaseInteractions(cartItems);
             setCartItems({});
             navigate('/orders');
           } else {
@@ -382,18 +382,18 @@ const PlaceOrder = () => {
   };
 
   return (
-    <form onSubmit={onSubmitHandler} className="flex flex-col sm:flex-row justify-between gap-4 pt-5 sm:pt-14 min-h-[80vh] border-t">
-      <div className="flex flex-col gap-4 w-full sm:max-w-[480px]">
-        <div className="text-xl sm:text-2xl my-3">
+    <form onSubmit={onSubmitHandler} className="flex flex-col px-4 md:px-6 md:flex-row justify-between gap-4 pt-5 md:pt-14 min-h-[80vh] border-t">
+      <div className="flex flex-col gap-4 w-full md:max-w-[480px]">
+        <div className="text-lg md:text-2xl my-3">
           <Title text1={'DELIVERY'} text2={'INFORMATION'} />
         </div>
 
-        {/* Address selection options - improved UI */}
-        <div className="mb-4 p-4 bg-gray-50 rounded-md border border-gray-200">
-          <p className="font-medium mb-3 text-gray-700">Choose delivery address:</p>
+        {/* Address selection options - mobile optimized */}
+        <div className="mb-4 p-3 md:p-4 bg-gray-50 rounded-md border border-gray-200">
+          <p className="font-medium mb-3 text-sm md:text-base text-gray-700">Choose delivery address:</p>
 
-          <div className="flex flex-wrap gap-4 mb-3">
-            <label className="flex items-center cursor-pointer">
+          <div className="flex flex-col md:flex-row gap-2 md:gap-4 mb-3">
+            <label className="flex items-center cursor-pointer py-1">
               <input
                 type="radio"
                 checked={addressOption === 'new'}
@@ -405,7 +405,7 @@ const PlaceOrder = () => {
             </label>
 
             {userAddresses.some(addr => addr.isDefault) && (
-              <label className="flex items-center cursor-pointer">
+              <label className="flex items-center cursor-pointer py-1">
                 <input
                   type="radio"
                   checked={addressOption === 'default'}
@@ -413,12 +413,12 @@ const PlaceOrder = () => {
                   className="mr-2 w-4 h-4 accent-blue-500"
                   name="addressOption"
                 />
-                <span className="text-sm">Use default Infromation</span>
+                <span className="text-sm">Use default information</span>
               </label>
             )}
 
             {userAddresses.length > 0 && (
-              <label className="flex items-center cursor-pointer">
+              <label className="flex items-center cursor-pointer py-1">
                 <input
                   type="radio"
                   checked={addressOption === 'saved'}
@@ -434,7 +434,7 @@ const PlaceOrder = () => {
           {/* Saved addresses dropdown */}
           {addressOption === 'saved' && userAddresses.length > 0 && (
             <div className="mt-3 p-2 border border-gray-300 rounded">
-              <p className="text-sm mb-2 text-gray-500">Select an address:</p>
+              <p className="text-xs md:text-sm mb-2 text-gray-500">Select an address:</p>
               <div className="max-h-40 overflow-y-auto">
                 {userAddresses.map((address) => (
                   <div
@@ -442,8 +442,8 @@ const PlaceOrder = () => {
                     onClick={() => handleAddressSelect(address)}
                     className={`p-2 cursor-pointer hover:bg-gray-100 rounded ${selectedAddress === address._id ? 'bg-blue-50 border-l-4 border-blue-500' : ''}`}
                   >
-                    <p className="font-medium">{address.addressName || 'Address'} {address.isDefault && <span className="text-xs text-blue-600">(Default)</span>}</p>
-                    <p className="text-xs text-gray-500">
+                    <p className="font-medium text-sm">{address.addressName || 'Address'} {address.isDefault && <span className="text-xs text-blue-600">(Default)</span>}</p>
+                    <p className="text-xs text-gray-500 break-words">
                       {address.street}, {address.city}, {address.state}, {address.postalCode}
                     </p>
                   </div>
@@ -453,8 +453,8 @@ const PlaceOrder = () => {
           )}
         </div>
 
-        {/* Form fields with better visual indication of which fields are currently editable */}
-        <div className="flex gap-3">
+        {/* Form fields with mobile optimization */}
+        <div className="flex flex-col md:flex-row gap-3">
           <input
             required
             onChange={onChangeHandler}
@@ -462,7 +462,7 @@ const PlaceOrder = () => {
             value={formData.firstName}
             type="text"
             placeholder="First name"
-            className="border border-gray-300 rounded px-3.5 py-1.5 w-full"
+            className="border border-gray-300 rounded px-3 py-2 md:py-1.5 w-full text-sm md:text-base"
           />
           <input
             required
@@ -471,7 +471,7 @@ const PlaceOrder = () => {
             value={formData.lastName}
             type="text"
             placeholder="Last name"
-            className="border border-gray-300 rounded px-3.5 py-1.5 w-full"
+            className="border border-gray-300 rounded px-3 py-2 md:py-1.5 w-full text-sm md:text-base"
           />
         </div>
 
@@ -482,7 +482,7 @@ const PlaceOrder = () => {
           value={formData.email}
           type="email"
           placeholder="Email Address"
-          className="border border-gray-300 rounded px-3.5 py-1.5 w-full"
+          className="border border-gray-300 rounded px-3 py-2 md:py-1.5 w-full text-sm md:text-base"
         />
 
         <input
@@ -492,11 +492,11 @@ const PlaceOrder = () => {
           value={formData.street}
           type="text"
           placeholder="Street"
-          className={`border ${fieldsDisabled ? 'bg-gray-100 border-gray-200' : 'border-gray-300'} rounded px-3.5 py-1.5 w-full`}
+          className={`border ${fieldsDisabled ? 'bg-gray-100 border-gray-200' : 'border-gray-300'} rounded px-3 py-2 md:py-1.5 w-full text-sm md:text-base`}
           disabled={fieldsDisabled}
         />
 
-        <div className="flex gap-3">
+        <div className="flex flex-col md:flex-row gap-3">
           <input
             required
             onChange={onChangeHandler}
@@ -504,11 +504,11 @@ const PlaceOrder = () => {
             value={formData.city}
             type="text"
             placeholder="City"
-            className={`border ${fieldsDisabled ? 'bg-gray-100 border-gray-200' : 'border-gray-300'} rounded px-3.5 py-1.5 w-full`}
+            className={`border ${fieldsDisabled ? 'bg-gray-100 border-gray-200' : 'border-gray-300'} rounded px-3 py-2 md:py-1.5 w-full text-sm md:text-base`}
             disabled={fieldsDisabled}
           />
 
-          <div className="relative w-full" ref={autocompleteRef}>
+          <div className="relative w-full mt-3 md:mt-0" ref={autocompleteRef}>
             <input
               required
               value={districtInput}
@@ -516,41 +516,39 @@ const PlaceOrder = () => {
               onFocus={() => !fieldsDisabled && setShowSuggestions(true)}
               type="text"
               placeholder="District"
-              className={`border ${fieldsDisabled ? 'bg-gray-100 border-gray-200' : 'border-gray-300'} rounded px-3.5 py-1.5 w-full`}
+              className={`border ${fieldsDisabled ? 'bg-gray-100 border-gray-200' : 'border-gray-300'} rounded px-3 py-2 md:py-1.5 w-full text-sm md:text-base`}
               disabled={fieldsDisabled}
             />
             {showSuggestions && !fieldsDisabled && (
-              <ul className="absolute z-10 w-full mt-1 max-h-60 overflow-y-auto bg-white border border-gray-300 rounded-md shadow-lg">
+              <ul className="absolute z-20 w-full mt-1 max-h-52 overflow-y-auto bg-white border border-gray-300 rounded-md shadow-lg">
                 {filteredDistricts.length > 0 ? (
                   filteredDistricts.map((district, index) => (
                     <li
                       key={index}
-                      className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                      className="px-4 py-2.5 hover:bg-gray-100 cursor-pointer text-sm"
                       onClick={() => handleSelectDistrict(district)}
                     >
                       {district}
                     </li>
                   ))
                 ) : (
-                  <li className="px-4 py-2 text-gray-500">No districts found</li>
+                  <li className="px-4 py-2.5 text-gray-500 text-sm">No districts found</li>
                 )}
               </ul>
             )}
           </div>
         </div>
 
-        <div className="flex gap-3">
-          <input
-            required
-            onChange={onChangeHandler}
-            name="postalCode"
-            value={formData.postalCode}
-            type="number"
-            placeholder="Postal Code"
-            className={`border ${fieldsDisabled ? 'bg-gray-100 border-gray-200' : 'border-gray-300'} rounded px-3.5 py-1.5 w-full`}
-            disabled={fieldsDisabled}
-          />
-        </div>
+        <input
+          required
+          onChange={onChangeHandler}
+          name="postalCode"
+          value={formData.postalCode}
+          type="number"
+          placeholder="Postal Code"
+          className={`border ${fieldsDisabled ? 'bg-gray-100 border-gray-200' : 'border-gray-300'} rounded px-3 py-2 md:py-1.5 w-full text-sm md:text-base`}
+          disabled={fieldsDisabled}
+        />
 
         <input
           required
@@ -561,35 +559,46 @@ const PlaceOrder = () => {
           pattern="^\+?\d{10,12}$"
           maxLength={12}
           placeholder="Phone Number"
-          className="border border-gray-300 rounded px-3.5 py-1.5 w-full"
+          className="border border-gray-300 rounded px-3 py-2 md:py-1.5 w-full text-sm md:text-base"
         />
       </div>
 
-      <div className="mt-8">
-        <div className="mt-8 min-w-80">
+      <div className="mt-8 md:mt-0 md:min-w-[320px] lg:min-w-[380px] w-full md:w-auto">
+        <div className="mt-2 md:mt-8">
           <CartTotal />
         </div>
 
-        <div className="mt-12 ">
+        <div className="mt-8 md:mt-12">
           <Title text1={'PAYMENT'} text2={'METHOD'} />
-          <div className="flex gap-3 flex-col lg:flex-row">
-            <div onClick={() => setMethod('stripe')} className="flex items-center gap-3 p-2 px-3 cursor-pointer">
+          <div className="flex flex-col gap-2 mt-3">
+            <div
+              onClick={() => setMethod('stripe')}
+              className={`flex items-center gap-3 p-3 cursor-pointer border rounded ${method === 'stripe' ? 'border-green-500 bg-green-50' : 'border-gray-200'}`}
+            >
               <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${method === 'stripe' ? 'border-green-500' : 'border-gray-300'}`}>
                 {method === 'stripe' && <div className="w-2 h-2 bg-green-500 rounded-full"></div>}
               </div>
               <img className="h-5 mx-4" src={assets.stripe_logo} alt="Stripe" />
             </div>
 
-            <div onClick={() => setMethod('cod')} className="flex items-center gap-3 p-2 px-3 cursor-pointer">
+            <div
+              onClick={() => setMethod('cod')}
+              className={`flex items-center gap-3 p-3 cursor-pointer border rounded ${method === 'cod' ? 'border-green-500 bg-green-50' : 'border-gray-200'}`}
+            >
               <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${method === 'cod' ? 'border-green-500' : 'border-gray-300'}`}>
                 {method === 'cod' && <div className="w-2 h-2 bg-green-500 rounded-full"></div>}
               </div>
-              <p className="text-gray-500 text-sm font-medium mx-4">CASH ON DELIVERY</p>
+              <p className="text-gray-700 text-sm font-medium mx-4">CASH ON DELIVERY</p>
             </div>
           </div>
 
-          <div className="w-full text-end mt-8">
-            <button type="submit" className="bg-black text-white px-16 py-3 text-sm rounded-sm hover:bg-gray-800 transition-colors">PLACE ORDER</button>
+          <div className="w-full flex justify-center md:justify-end mt-8 mb-8 md:mb-0">
+            <button
+              type="submit"
+              className="bg-black text-white px-8 md:px-16 py-3 w-full md:w-auto text-sm font-medium rounded-sm hover:bg-gray-800 transition-colors"
+            >
+              PLACE ORDER
+            </button>
           </div>
         </div>
       </div>
