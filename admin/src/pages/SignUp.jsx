@@ -45,6 +45,7 @@ const AdminSignup = ({ setShowSignup, setToken }) => {
         // Name validation
         if (!name) newErrors.name = 'Name is required';
         else if (name.length < 3) newErrors.name = 'Name must be at least 3 characters';
+        else if (!/^[a-zA-Z\s]+$/.test(name)) newErrors.name = 'Name can only contain letters and spaces';
 
         // Username validation
         if (!username) newErrors.username = 'Username is required';

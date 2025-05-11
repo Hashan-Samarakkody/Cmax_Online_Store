@@ -9,6 +9,8 @@ import AddressManager from '../components/AddressManager';
 import PasswordChangeModle from '../components/PasswordChangeModle';
 import DeleteAccountModle from '../components/DeleteAccountModle';
 import LogoutModle from '../components/LogoutModle';
+import { ShopContext } from '../context/ShopContext'
+import { useContext } from 'react';
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -16,6 +18,8 @@ const Profile = () => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [token, setToken] = useState(localStorage.getItem('token'));
+  const { setCartItems } = useContext(ShopContext);
+
 
   // Get section from URL if available
   const queryParams = new URLSearchParams(location.search);
@@ -212,10 +216,18 @@ const Profile = () => {
 
   // Handle logout
   const handleLogout = () => {
+    // Close the modal first to avoid UI glitches
+    setShowLogoutModle(false);
+
+    // Then clear all data
     localStorage.removeItem('token');
+
+    // Use a more reliable approach to navigation
+    window.location.href = '/';
     setToken('');
-    navigate('/');
-    toast.info('You have been logged out');
+    setCartItems({});
+    setUser(null);
+    navigate('/', { replace: true });
   };
 
   // Fetch user data on component mount

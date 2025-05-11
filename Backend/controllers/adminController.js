@@ -105,7 +105,6 @@ const registerAdmin = async (req, res) => {
 
                 profileImageUrl = result.secure_url;
             } catch (uploadError) {
-                console.log('Error uploading image to Cloudinary:', uploadError);
                 // Continue with default image if upload fails
             }
         }
@@ -249,13 +248,11 @@ const updateAdminProfile = async (req, res) => {
                             await cloudinary.uploader.destroy(publicId);
                         }
                     } catch (deleteError) {
-                        console.log('Error deleting old image:', deleteError);
-                        // Continue even if old image deletion fails
+                        return res.json({ success: false, message: 'Error deleting old profile image from Cloudinary' });
                     }
                 }
             } catch (uploadError) {
-                console.log('Error uploading image to Cloudinary:', uploadError);
-                return res.json({ success: false, message: 'Error uploading profile image' });
+                return res.json({ success: false, message: 'Error uploading profile image to Cloudinary' });
             }
         }
 

@@ -682,7 +682,6 @@ async function processSalesData(orders) {
             try {
                 // Skip items without productId
                 if (!orderItem.productId) {
-                    console.log('Skipping item without productId:', orderItem);
                     continue;
                 }
 
@@ -708,7 +707,6 @@ async function processSalesData(orders) {
                 }
 
                 if (!product) {
-                    console.log('Product not found for ID:', orderItem.productId);
 
                     // Use default values for products that can't be found
                     const category = 'Uncategorized';

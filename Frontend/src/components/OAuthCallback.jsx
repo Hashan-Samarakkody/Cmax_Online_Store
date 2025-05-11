@@ -14,7 +14,6 @@ const OAuthCallback = () => {
         const token = params.get('token');
         const error = params.get('error');
 
-        console.log("OAuth callback received token:", token ? "✓ Token received" : "✗ No token");
 
         if (token) {
             localStorage.setItem('token', token);

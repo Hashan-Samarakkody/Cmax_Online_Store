@@ -100,19 +100,19 @@ const ShopContextProvider = (props) => {
         // Ensure WebSocket connection is established
         if (!WebSocketService.isConnected()) {
             WebSocketService.connect(() => {
-                console.log("WebSocket connected successfully in ShopContext");
+                console.log("WebSocket connected");
             });
+        } else {
+            console.log("WebSocket already connected");
         }
 
         // Handle new products at context level
         const handleNewProduct = (data) => {
-            console.log("ShopContext received new product:", data);
             if (data && data.product) {
                 setProducts(prevProducts => {
                     // Only add if not already in the array
                     const exists = prevProducts.some(p => p._id === data.product._id);
                     if (!exists) {
-                        console.log("Adding new product to global state:", data.product.name);
                         return [...prevProducts, data.product];
                     }
                     return prevProducts;
@@ -145,7 +145,6 @@ const ShopContextProvider = (props) => {
 
         // Handle product deletions
         const handleDeleteProduct = (data) => {
-            console.log("ShopContext received product deletion:", data);
             if (data && data.productId) {
                 setProducts(prevProducts =>
                     prevProducts.filter(product => product._id !== data.productId)
@@ -195,6 +194,7 @@ const ShopContextProvider = (props) => {
                     size: size || null,
                     color: color || null
                 }, { headers: { token } });
+                toast.success('Product added to cart!');
             } catch (error) {
                 console.log(error)
                 toast.error(error.message)

@@ -67,8 +67,6 @@ const getCategories = async (req, res) => {
 const getSubCategories = async (req, res) => {
     try {
         const { categoryId } = req.query;
-        console.log("Request query params:", req.query); // Log all query parameters
-        console.log("Fetching subcategories with filter:", categoryId ? `Category ID: ${categoryId}` : "No filter");
 
         let subcategories;
         if (categoryId) {
@@ -79,11 +77,9 @@ const getSubCategories = async (req, res) => {
 
             // If categoryId is provided, find subcategories for this category
             subcategories = await Subcategory.find({ category: categoryId });
-            console.log(`Found ${subcategories.length} subcategories for category ${categoryId}`);
         } else {
             // If no categoryId is provided, return all subcategories
             subcategories = await Subcategory.find();
-            console.log(`Found ${subcategories.length} subcategories (all categories)`);
         }
 
         // Add product count for each subcategory
