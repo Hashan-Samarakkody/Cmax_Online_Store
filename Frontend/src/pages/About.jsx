@@ -41,18 +41,14 @@ const About = () => {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.8, duration: 0.5 }}
           >
-            Lorem ipsum dolor sit amet consectetur adipisicing elit. Magni explicabo
-            repudiandae ad? Non architecto itaque tempora at fugit voluptatum, ipsum,
-            culpa suscipit repellat molestiae harum totam sequi accusantium assumenda maiores!
+            C-max is a leading online store for all your electronic needs. We offer a wide range of products at competitive prices, ensuring that you get the best value for your money. Our mission is to provide our customers with the best shopping experience possible, and we are committed to delivering high-quality products and exceptional customer service.
           </motion.p>
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 1, duration: 0.5 }}
           >
-            Lorem, ipsum dolor sit amet consectetur adipisicing elit. Totam aut
-            incidunt magnam recusandae perferendis aliquam eos iste unde pariatur
-            expedita delectus accusamus cum ipsam veniam, ea ratione minus distinctio numquam!
+            Our team of experts is dedicated to helping you find the right products for your needs, and we are always here to answer any questions you may have. Whether you're looking for the latest gadgets or everyday essentials, C-max has you covered.
           </motion.p>
 
           <motion.b
@@ -68,7 +64,7 @@ const About = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 1.4, duration: 0.5 }}
           >
-            Lorem ipsum dolor sit amet consectetur adipisicing elit. Magni explicabo
+            Our mission is to provide our customers with the best shopping experience possible. We are committed to delivering high-quality products and exceptional customer service. Our team of experts is dedicated to helping you find the right products for your needs, and we are always here to answer any questions you may have.
           </motion.p>
         </motion.div>
       </div>
@@ -83,12 +79,12 @@ const About = () => {
         <Title text1={'WHY'} text2={'CHOOSE US?'} />
       </motion.div>
 
-      <div className='flex flex-col md:flex-row text-sm mb-20'>
+      <div className='flex flex-col md:flex-row text-sm mb-20 cursor-pointer'>
         {[
-          { title: 'Quality Assurance:', text: 'Lorem ipsum dolor sit amet consectetur adipisicing elit.' },
-          { title: 'Convenience:', text: 'Lorem ipsum dolor sit amet consectetur adipisicing elit.' },
-          { title: 'Exceptional Customer Service:', text: 'Lorem ipsum dolor sit amet consectetur adipisicing elit.' },
-          { title: 'Fast Delivery:', text: 'Lorem ipsum dolor sit amet consectetur adipisicing elit.' }
+          { title: 'Quality Assurance:', text: 'We ensure that all our products meet the highest standards of quality.' },
+          { title: 'Convenience:', text: 'We offer a seamless online shopping experience, with easy navigation and quick checkout.' },
+          { title: 'Exceptional Customer Service:', text: 'Our customer service team is always ready to assist you with any inquiries or issues.' },
+          { title: 'Fast Delivery:', text: 'We strive to deliver your orders as quickly as possible, without compromising on quality.' }
         ].map((item, index) => (
           <motion.div
             key={index}
