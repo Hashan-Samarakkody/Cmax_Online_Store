@@ -9,6 +9,8 @@ import AddressManager from '../components/AddressManager';
 import PasswordChangeModle from '../components/PasswordChangeModle';
 import DeleteAccountModle from '../components/DeleteAccountModle';
 import LogoutModle from '../components/LogoutModle';
+import { ShopContext } from '../context/ShopContext'
+import { useContext } from 'react';
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -16,6 +18,8 @@ const Profile = () => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [token, setToken] = useState(localStorage.getItem('token'));
+  const { setCartItems } = useContext(ShopContext);
+
 
   // Get section from URL if available
   const queryParams = new URLSearchParams(location.search);
@@ -212,10 +216,18 @@ const Profile = () => {
 
   // Handle logout
   const handleLogout = () => {
+    // Close the modal first to avoid UI glitches
+    setShowLogoutModle(false);
+
+    // Then clear all data
     localStorage.removeItem('token');
+
+    // Use a more reliable approach to navigation
+    window.location.href = '/';
     setToken('');
-    navigate('/');
-    toast.info('You have been logged out');
+    setCartItems({});
+    setUser(null);
+    navigate('/', { replace: true });
   };
 
   // Fetch user data on component mount
@@ -266,10 +278,10 @@ const Profile = () => {
   }
 
   return (
-    <div className="container mx-auto p-4 max-w-6xl">
-      <ToastContainer position="top-right" autoClose={3000} />
+    <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4 max-w-6xl">
+      <ToastContainer position="top-right" autoClose={1000} />
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 sm:gap-6">
         {/* Left sidebar navigation */}
         <div className="md:col-span-1">
           <ProfileSidebar
@@ -284,10 +296,10 @@ const Profile = () => {
 
         {/* Main content area */}
         <div className="md:col-span-3">
-          <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
             {activeSection === 'personalInfo' && (
               <form onSubmit={handleSubmit}>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                   {/* First Name */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -298,7 +310,7 @@ const Profile = () => {
                       name="firstName"
                       value={user?.firstName || ''}
                       onChange={handleChange}
-                      className={`w-full border ${errors.firstName ? 'border-red-500' : 'border-gray-300'} rounded-md px-3 py-2`}
+                      className={`w-full border ${errors.firstName ? 'border-red-500' : 'border-gray-300'} rounded-md px-3 py-2 text-sm sm:text-base`}
                       required
                     />
                     {errors.firstName && (
@@ -316,7 +328,7 @@ const Profile = () => {
                       name="lastName"
                       value={user?.lastName || ''}
                       onChange={handleChange}
-                      className={`w-full border ${errors.lastName ? 'border-red-500' : 'border-gray-300'} rounded-md px-3 py-2`}
+                      className={`w-full border ${errors.lastName ? 'border-red-500' : 'border-gray-300'} rounded-md px-3 py-2 text-sm sm:text-base`}
                       required
                     />
                     {errors.lastName && (
@@ -332,7 +344,7 @@ const Profile = () => {
                     <input
                       type="email"
                       value={user?.email || ''}
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 bg-gray-50"
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 bg-gray-50 text-sm sm:text-base"
                       disabled
                     />
                     <p className="mt-1 text-xs text-gray-500">Email cannot be changed</p>
@@ -349,7 +361,7 @@ const Profile = () => {
                       value={user?.phoneNumber || ''}
                       onChange={handleChange}
                       placeholder="0XXXXXXXXX"
-                      className={`w-full border ${errors.phoneNumber ? 'border-red-500' : 'border-gray-300'} rounded-md px-3 py-2`}
+                      className={`w-full border ${errors.phoneNumber ? 'border-red-500' : 'border-gray-300'} rounded-md px-3 py-2 text-sm sm:text-base`}
                     />
                     {errors.phoneNumber ? (
                       <p className="mt-1 text-xs text-red-500">{errors.phoneNumber}</p>
@@ -358,28 +370,28 @@ const Profile = () => {
                     )}
                   </div>
 
-                  {/* Authentication Provider - Add this section */}
+                  {/* Authentication Provider section */}
                   {user?.authProvider && user.authProvider !== 'local' && (
-                    <div className="col-span-2">
-                      <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200 flex items-center">
-                        <div className="mr-4 bg-blue-50 p-3 rounded-full">
+                    <div className="col-span-1 md:col-span-2">
+                      <div className="mt-4 p-3 sm:p-4 bg-gray-50 rounded-lg border border-gray-200 flex items-center flex-wrap sm:flex-nowrap">
+                        <div className="mr-3 sm:mr-4 mb-2 sm:mb-0 bg-blue-50 p-2 sm:p-3 rounded-full">
                           {user.authProvider === 'google' ? (
-                            <svg className="w-8 h-8" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <svg className="w-6 h-6 sm:w-8 sm:h-8" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                               <path d="M12.24 10.285V14.4h6.806c-.275 1.765-2.056 5.174-6.806 5.174-4.095 0-7.439-3.389-7.439-7.574s3.345-7.574 7.439-7.574c2.33 0 3.891.989 4.785 1.849l3.254-3.138C18.189 1.186 15.479 0 12.24 0c-6.635 0-12 5.365-12 12s5.365 12 12 12c6.926 0 11.52-4.869 11.52-11.726 0-.788-.085-1.39-.189-1.989H12.24z"
                                 fill="#4285F4" />
                             </svg>
                           ) : user.authProvider === 'facebook' ? (
-                            <svg className="w-8 h-8" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                            <svg className="w-6 h-6 sm:w-8 sm:h-8" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
                               <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"
                                 fill="#1877F2" />
                             </svg>
                           ) : null}
                         </div>
                         <div>
-                          <p className="text-base font-medium text-gray-800">
+                          <p className="text-sm sm:text-base font-medium text-gray-800">
                             Connected with {user.authProvider === 'google' ? 'Google' : 'Facebook'}
                           </p>
-                          <p className="text-sm text-gray-600">
+                          <p className="text-xs sm:text-sm text-gray-600">
                             Your account is linked to your {user.authProvider === 'google' ? 'Google' : 'Facebook'} account.
                             Password changes must be made through your {user.authProvider === 'google' ? 'Google' : 'Facebook'} account.
                           </p>
@@ -389,10 +401,10 @@ const Profile = () => {
                   )}
                 </div>
 
-                <div className="mt-6">
+                <div className="mt-4 sm:mt-6">
                   <button
                     type="submit"
-                    className="bg-green-600 hover:bg-green-700 text-white rounded-md px-4 py-2 font-medium"
+                    className="bg-green-600 hover:bg-green-700 text-white rounded-md px-3 sm:px-4 py-1.5 sm:py-2 text-sm sm:text-base font-medium"
                     disabled={updateLoading}
                   >
                     {updateLoading ? 'Updating...' : 'Update Profile'}
@@ -408,7 +420,7 @@ const Profile = () => {
         </div>
       </div>
 
-      {/* Password Change Modle */}
+      {/* Modals remain the same */}
       <PasswordChangeModle
         isOpen={showPasswordModle}
         onClose={() => setShowPasswordModle(false)}
@@ -419,14 +431,12 @@ const Profile = () => {
         navigate={navigate}
       />
 
-      {/* Logout Modle */}
       <LogoutModle
         isOpen={showLogoutModle}
         onClose={() => setShowLogoutModle(false)}
         onLogout={handleLogout}
       />
 
-      {/* Delete Account Modle */}
       <DeleteAccountModle
         isOpen={showDeleteModle}
         onClose={() => setShowDeleteModle(false)}

@@ -27,8 +27,6 @@ const SalesReport = () => {
             // Make API call to generate report
             const token = localStorage.getItem('adminToken');
 
-            console.log('Requesting report with params:', { startDate });
-
             // Use blob response type to handle PDF download
             const response = await axios.get(
                 `${backendUrl}/api/reports/sales`,

@@ -23,12 +23,6 @@ const getDashboardStats = async (req, res) => {
         startOfMonth.setDate(today.getDate() - 30);
         startOfMonth.setHours(0, 0, 0, 0);
 
-        console.log('Time ranges:', {
-            day: startOfDay.getTime(),
-            week: startOfWeek.getTime(),
-            month: startOfMonth.getTime()
-        });
-
         // Get all orders if time-filtered queries return nothing
         let dailyOrders = await orderModel.find({
             date: { $gte: startOfDay.getTime() }
@@ -36,7 +30,6 @@ const getDashboardStats = async (req, res) => {
 
         // If no daily orders, get at least some recent orders for display
         if (dailyOrders.length === 0) {
-            console.log("No orders found for today, getting latest orders instead");
             dailyOrders = await orderModel.find().sort({ date: -1 }).limit(5);
         }
 
@@ -136,8 +129,6 @@ const getSalesTrends = async (req, res) => {
             };
         }
 
-        console.log('Fetching sales trends since:', startDate);
-
         // Aggregate sales data
         const salesData = await orderModel.aggregate([
             { $match: { date: { $gte: startDate.getTime() } } },
@@ -180,7 +171,6 @@ const getProductPerformance = async (req, res) => {
 
             // Skip invalid items
             if (!itemId || !item.name || typeof item.price !== 'number' || typeof item.quantity !== 'number') {
-                console.log('Skipping invalid item:', item);
                 return;
             }
 
@@ -589,9 +579,6 @@ const getUserActivityReport = async (req, res) => {
     try {
         const { period = 'monthly', startDate, endDate } = req.query;
 
-        // Log the received parameters to debug
-        console.log(`Received params: period=${period}, startDate=${startDate}, endDate=${endDate}`);
-
         let dateFilter = {};
 
         // Apply date range filter if provided 
@@ -607,13 +594,11 @@ const getUserActivityReport = async (req, res) => {
                 }
             };
 
-            // Log the date filter being used
-            console.log('Date filter:', JSON.stringify(dateFilter));
+
         }
 
         // For debugging, count total documents that match the filter
         const totalMatchingDocs = await userModel.countDocuments(dateFilter);
-        console.log(`Total documents matching filter: ${totalMatchingDocs}`);
 
         // Rest of your aggregation logic...
         let groupBy;
@@ -642,9 +627,6 @@ const getUserActivityReport = async (req, res) => {
             },
             { $sort: { "_id": 1 } }
         ]);
-
-        // Log the raw aggregation result
-        console.log('Aggregation result:', JSON.stringify(registrationData));
 
         // Format data for response
         const formattedData = registrationData.map(item => {

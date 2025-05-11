@@ -87,7 +87,6 @@ const Dashboard = () => {
           map[cat.name.toLowerCase()] = cat._id;
         });
         setCategoryMap(map);
-        console.log('Category map built:', map);
       }
     } catch (error) {
       console.error('Error building category map:', error);
@@ -98,7 +97,6 @@ const Dashboard = () => {
   const fetchSubcategoryData = async (categoryId = null) => {
     const token = localStorage.getItem('adminToken');
     try {
-      console.log(`[Dashboard] Fetching subcategory data for category ID: ${categoryId || 'all'}`);
 
       // Create request options with token
       const options = {
@@ -114,8 +112,6 @@ const Dashboard = () => {
         `${backendUrl}/api/categories/subcategories/all`,
         options
       );
-
-      console.log(`[Dashboard] Received ${response.data.length} subcategories`);
 
       // Transform the response data to have the format we need for the chart
       const subcategoryData = response.data.map(subcategory => ({
@@ -142,12 +138,6 @@ const Dashboard = () => {
         // Find the category ID from the category name using our map
         const categoryName = category.category.toLowerCase();
         const categoryId = categoryMap[categoryName];
-
-        console.log('Category Click Details:', {
-          categoryName: category.category,
-          categoryId: categoryId,
-          fullObject: category
-        });
 
         setSelectedCategory(category);
 
@@ -326,7 +316,7 @@ const Dashboard = () => {
 
     connectAndSetup();
 
-    // Add an interval to ensure data is fresh
+    // An interval to ensure data is fresh
     const refreshInterval = setInterval(debouncedFullRefresh, 600000);
 
     // Cleanup function
@@ -722,7 +712,7 @@ const Dashboard = () => {
                     {product.quantitySold !== undefined ? product.quantitySold : 'N/A'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    ${product.revenue !== undefined ? Number(product.revenue).toFixed(2) : '0.00'}
+                    Rs.{product.revenue !== undefined ? Number(product.revenue).toFixed(2) : '0.00'}
                   </td>
                 </tr>
               ))}

@@ -163,7 +163,6 @@ const sendOrderConfirmationEmail = async (userId, order) => {
 
         // Send the email
         await transporter.sendMail(mailOptions);
-        console.log(`Order confirmation email sent to ${user.email}`);
     } catch (error) {
         console.error('Error sending order confirmation email:', error);
         // Don't stop the order process if email fails
@@ -406,7 +405,6 @@ const sendOrderStatusUpdateEmail = async (userId, order, trackingId = null) => {
 
         // Send the email
         await transporter.sendMail(mailOptions);
-        console.log(`Order status update email sent to ${user.email}`);
     } catch (error) {
         console.error('Error sending status update email:', error);
     }

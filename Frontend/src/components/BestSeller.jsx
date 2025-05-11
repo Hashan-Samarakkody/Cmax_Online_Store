@@ -20,7 +20,6 @@ const BestSeller = () => {
     useEffect(() => {
         // Filter and set best sellers - keep original functionality
         const bestProduct = products.filter((item) => item.bestseller === true);
-        console.log(`Found ${bestProduct.length} bestseller products`);
         setBestSeller(bestProduct.slice(0, 4));
     }, [products]);
 
@@ -28,17 +27,15 @@ const BestSeller = () => {
         // WebSocket functionality - kept exactly the same
         if (!WebSocketService.isConnected()) {
             WebSocketService.connect(() => {
-                console.log("WebSocket connected successfully in BestSeller");
+                console.log("WebSocket connected");
             });
         }
 
         const handleNewProduct = (data) => {
-            console.log("BestSeller received new product:", data);
             if (data && data.product) {
                 setProducts((prevProducts) => {
                     const exists = prevProducts.some(p => p._id === data.product._id);
                     if (!exists) {
-                        console.log("Adding new product to state:", data.product.name);
                         return [...prevProducts, data.product];
                     }
                     return prevProducts;
@@ -47,7 +44,6 @@ const BestSeller = () => {
         };
 
         const handleUpdateProduct = (data) => {
-            console.log("BestSeller received product update:", data);
             if (data && data.product) {
                 setProducts(prevProducts =>
                     prevProducts.map(product =>

@@ -70,12 +70,11 @@ const Orders = () => {
     if (token) {
       // Connect to WebSocket
       WebSocketService.connect(() => {
-        console.log('WebSocket connected in Orders component')
+        console.log("WebSocket connected");
       })
 
       // Register callback for new orders
       const handleNewOrder = (data) => {
-        console.log('New order received via WebSocket:', data)
         // Reload orders when a new one arrives
         loadOrderData()
         toast.info('New order has been added!')
@@ -83,7 +82,6 @@ const Orders = () => {
 
       // Handle order status updates
       const handleStatusUpdate = (data) => {
-        console.log('Order status update received:', data);
         // Only update if this update is for the current user
         loadOrderData();
         toast.info(`Order status updated: ${data.status}`);
@@ -131,11 +129,10 @@ const Orders = () => {
     if (item.color && item.color !== 'undefined_undefined' && item.color !== 'undefined') {
       return `Color: ${item.color}`;
     }
-
   }
 
   return (
-    <div className='boarder-t pt-16'>
+    <div className='boarder-t pt-16 px-3 sm:px-4 md:px-6'>
       <div className='text-2xl'>
         <Title text1={'MY'} text2={'ORDERS'} />
         <p className='text-sm font-semibold'> Once you placed an order you will receive an order confirmation via email.</p>
@@ -150,7 +147,7 @@ const Orders = () => {
               src={assets.empty_order}
               alt='Empty Cart'
             />
-            <p className='text-gray-400 font-semibold text-4xl mt-4 animate-pulse'>No orders to display!</p>
+            <p className='text-gray-400 font-semibold text-2xl sm:text-4xl mt-4 animate-pulse text-center'>No orders to display!</p>
           </div>
         ) : (
           orderData.map((item, index) => {
@@ -160,51 +157,53 @@ const Orders = () => {
 
             return (
               <div key={index} className='py-4 border-t border-b text-gray-700 flex flex-col md:flex-row md:items-center md:justify-between gap-4'>
-                <div className='flex items-start gap-6 text-sm'>
-                  <img className='w-16 sm:w-20 rounded-lg' src={item.images[0]} alt="" />
+                <div className='flex items-start gap-3 sm:gap-6 text-sm'>
+                  <img className='w-16 sm:w-20 rounded-lg object-cover' src={item.images[0]} alt="" />
                   <div>
-                    <p className='sm:text-base font-bold'>Item Name: {item.name}</p>
-                    <div className='flex items-center gap-3 mt-1 text-base text-gray-700'>
+                    <p className='sm:text-base font-bold line-clamp-2 sm:line-clamp-none'>Item Name: {item.name}</p>
+                    <div className='flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-3 mt-1 text-sm sm:text-base text-gray-700'>
                       <p className='font-semibold text-gray-500'>{currency}{item.price}</p>
                       <p className='font-semibold text-gray-500'>Quantity: {item.quantity}</p>
                     </div>
                     {itemDetails && (
-                      <p className='font-semibold text-gray-500'>{itemDetails}</p>
+                      <p className='font-semibold text-gray-500 text-sm sm:text-base'>{itemDetails}</p>
                     )}
-                    <p className='mt-1 font-sem font-medium'>Date: <span className='text-gray-500'>{new Date(item.date).toDateString()}</span></p>
-                    <p className='mt-1 font-sem font-medium'>Payment Method: <span className='text-gray-500'>{item.paymentMethod}</span></p>
-                    <p className='mt-1 font-sem text-green-600 font-semibold'>Order ID: {item.orderDisplayId || "N/A"}</p>
+                    <p className='mt-1 font-medium text-sm sm:text-base'>Date: <span className='text-gray-500'>{new Date(item.date).toDateString()}</span></p>
+                    <p className='mt-1 font-medium text-sm sm:text-base'>Payment Method: <span className='text-gray-500'>{item.paymentMethod}</span></p>
+                    <p className='mt-1 text-green-600 font-semibold text-sm sm:text-base'>Order ID: {item.orderDisplayId || "N/A"}</p>
                     {item.trackingId && isDelivered && (
-                      <p className='mt-1 font-semibold text-blue-600'>
+                      <p className='mt-1 font-semibold text-blue-600 text-sm sm:text-base'>
                         Tracking ID: {item.trackingId}
                       </p>
                     )}
                   </div>
                 </div>
-                <div className='md:w-1/2 flex justify-between'>
-                  <div className='flex item-center gap-2'>
-                    <p className={`min-w-2 h-2 rounded-full ${isDelivered ? 'bg-blue-500' : 'bg-green-500'}`}></p>
+                <div className='md:w-1/2 flex flex-wrap sm:flex-nowrap justify-between mt-3 md:mt-0 gap-3'>
+                  <div className='flex items-center gap-2 w-full md:w-auto'>
+                    <div className={`w-2 h-2 rounded-full ${isDelivered ? 'bg-blue-500' : 'bg-green-500'}`}></div>
                     <p className='text-sm md:text-base'>{item.status}</p>
                   </div>
-                  <button
-                    onClick={() => trackOrder(item)}
-                    className={`border px-4 py-2 text-sm font-medium 
-                      ${isDelivered && item.trackingId
-                        ? 'bg-blue-600 text-white hover:bg-blue- hover:text-black'
-                        : 'bg-green-600 text-white hover:bg-white hover:text-black'} 
-                      transition-all duration-200 rounded-sm`}
-                  >
-                    {isDelivered && item.trackingId ? 'Track Package' : 'Track Order'}
-                  </button>
-
-                  {isReturnEligible(item) && isDelivered && item.trackingId && (
+                  <div className='flex flex-wrap gap-2 w-full md:w-auto'>
                     <button
-                      onClick={() => navigate('/returns')}
-                      className="border px-4 py-2 text-sm font-medium bg-yellow-500 text-white hover:bg-yellow-600 transition-all duration-200 rounded-sm"
+                      onClick={() => trackOrder(item)}
+                      className={`border px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium 
+                        ${isDelivered && item.trackingId
+                          ? 'bg-blue-600 text-white hover:bg-blue-700 hover:text-white'
+                          : 'bg-green-600 text-white hover:bg-green-700 hover:text-white'} 
+                        transition-all duration-200 rounded-sm w-full sm:w-auto`}
                     >
-                      Return Item
+                      {isDelivered && item.trackingId ? 'Track Package' : 'Track Order'}
                     </button>
-                  )}
+
+                    {isReturnEligible(item) && isDelivered && item.trackingId && (
+                      <button
+                        onClick={() => navigate('/returns')}
+                        className="border px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium bg-yellow-500 text-white hover:bg-yellow-600 transition-all duration-200 rounded-sm w-full sm:w-auto"
+                      >
+                        Return Item
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             )

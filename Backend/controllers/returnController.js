@@ -481,7 +481,6 @@ const updateReturnStatus = async (req, res) => {
 
             // Process the refund based on refundMethod
             if (returnRequest.refundMethod === 'Original Payment Method') {
-                console.log(`Processing refund of ${returnRequest.refundAmount} to original payment method`);
                 // Implement actual refund logic here
             } else if (returnRequest.refundMethod === 'Store Credit') {
                 // Add store credit to user account
@@ -490,7 +489,6 @@ const updateReturnStatus = async (req, res) => {
                     // Add store credit
                     user.storeCredit = (user.storeCredit || 0) + returnRequest.refundAmount;
                     await user.save();
-                    console.log(`Added ${returnRequest.refundAmount} store credit to user ${user.name}`);
                 }
             }
         }

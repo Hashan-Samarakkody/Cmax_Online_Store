@@ -228,15 +228,15 @@ const AddressManager = ({ user, setUser }) => {
     }, [token]);
 
     return (
-        <div>
-            <div className="flex justify-between items-center mb-6">
+        <div className="px-2 sm:px-0">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-3">
                 <h2 className="text-xl font-semibold text-gray-800">My Addresses</h2>
                 <button
                     onClick={() => {
                         resetForm();
                         setShowAddForm(!showAddForm);
                     }}
-                    className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center"
+                    className="w-full sm:w-auto px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center justify-center"
                     disabled={isLoading}
                 >
                     {showAddForm ? 'Cancel' : '+ Add New Address'}
@@ -252,12 +252,12 @@ const AddressManager = ({ user, setUser }) => {
 
             {/* Address form */}
             {showAddForm && (
-                <form id="addressForm" onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-md mb-8">
+                <form id="addressForm" onSubmit={handleSubmit} className="bg-white p-4 sm:p-6 rounded-lg shadow-md mb-8">
                     <h3 className="text-lg font-medium mb-4">
                         {editingAddress ? 'Edit Address' : 'Add New Address'}
                     </h3>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div className="grid grid-cols-1 gap-4 mb-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                                 Address Title <span className="text-red-500">*</span>
@@ -320,14 +320,14 @@ const AddressManager = ({ user, setUser }) => {
                                         filteredDistricts.map((district, index) => (
                                             <li
                                                 key={index}
-                                                className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                                                className="px-4 py-3 hover:bg-gray-100 cursor-pointer text-sm sm:text-base"
                                                 onClick={() => handleSelectDistrict(district)}
                                             >
                                                 {district}
                                             </li>
                                         ))
                                     ) : (
-                                        <li className="px-4 py-2 text-gray-500">No districts found</li>
+                                        <li className="px-4 py-3 text-gray-500 text-sm">No districts found</li>
                                     )}
                                 </ul>
                             )}
@@ -354,7 +354,7 @@ const AddressManager = ({ user, setUser }) => {
                                 name="isDefault"
                                 checked={formData.isDefault}
                                 onChange={handleChange}
-                                className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+                                className="h-5 w-5 text-green-600 focus:ring-green-500 border-gray-300 rounded"
                             />
                             <label htmlFor="isDefault" className="ml-2 block text-sm text-gray-700">
                                 Set as default address
@@ -362,17 +362,17 @@ const AddressManager = ({ user, setUser }) => {
                         </div>
                     </div>
 
-                    <div className="flex justify-end gap-3">
+                    <div className="flex flex-col sm:flex-row justify-end gap-3 mt-6">
                         <button
                             type="button"
                             onClick={resetForm}
-                            className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                            className="px-4 py-2.5 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 w-full sm:w-auto"
                         >
                             Cancel
                         </button>
                         <button
                             type="submit"
-                            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-70"
+                            className="px-4 py-2.5 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-70 w-full sm:w-auto"
                             disabled={isSubmitting}
                         >
                             {isSubmitting ? 'Saving...' : editingAddress ? 'Update Address' : 'Save Address'}
@@ -383,7 +383,7 @@ const AddressManager = ({ user, setUser }) => {
 
             {/* Address cards */}
             {addresses.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4">
                     {addresses.map((address) => (
                         <div
                             key={address._id}
@@ -400,27 +400,27 @@ const AddressManager = ({ user, setUser }) => {
                             </div>
 
                             <div className="text-gray-600 mb-4">
-                                <p>{address.street}</p>
-                                <p>{address.city}, {address.state} {address.postalCode}</p>
+                                <p className="text-sm sm:text-base">{address.street}</p>
+                                <p className="text-sm sm:text-base">{address.city}, {address.state} {address.postalCode}</p>
                             </div>
 
-                            <div className="flex gap-2">
+                            <div className="flex flex-wrap gap-2">
                                 <button
                                     onClick={() => handleEdit(address)}
-                                    className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                                    className="text-blue-600 hover:text-blue-800 text-sm font-medium py-1.5 px-3 border border-blue-200 rounded-full hover:bg-blue-50"
                                 >
                                     Edit
                                 </button>
                                 <button
                                     onClick={() => handleDelete(address._id)}
-                                    className="text-red-600 hover:text-red-800 text-sm font-medium"
+                                    className="text-red-600 hover:text-red-800 text-sm font-medium py-1.5 px-3 border border-red-200 rounded-full hover:bg-red-50"
                                 >
                                     Delete
                                 </button>
                                 {!address.isDefault && (
                                     <button
                                         onClick={() => setDefaultAddress(address._id)}
-                                        className="text-green-600 hover:text-green-800 text-sm font-medium"
+                                        className="text-green-600 hover:text-green-800 text-sm font-medium py-1.5 px-3 border border-green-200 rounded-full hover:bg-green-50"
                                     >
                                         Set as Default
                                     </button>

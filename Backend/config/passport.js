@@ -19,14 +19,6 @@ passport.use(new GoogleStrategy({
 },
     async (accessToken, refreshToken, profile, done) => {
         try {
-            // Debug logging
-            console.log("Google profile:", {
-                id: profile.id,
-                displayName: profile.displayName,
-                emails: profile.emails,
-                photos: profile.photos
-            });
-
             // Make sure we have email
             if (!profile.emails || profile.emails.length === 0) {
                 return done(new Error('No email found in Google profile'), null);
