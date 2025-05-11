@@ -147,6 +147,28 @@ const Add = ({ token }) => {
     }
   };
 
+  // Function to remove an image
+  const removeImage = (index) => {
+    switch (index) {
+      case 0:
+        setImage1(false);
+        break;
+      case 1:
+        setImage2(false);
+        break;
+      case 2:
+        setImage3(false);
+        break;
+      case 3:
+        setImage4(false);
+        break;
+      default:
+        break;
+    }
+
+    toast.info('Image removed');
+  };
+
   const onSubmitHandler = async (e) => {
     e.preventDefault();
 
@@ -289,6 +311,7 @@ const Add = ({ token }) => {
       </div>
 
       <form onSubmit={onSubmitHandler} className="flex flex-col w-full items-start gap-3">
+        
         {/* Product ID Input */}
         <div className="w-full">
           <p className="font-semibold mb-2">Product ID</p>
@@ -301,6 +324,7 @@ const Add = ({ token }) => {
             required
           />
         </div>
+
         {/* Product Name */}
         <div className="w-full">
           <p className="font-semibold mb-2">Product Name</p>
@@ -313,6 +337,7 @@ const Add = ({ token }) => {
             required
           />
         </div>
+
         {/* Product Description */}
         <div className="w-full">
           <p className="font-semibold mb-2">Product Description</p>
@@ -336,6 +361,7 @@ const Add = ({ token }) => {
             style={{ resize: "none" }} // Prevent manual resizing
           />
         </div>
+
         {/* Category and Subcategory */}
         <div className="flex flex-col sm:flex-row gap-2 w-full sm:gap-8">
           <div>
@@ -383,6 +409,7 @@ const Add = ({ token }) => {
             />
           </div>
         </div>
+
         {/* Sizes Toggle */}
         <div className="flex gap-2 mt-2">
           <input
@@ -395,6 +422,7 @@ const Add = ({ token }) => {
             Enable Sizes
           </label>
         </div>
+
         {/* Sizes Selection (only if hasSizes is true) */}
         {hasSizes && (
           <div>
@@ -420,6 +448,7 @@ const Add = ({ token }) => {
             </div>
           </div>
         )}
+
         {/* Colors Toggle */}
         <div className="flex gap-2 mt-2">
           <input
@@ -432,6 +461,7 @@ const Add = ({ token }) => {
             Enable Colors
           </label>
         </div>
+
         {/* Color Input (only if hasColors is true) */}
         {hasColors && (
           <div className="w-full max-w-[590px]">
@@ -472,6 +502,7 @@ const Add = ({ token }) => {
             </div>
           </div>
         )}
+
         {/* Bestseller Toggle */}
         <div className="flex gap-2 mt-2">
           <input
@@ -484,39 +515,58 @@ const Add = ({ token }) => {
             Add to bestseller
           </label>
         </div>
+
         {/* Image Upload */}
         <div>
           <p className="font-semibold mb-2">Upload Images</p>
           <p className='text-sm text-red-500 mb-2'>
-            <i>* Images will be automatically resized to 700 × 700 pixels</i>
+            <i>✸ First image will always be the main image (display image)</i>
+          </p>
+          <p className='text-sm text-red-500 mb-2'>
+            <i>✸ Only PNG, JPEG, and JPG files are allowed</i>
+          </p>
+          <p className='text-sm text-red-500 mb-2'>
+            <i>✸ Images will be automatically resized to 700 × 700 pixels</i>
           </p>
           <div className="flex gap-2">
             {[image1, image2, image3, image4].map((image, index) => (
-              <label
-                key={index}
-                htmlFor={`image${index + 1}`}
-                className={`cursor-pointer ${processingImage ? 'opacity-50 pointer-events-none' : ''}`}
-              >
-                <img
-                  className="w-40 h-40 object-cover rounded-sm border border-gray-300"
-                  src={!image ? assets.upload_area : URL.createObjectURL(image)}
-                  alt={`Preview ${index + 1}`}
-                />
-                <input
-                  onChange={(e) => handleImageUpload(e, [setImage1, setImage2, setImage3, setImage4][index])}
-                  type="file"
-                  id={`image${index + 1}`}
-                  accept="image/png, image/jpeg, image/jpg"
-                  hidden
-                  disabled={processingImage}
-                />
-              </label>
+              <div key={index} className="relative">
+                <label
+                  htmlFor={`image${index + 1}`}
+                  className={`cursor-pointer block ${processingImage ? 'opacity-50 pointer-events-none' : ''}`}
+                >
+                  <img
+                    className="w-40 h-40 object-cover rounded-sm border border-gray-300"
+                    src={!image ? assets.upload_area : URL.createObjectURL(image)}
+                    alt={`Preview ${index + 1}`}
+                  />
+                  <input
+                    onChange={(e) => handleImageUpload(e, [setImage1, setImage2, setImage3, setImage4][index])}
+                    type="file"
+                    id={`image${index + 1}`}
+                    accept="image/png, image/jpeg, image/jpg"
+                    hidden
+                    disabled={processingImage}
+                  />
+                </label>
+                {image && (
+                  <button
+                    type="button"
+                    onClick={() => removeImage(index)}
+                    className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center shadow-md"
+                    title="Remove image"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
             ))}
           </div>
           {processingImage && (
             <p className="text-blue-500 mt-2">Processing image, please wait...</p>
           )}
         </div>
+
         {/* Submit Button */}
         <button
           type="submit"

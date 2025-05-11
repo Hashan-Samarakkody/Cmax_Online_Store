@@ -122,13 +122,24 @@ const ShopContextProvider = (props) => {
 
         // Handle product updates at context level
         const handleUpdateProduct = (data) => {
-            console.log("ShopContext received product update:", data);
             if (data && data.product) {
-                setProducts(prevProducts =>
-                    prevProducts.map(product =>
-                        product._id === data.product._id ? data.product : product
-                    )
-                );
+                setProducts(prevProducts => {
+                    // Create a new array with the updated product
+                    const updatedProducts = prevProducts.map(product =>
+                        product._id === data.product._id ?
+                            {
+                                ...data.product,
+                                // Preserve category and subcategory objects if they exist
+                                category: product.category && typeof product.category === 'object' ?
+                                    product.category : data.product.category,
+                                subcategory: product.subcategory && typeof product.subcategory === 'object' ?
+                                    product.subcategory : data.product.subcategory
+                            } : product
+                    );
+
+                    // Force a render by returning a new array
+                    return [...updatedProducts];
+                });
             }
         };
 

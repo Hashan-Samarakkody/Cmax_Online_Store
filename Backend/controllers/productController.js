@@ -184,29 +184,56 @@ const updateProduct = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Invalid subcategory ID' });
         }
 
-        // Handle image uploads
-        const image1 = req.files.image1 && req.files.image1[0];
-        const image2 = req.files.image2 && req.files.image2[0];
-        const image3 = req.files.image3 && req.files.image3[0];
-        const image4 = req.files.image4 && req.files.image4[0];
+        // Process existing images
+        const existingImagesData = {};
+        Object.keys(req.body).forEach(key => {
+            if (key.startsWith('existingImages[')) {
+                const index = key.match(/\[(\d+)\]/)[1];
+                existingImagesData[index] = req.body[key];
+            }
+        });
 
-        const newUploadedImages = [image1, image2, image3, image4].filter((item) => item !== undefined);
+        // Extract existing images in order
+        const existingImages = Object.keys(existingImagesData)
+            .sort()
+            .map(key => existingImagesData[key]);
+
+        // Process new images
+        const newImageFiles = [];
+        if (req.files && req.files.length > 0) {
+            req.files.forEach(file => {
+                if (file.fieldname.startsWith('newImages[')) {
+                    newImageFiles.push(file);
+                }
+            });
+        }
 
         // Upload new images to cloudinary if any
-        let newImagesUrl = [];
-        if (newUploadedImages.length > 0) {
-            newImagesUrl = await Promise.all(
-                newUploadedImages.map(async (item) => {
-                    let result = await cloudinary.uploader.upload(item.path, { resource_type: 'image' });
-                    return result.secure_url;
+        let newImagesUrls = [];
+        if (newImageFiles.length > 0) {
+            newImagesUrls = await Promise.all(
+                newImageFiles.map(async (file) => {
+                    try {
+                        const result = await cloudinary.uploader.upload(file.path, {
+                            resource_type: 'image'
+                        });
+                        return result.secure_url;
+                    } catch (error) {
+                        console.error('Cloudinary upload error:', error);
+                        throw new Error('Failed to upload image to cloud storage');
+                    }
                 })
             );
         }
 
-        // Merge existing and new images, keeping existing if no new images uploaded
-        const updatedImages = newImagesUrl.length > 0
-            ? newImagesUrl
-            : existingProduct.images;
+        // Combine existing and new images
+        const updatedImages = [...existingImages, ...newImagesUrls];
+
+        // Process images to delete if any
+        if (req.body.imagesToDelete) {
+            const imagesToDelete = JSON.parse(req.body.imagesToDelete);
+            // You could add logic here to delete images from Cloudinary if needed
+        }
 
         // Prepare update data
         const updateData = {
@@ -216,8 +243,8 @@ const updateProduct = async (req, res) => {
             price: Number(price),
             subcategory,
             bestseller: bestseller === 'true' ? true : false,
-            sizes: hasSizes && sizes ? JSON.parse(sizes) : [],
-            colors: hasColors && colors ? JSON.parse(colors) : [],
+            sizes: hasSizes === 'true' && sizes ? JSON.parse(sizes) : [],
+            colors: hasColors === 'true' && colors ? JSON.parse(colors) : [],
             images: updatedImages,
             hasSizes: hasSizes === 'true',
             hasColors: hasColors === 'true',
@@ -230,12 +257,20 @@ const updateProduct = async (req, res) => {
             { new: true }
         );
 
+        // Get the updated product data with populated fields for WebSocket broadcast
+        const updatedProduct = await productModel.findOne({ productId })
+            .populate('category', 'name')
+            .populate('subcategory', 'name');
+
+        // Send response to client ONLY ONCE
         res.json({ success: true, message: 'Product updated successfully!' });
 
-        // Broadcast product update
-        const updatedProduct = await productModel.findOne({ productId });
-        broadcast({ type: 'updateProduct', product: updatedProduct }); // Send the updated product via WebSocket
-    
+        // Broadcast fully populated product update (after response is sent)
+        broadcast({
+            type: 'updateProduct',
+            product: updatedProduct
+        });
+
     } catch (error) {
         console.log(error);
         res.status(500).json({ success: false, message: error.message });

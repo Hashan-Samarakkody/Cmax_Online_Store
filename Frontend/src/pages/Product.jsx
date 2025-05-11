@@ -142,7 +142,6 @@ const Product = () => {
 
     // Add to cart functionality
     addToCart(productData._id, size, color);
-    toast.success('Product added to cart!', { autoClose: 800 });
 
     // Record cart interaction
     if (token) {

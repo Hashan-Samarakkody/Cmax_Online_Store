@@ -6,10 +6,28 @@ import axios from 'axios';
 import { backendUrl } from '../../../admin/src/App';
 
 const ProductItem = ({ id, image, name, price }) => {
-    const { currency } = useContext(ShopContext);
+    const { currency, products } = useContext(ShopContext);
     const [rating, setRating] = useState(0);
+    const [productImage, setProductImage] = useState(
+        image && image.length > 0 ? image[0] : assets.default_img
+    );
 
-    const productImage = image && image.length > 0 ? image[0] : assets.default_img;
+    // Update the image if it changes in props
+    useEffect(() => {
+        if (image && image.length > 0 && image[0] !== productImage) {
+            setProductImage(image[0]);
+        }
+    }, [image]);
+
+    // Also check product from context to ensure we have latest images
+    useEffect(() => {
+        const currentProduct = products.find(p => p._id === id);
+        if (currentProduct && currentProduct.images && currentProduct.images.length > 0) {
+            if (currentProduct.images[0] !== productImage) {
+                setProductImage(currentProduct.images[0]);
+            }
+        }
+    }, [products, id]);
 
     useEffect(() => {
         // Fetch product reviews to get average rating

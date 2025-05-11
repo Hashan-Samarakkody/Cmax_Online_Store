@@ -62,13 +62,30 @@ const Collection = () => {
 
     // Define the handler for updated products
     const handleUpdateProduct = (data) => {
+      if (!data || !data.product) return;
+
       const updatedProduct = data.product;
-      const updateFunc = (products) => products.map(product =>
+
+      setAllProducts(prev => prev.map(product =>
         product._id === updatedProduct._id ? updatedProduct : product
-      );
-      setAllProducts(updateFunc);
-      setOriginalProducts(updateFunc);
-      setFilterProducts(updateFunc);
+      ));
+
+      setOriginalProducts(prev => prev.map(product =>
+        product._id === updatedProduct._id ? updatedProduct : product
+      ));
+
+      setFilterProducts(prev => prev.map(product =>
+        product._id === updatedProduct._id ?
+          // This ensures images are updated
+          {
+            ...updatedProduct,
+            // Ensure category and subcategory objects are preserved if they exist
+            category: product.category && typeof product.category === 'object' ?
+              product.category : updatedProduct.category,
+            subcategory: product.subcategory && typeof product.subcategory === 'object' ?
+              product.subcategory : updatedProduct.subcategory
+          } : product
+      ));
     };
 
     // Connect to WebSocket and listen for new products
