@@ -4,6 +4,7 @@ import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { backendUrl } from '../App';
 import { useNavigate } from 'react-router-dom';
+import { assets } from '../assets/assets';
 
 const AdminManagement = ({ token }) => {
     const navigate = useNavigate();
@@ -165,7 +166,7 @@ const AdminManagement = ({ token }) => {
                                                             alt={admin.name}
                                                             onError={(e) => {
                                                                 e.target.onerror = null;
-                                                                e.target.src = 'https://via.placeholder.com/40';
+                                                                e.target.src = assets.profile_icon;
                                                             }}
                                                         />
                                                     </div>
