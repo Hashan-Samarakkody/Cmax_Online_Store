@@ -252,25 +252,27 @@ const Edit = ({ token }) => {
         }
 
         // Add images to keep (URLs) and newly uploaded images (Files)
-        let imageIndex = 0;
-        images.forEach((image) => {
-            if (image) {
-                if (typeof image === 'string') {
-                    // This is an existing image URL we want to keep
-                    formData.append(`existingImages[${imageIndex}]`, image);
-                    imageIndex++;
-                } else if (image instanceof File) {
-                    // This is a new image file
-                    formData.append(`newImages[${imageIndex}]`, image);
-                    imageIndex++;
-                }
-            }
+        // First, ensure the existing image URLs are preserved exactly as they were
+        const existingUrlImages = images.filter(img => typeof img === 'string');
+        existingUrlImages.forEach((imageUrl, idx) => {
+            formData.append(`existingImages[${idx}]`, imageUrl);
+        });
+
+        // Then add any new image files separately
+        const newImageFiles = images.filter(img => img instanceof File);
+        newImageFiles.forEach((imageFile, idx) => {
+            formData.append(`newImages[${idx}]`, imageFile);
         });
 
         // Add list of images to delete
         if (imagesToDelete.length > 0) {
             formData.append('imagesToDelete', JSON.stringify(imagesToDelete));
         }
+
+        // Debug what's being sent
+        console.log('Product ID:', id);
+        console.log('Existing images count:', existingUrlImages.length);
+        console.log('New images count:', newImageFiles.length);
 
         try {
             const response = await axios.put(`${backendUrl}/api/product/update`, formData, {

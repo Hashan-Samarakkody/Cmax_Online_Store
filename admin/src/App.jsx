@@ -43,39 +43,21 @@ const App = () => {
       }
 
       try {
-        // First, check if the token validate endpoint exists
-        try {
-          const response = await axios.get(`${backendUrl}/api/admin/validate-token`, {
-            headers: { Authorization: `Bearer ${token}` },
-            timeout: 5000
-          })
+        // Use the profile endpoint directly for validation since we know it exists
+        const profileResponse = await axios.get(`${backendUrl}/api/admin/profile`, {
+          headers: { Authorization: `Bearer ${token}` },
+          timeout: 5000
+        })
 
-          setIsValidToken(response.data.valid === true)
-        } catch (error) {
-          // If 404 error, the endpoint doesn't exist, so try alternative validation
-          if (error.response && error.response.status === 404) {
-
-            // Try an alternative endpoint that requires authentication
-            const profileResponse = await axios.get(`${backendUrl}/api/admin/profile`, {
-              headers: { Authorization: `Bearer ${token}` }
-            })
-
-            // If we can access the profile, then token is valid
-            if (profileResponse.status === 200) {
-              setIsValidToken(true)
-            } else {
-              setIsValidToken(false)
-              setToken('')
-            }
-          } else {
-            // For other errors, token is invalid
-            console.error("Token validation error:", error)
-            setIsValidToken(false)
-            setToken('')
-          }
+        // If we can access the profile, then token is valid
+        if (profileResponse.status === 200) {
+          setIsValidToken(true)
+        } else {
+          setIsValidToken(false)
+          setToken('')
         }
       } catch (error) {
-        console.error('Final token validation error:', error)
+        console.error('Token validation error:', error)
         setIsValidToken(false)
         setToken('')
       } finally {

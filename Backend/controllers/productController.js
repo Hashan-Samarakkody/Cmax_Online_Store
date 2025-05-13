@@ -184,19 +184,24 @@ const updateProduct = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Invalid subcategory ID' });
         }
 
-        // Process existing images
-        const existingImagesData = {};
+
+        // Process existing images - IMPROVED HANDLING
+        let existingImages = [];
         Object.keys(req.body).forEach(key => {
             if (key.startsWith('existingImages[')) {
                 const index = key.match(/\[(\d+)\]/)[1];
-                existingImagesData[index] = req.body[key];
+                existingImages[parseInt(index)] = req.body[key];
             }
         });
 
-        // Extract existing images in order
-        const existingImages = Object.keys(existingImagesData)
-            .sort()
-            .map(key => existingImagesData[key]);
+        // Filter out any undefined elements
+        existingImages = existingImages.filter(img => img !== undefined);
+
+        // If no existing images were found in the form data but the product has images,
+        // use the existing product's images to prevent data loss
+        if (existingImages.length === 0 && existingProduct.images && existingProduct.images.length > 0) {
+            existingImages = [...existingProduct.images];
+        }
 
         // Process new images
         const newImageFiles = [];
@@ -229,10 +234,23 @@ const updateProduct = async (req, res) => {
         // Combine existing and new images
         const updatedImages = [...existingImages, ...newImagesUrls];
 
+        // NEW VALIDATION: Ensure there's at least one image before updating
+        if (updatedImages.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'At least one product image is required. Please add an image before updating.'
+            });
+        }
+
         // Process images to delete if any
+        let imagesToDelete = [];
         if (req.body.imagesToDelete) {
-            const imagesToDelete = JSON.parse(req.body.imagesToDelete);
-            // You could add logic here to delete images from Cloudinary if needed
+            try {
+                imagesToDelete = JSON.parse(req.body.imagesToDelete);
+                console.log('Images marked for deletion:', imagesToDelete.length);
+            } catch (e) {
+                console.error('Error parsing imagesToDelete:', e);
+            }
         }
 
         // Prepare update data
@@ -251,7 +269,7 @@ const updateProduct = async (req, res) => {
         };
 
         // Update the product
-        await productModel.findOneAndUpdate(
+        const updatedProductDoc = await productModel.findOneAndUpdate(
             { productId },
             updateData,
             { new: true }
@@ -262,8 +280,12 @@ const updateProduct = async (req, res) => {
             .populate('category', 'name')
             .populate('subcategory', 'name');
 
-        // Send response to client ONLY ONCE
-        res.json({ success: true, message: 'Product updated successfully!' });
+        // Send response to client
+        res.json({
+            success: true,
+            message: 'Product updated successfully!',
+            images: updatedProductDoc.images // Send back the updated images array for confirmation
+        });
 
         // Broadcast fully populated product update (after response is sent)
         broadcast({
