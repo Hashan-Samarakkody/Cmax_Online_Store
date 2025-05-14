@@ -8,6 +8,7 @@ import {
 } from 'recharts';
 import { backendUrl } from '../App';
 import { toast } from 'react-toastify';
+import WebSocketService from '../services/WebSocketService';
 
 const UserActivityReport = () => {
     const navigate = useNavigate();
@@ -33,13 +34,72 @@ const UserActivityReport = () => {
     const [loyalCustomersSortBy, setLoyalCustomersSortBy] = useState('loyalty');
     const [loyalCustomersLimit, setLoyalCustomersLimit] = useState(5);
     const [showLoyalCustomers, setShowLoyalCustomers] = useState(false);
+    const [dataRefreshed, setDataRefreshed] = useState(false);
 
     // Get today's date in YYYY-MM-DD format for the max date attribute
     const today = new Date().toISOString().split('T')[0];
 
     useEffect(() => {
         fetchUserActivity();
-    }, [period]);
+
+        // Set up WebSocket listeners for real-time updates
+        const handleLoyaltyUpdate = (data) => {
+            // Only refresh if the loyal customers section is visible
+            if (showLoyalCustomers) {
+                console.log('Loyalty update received:', data);
+
+                // Background refresh (true parameter prevents loading state)
+                fetchLoyalCustomers(true);
+
+                // Show refresh indicator with the type of update that occurred
+                let updateMessage = 'Data refreshed';
+                if (data.action) {
+                    switch (data.action) {
+                        case 'order':
+                            updateMessage = 'New order detected';
+                            break;
+                        case 'review':
+                            updateMessage = 'New review added';
+                            break;
+                        case 'updateReview':
+                            updateMessage = 'Review updated';
+                            break;
+                        case 'deleteReview':
+                            updateMessage = 'Review deleted';
+                            break;
+                    }
+                }
+
+                // Show toast notification for the update
+                toast.info(updateMessage);
+
+                // Visual indicator
+                setDataRefreshed(true);
+                setTimeout(() => setDataRefreshed(false), 3000);
+            }
+        };
+
+        // Connect to WebSocket if not already connected
+        if (!WebSocketService.isConnected()) {
+            WebSocketService.connect();
+        }
+
+        // Register event listeners for all relevant events
+        WebSocketService.on('loyaltyUpdate', handleLoyaltyUpdate);
+        WebSocketService.on('newOrder', handleLoyaltyUpdate);
+        WebSocketService.on('deleteReview', handleLoyaltyUpdate);
+        WebSocketService.on('newReview', handleLoyaltyUpdate);
+        WebSocketService.on('updateReview', handleLoyaltyUpdate);
+
+        // Cleanup listeners on component unmount
+        return () => {
+            WebSocketService.off('loyaltyUpdate', handleLoyaltyUpdate);
+            WebSocketService.off('newOrder', handleLoyaltyUpdate);
+            WebSocketService.off('deleteReview', handleLoyaltyUpdate);
+            WebSocketService.off('newReview', handleLoyaltyUpdate);
+            WebSocketService.off('updateReview', handleLoyaltyUpdate);
+        };
+    }, [period, showLoyalCustomers]);
 
     useEffect(() => {
         if (showLoyalCustomers) {
@@ -94,9 +154,13 @@ const UserActivityReport = () => {
         }
     };
 
-    const fetchLoyalCustomers = async () => {
+    const fetchLoyalCustomers = async (isBackgroundRefresh = false) => {
         try {
-            setLoyalCustomersLoading(true);
+            // Only show loading indicator if not a background refresh
+            if (!isBackgroundRefresh) {
+                setLoyalCustomersLoading(true);
+            }
+
             setLoyalCustomersError(null);
             const token = localStorage.getItem('adminToken');
 
@@ -105,14 +169,14 @@ const UserActivityReport = () => {
                 return;
             }
 
-            // Prepare query parameters
+            // Prepare query parameters with timestamp to ensure fresh data
             const queryParams = new URLSearchParams();
             queryParams.append('sortBy', loyalCustomersSortBy);
             queryParams.append('limit', loyalCustomersLimit);
+            queryParams.append('_t', Date.now()); // Prevent caching
 
             // Use same period from user activity report if date range is active
             if (showDateRange && dateRange.startDate && dateRange.endDate) {
-                // Use "month" as default period but could be customized based on date range span
                 queryParams.append('period', 'month');
             }
 
@@ -124,18 +188,29 @@ const UserActivityReport = () => {
 
             if (response.data.success) {
                 setLoyalCustomers(response.data.customers);
-                if (response.data.customers.length === 0) {
+                if (response.data.customers.length === 0 && !isBackgroundRefresh) {
                     toast.info('No loyal customer data found for the selected criteria');
                 }
             } else {
                 setLoyalCustomersError(response.data.message || 'Failed to fetch loyal customers data');
+                if (!isBackgroundRefresh) {
+                    toast.error('Failed to load loyal customers data');
+                }
             }
         } catch (error) {
             console.error('Error fetching loyal customers:', error);
             setLoyalCustomersError(error.response?.data?.message || error.message);
-            toast.error('Failed to load loyal customers data');
+            if (!isBackgroundRefresh) {
+                toast.error('Failed to load loyal customers data');
+            }
         } finally {
-            setLoyalCustomersLoading(false);
+            if (!isBackgroundRefresh) {
+                setLoyalCustomersLoading(false);
+            } else {
+                // For background refreshes, still need to turn off loading state
+                // but we do it silently
+                setLoyalCustomersLoading(false);
+            }
         }
     };
 
@@ -644,7 +719,14 @@ const UserActivityReport = () => {
             {showLoyalCustomers && (
                 <div className="bg-white rounded-lg shadow-md p-6 mb-8">
                     <div className="flex items-center justify-between mb-6">
-                        <h2 className="text-2xl font-bold">Most Loyal Customers</h2>
+                        <div className="flex items-center">
+                            <h2 className="text-2xl font-bold">Most Loyal Customers</h2>
+                            {dataRefreshed && (
+                                <span className="ml-3 text-sm bg-green-100 text-green-800 px-2 py-1 rounded-md animate-pulse">
+                                    Data refreshed
+                                </span>
+                            )}
+                        </div>
                         <button
                             onClick={handleExportLoyalCustomersCSV}
                             className="flex items-center px-4 py-2 bg-green-600 text-white rounded-md shadow-sm hover:bg-green-700"
@@ -654,7 +736,7 @@ const UserActivityReport = () => {
                         </button>
                     </div>
 
-                    {/* Loyal Customers Controls */}
+                    {/* Add refresh button to controls */}
                     <div className="flex flex-wrap items-center gap-4 mb-6">
                         <div>
                             <label htmlFor="sortBy" className="block text-sm font-medium text-gray-700 mb-1">
@@ -794,22 +876,22 @@ const UserActivityReport = () => {
                                 <table className="min-w-full divide-y divide-gray-200">
                                     <thead className="bg-gray-50">
                                         <tr>
-                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            <th scope="col" className="px-6 py-3 text-left text-md font-semibold text-gray-500 uppercase tracking-wider">
                                                 Customer
                                             </th>
-                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            <th scope="col" className="px-6 py-3 text-left text-md font-semibold text-gray-500 uppercase tracking-wider">
                                                 Orders
                                             </th>
-                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            <th scope="col" className="px-6 py-3 text-left text-md font-semibold text-gray-500 uppercase tracking-wider">
                                                 Total Spent
                                             </th>
-                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            <th scope="col" className="px-6 py-3 text-left text-md font-semibold text-gray-500 uppercase tracking-wider">
                                                 Reviews
                                             </th>
-                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            <th scope="col" className="px-6 py-3 text-left text-md font-semibold text-gray-500 uppercase tracking-wider">
                                                 Last Order
                                             </th>
-                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            <th scope="col" className="px-6 py-3 text-left text-md font-semibold text-gray-500 uppercase tracking-wider">
                                                 Loyalty Score
                                             </th>
                                         </tr>
