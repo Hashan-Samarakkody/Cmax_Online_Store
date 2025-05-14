@@ -42,7 +42,7 @@ const Footer = () => {
             <div>
                 <hr />
                 {/* Copyright for current year */}
-                <p className='py-5 text-sm text-center font-semibold'>Copyright {new Date().getFullYear()}@ forever.com - All rights reserved</p>
+                <p className='py-5 text-sm text-center font-semibold'>Copyright {new Date().getFullYear()}@ cmaxonliestore.com - All rights reserved</p>
             </div>
 
         </div>
