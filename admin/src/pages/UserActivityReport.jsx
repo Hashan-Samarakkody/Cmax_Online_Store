@@ -164,7 +164,7 @@ const UserActivityReport = () => {
             <div className="flex items-center justify-between mb-6">
                 <h1 className="text-2xl font-bold">User Activity Report</h1>
                 <button
-                    onClick={() => navigate('/')}
+                    onClick={() => navigate('/dashboard')}
                     className="flex items-center text-blue-600 hover:text-blue-800"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
