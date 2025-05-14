@@ -1,8 +1,7 @@
 import orderModel from '../models/orderModel.js';
 import userModel from '../models/userModel.js';
 import productModel from '../models/productModel.js';
-import * as ss from 'simple-statistics';
-import axios from 'axios';
+
 
 // Get dashboard overview statistics
 const getDashboardStats = async (req, res) => {

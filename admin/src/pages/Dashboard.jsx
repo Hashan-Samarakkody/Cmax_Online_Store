@@ -474,6 +474,13 @@ const Dashboard = () => {
 
         <div className="flex items-center gap-4">
           <button
+            onClick={() => navigate('/financial-sales-report')}
+            className="flex items-center px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors"
+          >
+            Financial Sales Report
+          </button>
+
+          <button
             onClick={() => navigate('/sales')}
             className="flex items-center px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors"
           >
@@ -482,7 +489,7 @@ const Dashboard = () => {
 
           <button
             onClick={() => navigate('/user-activity-report')}
-            className="flex items-center px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+            className="flex items-center px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors"
           >
             User Activity Report
           </button>

@@ -8,8 +8,9 @@ import {
     getCategoryDistribution,
     generateReport,
     getRevenuePrediction,
-    getUserActivityReport
+    getUserActivityReport,
 } from '../controllers/dashboardController.js';
+import { getLoyalCustomers } from '../controllers/userController.js';
 import adminAuth from '../middleware/adminAuth.js';
 
 const dashboardRouter = express.Router();
@@ -24,5 +25,6 @@ dashboardRouter.get('/category-distribution', adminAuth, getCategoryDistribution
 dashboardRouter.post('/generate-report', adminAuth, generateReport);
 dashboardRouter.get('/revenue-prediction', adminAuth, getRevenuePrediction);
 dashboardRouter.get('/user-activity-report', adminAuth, getUserActivityReport);
+dashboardRouter.get('/loyal-customers', adminAuth, getLoyalCustomers);
 
 export default dashboardRouter;
