@@ -6,7 +6,6 @@ import orderModel from '../models/orderModel.js';
 import productModel from '../models/productModel.js';
 import userModel from '../models/userModel.js';
 
-
 export const generateOrderPDF = async (req, res) => {
     try {
         const placedOrders = await orderModel.find({
@@ -671,6 +670,20 @@ function getColor(item) {
     return null;
 }
 
+// Helper function to format date
+function formatDate(date) {
+    return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+    });
+}
+
+// Helper function to format date for filename
+function formatDateForFilename(date) {
+    return date.toISOString().split('T')[0];
+}
+
 // Helper function to process sales data and organize hierarchically
 async function processSalesData(orders) {
     // Create a hierarchical structure: Category -> Subcategory -> Item -> Variations
@@ -1066,18 +1079,4 @@ async function getSubcategoryName(subcategoryId) {
         console.error('Error getting subcategory name:', error);
         return 'Unknown Subcategory';
     }
-}
-
-// Helper function to format date
-function formatDate(date) {
-    return date.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-    });
-}
-
-// Helper function to format date for filename
-function formatDateForFilename(date) {
-    return date.toISOString().split('T')[0];
 }

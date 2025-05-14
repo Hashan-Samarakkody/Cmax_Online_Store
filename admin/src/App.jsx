@@ -17,6 +17,7 @@ import CategoryManager from './pages/CategoryManager'
 import ReturnAnalysis from './pages/ReturnAnalysis'
 import UserActivityReport from './pages/UserActivityReport'
 import AdminChatBot from './components/AdminChatBot'
+import FinancialSalesReport from './pages/FinancialSalesReport'
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css'
 import axios from 'axios'
@@ -113,6 +114,7 @@ const App = () => {
             <Route path='/return-requests' element={<ReturnRequests token={token} />} />
             <Route path='/return-analysis' element={<ReturnAnalysis token={token} />} />
             <Route path='/user-activity-report' element={<UserActivityReport token={token} />} />
+            <Route path='/financial-sales-report' element={<FinancialSalesReport token={token} />} />
           </Routes>
         </div>
       </div>
