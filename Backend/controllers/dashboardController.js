@@ -433,7 +433,6 @@ const getRevenuePrediction = async (req, res) => {
         const n = yValues.length;
 
         if (n < 2) {
-            // Not enough data for advanced modeling, fall back to simple approach
             // Calculate trend using simple regression
             const xValues = Array.from({ length: n }, (_, i) => i);
 

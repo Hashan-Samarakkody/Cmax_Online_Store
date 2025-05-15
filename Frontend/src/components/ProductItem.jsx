@@ -57,7 +57,7 @@ const ProductItem = ({ id, image, name, price }) => {
                     key={i}
                     src={i <= roundedRating ? assets.star_icon : assets.star_dull_icon}
                     alt={`${i <= roundedRating ? "filled" : "empty"} star`}
-                    className="w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5" // Responsive star sizes
+                    className="w-2.5 h-2.5 sm:w-4 sm:h-3 md:w-3 md:h-3"
                 />
             );
         }
