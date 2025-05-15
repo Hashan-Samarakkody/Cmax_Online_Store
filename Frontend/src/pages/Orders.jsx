@@ -11,6 +11,15 @@ const Orders = () => {
   const { backendUrl, token, currency } = useContext(ShopContext);
   const [orderData, setOrderData] = useState([])
   const navigate = useNavigate();
+  const [expandedOrderId, setExpandedOrderId] = useState(null);
+
+  const toggleOrderExpand = (orderId) => {
+    if (expandedOrderId === orderId) {
+      setExpandedOrderId(null);
+    } else {
+      setExpandedOrderId(orderId);
+    }
+  };
 
   const isReturnEligible = (item) => {
     if (item.status !== 'Delivered') return false;
@@ -29,20 +38,8 @@ const Orders = () => {
       }
       const response = await axios.post(backendUrl + '/api/order/userorders', {}, { headers: { token } })
       if (response.data.success) {
-        let allOrdersItems = []
-        response.data.orders.map((order) => {
-          order.items.map((item) => {
-            item['status'] = order.status
-            item['payment'] = order.payment
-            item['paymentMethod'] = order.paymentMethod
-            item['date'] = order.date
-            item['trackingId'] = order.trackingId
-            item['orderId'] = order._id
-            item['orderDisplayId'] = order.orderId
-            allOrdersItems.push(item)
-          })
-        })
-        setOrderData(allOrdersItems.reverse())
+        // Store grouped orders instead of individual items
+        setOrderData(response.data.orders.reverse())
       }
     } catch (error) {
       console.log(error)
@@ -51,14 +48,14 @@ const Orders = () => {
   }
 
   // Track order function
-  const trackOrder = (item) => {
-    if (item.status === 'Delivered' && item.trackingId) {
+  const trackOrder = (order) => {
+    if (order.status === 'Delivered' && order.trackingId) {
       // Open tracking website in a new tab
       window.open(`https://koombiyodelivery.lk/Track/track_id`, '_blank');
     } else {
       // For non-delivered items or without tracking, just refresh
       loadOrderData();
-      toast.info(`Order status: ${item.status}`);
+      toast.info(`Order status: ${order.status}`);
     }
   }
 
@@ -150,63 +147,115 @@ const Orders = () => {
             <p className='text-gray-400 font-semibold text-2xl sm:text-4xl mt-4 animate-pulse text-center'>No orders to display!</p>
           </div>
         ) : (
-          orderData.map((item, index) => {
-            // Get additional details
-            const itemDetails = renderItemDetails(item);
-            const isDelivered = item.status === 'Delivered';
+          orderData.map((order) => {
+            const isDelivered = order.status === 'Delivered';
+            const isExpanded = expandedOrderId === order._id;
+
+            // Calculate total order price
+            const totalOrderPrice = order.items.reduce((total, item) => {
+              return total + (item.price * item.quantity);
+            }, 0);
 
             return (
-              <div key={index} className='py-4 border-t border-b text-gray-700 flex flex-col md:flex-row md:items-center md:justify-between gap-4'>
-                <div className='flex items-start gap-3 sm:gap-6 text-sm'>
-                  <img className='w-16 sm:w-20 rounded-lg object-cover' src={item.images[0]} alt="" />
-                  <div>
-                    <p className='sm:text-base font-bold line-clamp-2 sm:line-clamp-none'>Item Name: {item.name}</p>
-                    <div className='flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-3 mt-1 text-sm sm:text-base text-gray-700'>
-                      <p className='font-semibold text-gray-500'>{currency}{item.price}</p>
-                      <p className='font-semibold text-gray-500'>Quantity: {item.quantity}</p>
+              <div key={order._id} className='my-4 border rounded-lg shadow-sm overflow-hidden'>
+                {/* Order Summary (Always Visible) */}
+                <div
+                  className='p-4 flex flex-col md:flex-row justify-between items-start md:items-center bg-gray-50 cursor-pointer'
+                  onClick={() => toggleOrderExpand(order._id)}
+                >
+                  <div className='flex-1'>
+                    <div className='flex items-center gap-2'>
+                      <div className={`w-2.5 h-2.5 rounded-full ${isDelivered ? 'bg-blue-500' : 'bg-green-500'}`}></div>
+                      <p className='font-semibold text-lg'>{order.status}</p>
                     </div>
-                    {itemDetails && (
-                      <p className='font-semibold text-gray-500 text-sm sm:text-base'>{itemDetails}</p>
-                    )}
-                    <p className='mt-1 font-medium text-sm sm:text-base'>Date: <span className='text-gray-500'>{new Date(item.date).toDateString()}</span></p>
-                    <p className='mt-1 font-medium text-sm sm:text-base'>Payment Method: <span className='text-gray-500'>{item.paymentMethod}</span></p>
-                    <p className='mt-1 text-green-600 font-semibold text-sm sm:text-base'>Order ID: {item.orderDisplayId || "N/A"}</p>
-                    {item.trackingId && isDelivered && (
-                      <p className='mt-1 font-semibold text-blue-600 text-sm sm:text-base'>
-                        Tracking ID: {item.trackingId}
+                    <p className='text-gray-700'>Order ID: <span className='font-medium'>{order.orderId || "N/A"}</span></p>
+                    <p className='text-gray-700'>Date: <span className='font-medium'>{new Date(order.date).toDateString()}</span></p>
+                    <p className='text-gray-700'>Payment Method: <span className='font-medium'>{order.paymentMethod}</span></p>
+                    <p className='font-semibold text-green-700'>{currency}{totalOrderPrice.toFixed(2)}</p>
+                    {order.trackingId && isDelivered && (
+                      <p className='mt-1 font-semibold text-blue-600 text-sm'>
+                        Tracking ID: {order.trackingId}
                       </p>
                     )}
                   </div>
-                </div>
-                <div className='md:w-1/2 flex flex-wrap sm:flex-nowrap justify-between mt-3 md:mt-0 gap-3'>
-                  <div className='flex items-center gap-2 w-full md:w-auto'>
-                    <div className={`w-2 h-2 rounded-full ${isDelivered ? 'bg-blue-500' : 'bg-green-500'}`}></div>
-                    <p className='text-sm md:text-base'>{item.status}</p>
-                  </div>
-                  <div className='flex flex-wrap gap-2 w-full md:w-auto'>
-                    <button
-                      onClick={() => trackOrder(item)}
-                      className={`border px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium 
-                        ${isDelivered && item.trackingId
-                          ? 'bg-blue-600 text-white hover:bg-blue-700 hover:text-white'
-                          : 'bg-green-600 text-white hover:bg-green-700 hover:text-white'} 
-                        transition-all duration-200 rounded-sm w-full sm:w-auto`}
-                    >
-                      {isDelivered && item.trackingId ? 'Track Package' : 'Track Order'}
-                    </button>
-
-                    {isReturnEligible(item) && isDelivered && item.trackingId && (
+                  <div className='mt-4 md:mt-0 flex flex-col gap-2 min-w-fit'>
+                    <div className='flex gap-2'>
                       <button
-                        onClick={() => navigate('/returns')}
-                        className="border px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium bg-yellow-500 text-white hover:bg-yellow-600 transition-all duration-200 rounded-sm w-full sm:w-auto"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          trackOrder(order);
+                        }}
+                        className={`px-3 py-1.5 text-sm font-medium rounded-sm 
+                          ${isDelivered && order.trackingId
+                            ? 'bg-blue-600 text-white hover:bg-blue-700'
+                            : 'bg-green-600 text-white hover:bg-green-700'}`}
                       >
-                        Return Item
+                        {isDelivered && order.trackingId ? 'Track Package' : 'Track Order'}
+                      </button>
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleOrderExpand(order._id);
+                        }}
+                        className="px-3 py-1.5 text-sm font-medium bg-gray-200 hover:bg-gray-300 rounded-sm"
+                      >
+                        {isExpanded ? 'Hide Details' : 'View Details'}
+                      </button>
+                    </div>
+
+                    {/* Return eligibility check for the whole order */}
+                    {isDelivered && order.trackingId && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate('/returns', { state: { orderId: order._id } });
+                        }}
+                        className="px-3 py-1.5 text-sm font-medium bg-yellow-500 text-white hover:bg-yellow-600 rounded-sm"
+                      >
+                        Return Items
                       </button>
                     )}
                   </div>
                 </div>
+
+                {/* Expanded Order Items */}
+                {isExpanded && (
+                  <div className='bg-white border-t'>
+                    <div className='p-4'>
+                      <h3 className='font-medium text-gray-800 mb-2'>Order Items ({order.items.length})</h3>
+                      <div className='space-y-4'>
+                        {order.items.map((item, itemIndex) => {
+                          // Get additional details
+                          const itemDetails = renderItemDetails(item);
+
+                          return (
+                            <div key={itemIndex} className='flex gap-4 pb-4 border-b last:border-b-0'>
+                              <img
+                                src={item.images[0]}
+                                alt={item.name}
+                                className='w-16 h-16 object-cover rounded-md'
+                              />
+                              <div className='flex-1'>
+                                <p className='font-medium line-clamp-2'>{item.name}</p>
+                                {itemDetails && (
+                                  <p className='text-sm text-gray-600'>{itemDetails}</p>
+                                )}
+                                <div className='flex flex-wrap gap-4 mt-1 text-sm text-gray-700'>
+                                  <p>Unit Price: <span className='font-medium'>{currency}{item.price}</span></p>
+                                  <p>Quantity: <span className='font-medium'>{item.quantity}</span></p>
+                                  <p>Total: <span className='font-medium'>{currency}{(item.price * item.quantity).toFixed(2)}</span></p>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
-            )
+            );
           })
         )}
       </div>
