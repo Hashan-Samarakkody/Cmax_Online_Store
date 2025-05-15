@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { FiDownload, FiCalendar, FiLoader } from 'react-icons/fi';
 import { backendUrl } from '../App';
+import { useNavigate } from 'react-router-dom';
 
 const SalesReport = () => {
+    const navigate = useNavigate();
     const [startDate, setStartDate] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -96,13 +98,17 @@ const SalesReport = () => {
 
     return (
         <div className="bg-white rounded-lg shadow-md p-6">
-            <h1 className="text-2xl font-bold mb-6">Sales Report Generator</h1>
-
-            <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
-                <p className="text-blue-700">
-                    Generate a hierarchical sales report showing item quantities sold grouped by category, subcategory, and product variations.
-                    The report will include data from your selected start date until today.
-                </p>
+            <div className="flex items-center justify-between mb-6">
+                <h1 className="text-2xl font-bold">Sold Items Report</h1>
+                <button
+                    onClick={() => navigate('/dashboard')}
+                    className="flex items-center text-blue-600 hover:text-blue-800"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                    <span className="ml-1">Back to Dashboard</span>
+                </button>
             </div>
 
             <div className="flex flex-col space-y-4 md:flex-row md:space-y-0 md:space-x-4 mb-6">

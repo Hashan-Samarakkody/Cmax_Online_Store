@@ -131,3 +131,49 @@ select,input,textarea {
 ::-webkit-scrollbar {
     display: none;
 }
+
+.financial-sales-report {
+    padding: 20px;
+}
+
+.financial-table-container {
+    margin-top: 30px;
+    overflow-x: auto;
+}
+
+.financial-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+
+.financial-table th,
+.financial-table td {
+    padding: 10px;
+    border: 1px solid #ddd;
+}
+
+.financial-table th {
+    background-color: #f4f4f4;
+    font-weight: bold;
+    text-align: left;
+}
+
+.financial-table .text-right {
+    text-align: right;
+}
+
+.subcategory-total {
+    background-color: #f8f9fa;
+    font-weight: bold;
+}
+
+.category-total {
+    background-color: #e9ecef;
+    font-weight: bold;
+}
+
+.grand-total {
+    background-color: #d1ecf1;
+    font-weight: bold;
+    font-size: 1.1em; }

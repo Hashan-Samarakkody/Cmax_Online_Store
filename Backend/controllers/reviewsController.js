@@ -96,6 +96,9 @@ const updateReview = async (req, res) => {
             });
         }
 
+        // Check if rating is being changed
+        const ratingChanged = rating && review.rating !== rating;
+
         // Update review
         review.rating = rating || review.rating;
         review.content = content || review.content;
@@ -108,12 +111,21 @@ const updateReview = async (req, res) => {
             .populate('userId', 'name username profileImage')
             .populate('replies.userId', 'name username profileImage');
 
-        // Broadcast review update
+        // Broadcast review update for product page
         broadcast({
             type: 'updateReview',
             review: updatedReview,
             productId: review.productId
         });
+
+        // If rating changed, broadcast loyalty update as this affects the loyalty score
+        if (ratingChanged) {
+            broadcast({
+                type: 'loyaltyUpdate',
+                userId: userId,
+                action: 'updateReview'
+            });
+        }
 
         res.json({
             success: true,
@@ -148,15 +160,23 @@ const deleteReview = async (req, res) => {
         }
 
         const productId = review.productId;
+        const reviewUserId = review.userId; // Capture the user ID before deletion
 
         // Delete the review
         await reviewModel.findByIdAndDelete(reviewId);
 
-        // Broadcast review deletion
+        // Broadcast review deletion for product page updates
         broadcast({
             type: 'deleteReview',
             reviewId,
             productId
+        });
+
+        // Also broadcast a loyalty update since this affects user's loyalty score
+        broadcast({
+            type: 'loyaltyUpdate',
+            userId: reviewUserId.toString(),
+            action: 'deleteReview'
         });
 
         res.json({

@@ -6,6 +6,8 @@ import { broadcast } from '../server.js';
 import { v2 as cloudinary } from 'cloudinary';
 import nodemailer from 'nodemailer';
 import mongoose from 'mongoose';
+import orderModel from "../models/orderModel.js";
+import reviewModel from "../models/reviewModel.js";
 
 const createToken = (id) => {
     return jwt.sign({ id }, process.env.JWT_SECRET);
@@ -894,6 +896,144 @@ const facebookAuthCallback = (req, res) => {
     }
 };
 
+// Get most loyal customers based on orders and reviews
+const getLoyalCustomers = async (req, res) => {
+    try {
+        const { limit = 10, sortBy = 'loyalty', period } = req.query;
+        const limitNum = parseInt(limit);
+
+        // Set date filter based on period
+        const dateFilter = {};
+        if (period) {
+            const currentDate = new Date();
+
+            switch (period) {
+                case 'week':
+                    const lastWeek = new Date(currentDate);
+                    lastWeek.setDate(currentDate.getDate() - 7);
+                    dateFilter.date = { $gte: lastWeek.getTime() };
+                    break;
+                case 'month':
+                    const lastMonth = new Date(currentDate);
+                    lastMonth.setMonth(currentDate.getMonth() - 1);
+                    dateFilter.date = { $gte: lastMonth.getTime() };
+                    break;
+                case 'year':
+                    const lastYear = new Date(currentDate);
+                    lastYear.setFullYear(currentDate.getFullYear() - 1);
+                    dateFilter.date = { $gte: lastYear.getTime() };
+                    break;
+            }
+        }
+
+        // Get customer order data
+        const customerOrders = await orderModel.aggregate([
+            { $match: { ...dateFilter } },
+            {
+                $group: {
+                    _id: '$userId',
+                    orderCount: { $sum: 1 },
+                    totalSpent: { $sum: '$amount' },
+                    lastOrder: { $max: '$date' }
+                }
+            }
+        ]);
+
+        // Get customer review data
+        const customerReviews = await reviewModel.aggregate([
+            {
+                $group: {
+                    _id: '$userId',
+                    reviewCount: { $sum: 1 },
+                    averageRating: { $avg: '$rating' }
+                }
+            }
+        ]);
+
+        // Create a map of user IDs to their review data
+        const reviewMap = {};
+        customerReviews.forEach(review => {
+            reviewMap[review._id] = {
+                reviewCount: review.reviewCount,
+                averageRating: review.averageRating
+            };
+        });
+
+        // Combine order and review data
+        const loyalCustomers = await Promise.all(
+            customerOrders.map(async (customer) => {
+                const userId = customer._id;
+
+                // Get user details
+                const user = await userModel.findById(userId, 'username email firstName lastName profileImage createdAt');
+
+                if (!user) return null; // Skip if user not found
+
+                // Calculate loyalty score (50% orders, 30% spending, 20% reviews)
+                const reviewData = reviewMap[userId] || { reviewCount: 0, averageRating: 0 };
+                const loyaltyScore = (
+                    (0.5 * customer.orderCount) +
+                    (0.3 * (customer.totalSpent / 1000)) +
+                    (0.2 * (reviewData.reviewCount * (reviewData.averageRating || 0) / 5))
+                ).toFixed(2);
+
+                return {
+                    userId: userId,
+                    username: user.username,
+                    email: user.email,
+                    name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username,
+                    profileImage: user.profileImage,
+                    createdAt: user.createdAt,
+                    orderCount: customer.orderCount,
+                    totalSpent: customer.totalSpent,
+                    lastOrder: new Date(customer.lastOrder),
+                    reviewCount: reviewData.reviewCount || 0,
+                    averageRating: reviewData.averageRating ? reviewData.averageRating.toFixed(1) : 0,
+                    loyaltyScore: parseFloat(loyaltyScore)
+                };
+            })
+        );
+
+        // Filter out null values and sort
+        const filteredCustomers = loyalCustomers.filter(customer => customer !== null);
+
+        // Sort results based on sortBy parameter
+        let sortedCustomers;
+        switch (sortBy) {
+            case 'orders':
+                sortedCustomers = filteredCustomers.sort((a, b) => b.orderCount - a.orderCount);
+                break;
+            case 'spent':
+                sortedCustomers = filteredCustomers.sort((a, b) => b.totalSpent - a.totalSpent);
+                break;
+            case 'reviews':
+                sortedCustomers = filteredCustomers.sort((a, b) => b.reviewCount - a.reviewCount);
+                break;
+            case 'rating':
+                sortedCustomers = filteredCustomers.sort((a, b) => b.averageRating - a.averageRating);
+                break;
+            case 'recent':
+                sortedCustomers = filteredCustomers.sort((a, b) => b.lastOrder - a.lastOrder);
+                break;
+            case 'loyalty':
+            default:
+                sortedCustomers = filteredCustomers.sort((a, b) => b.loyaltyScore - a.loyaltyScore);
+                break;
+        }
+
+        res.json({
+            success: true,
+            customers: sortedCustomers.slice(0, limitNum)
+        });
+    } catch (error) {
+        console.error('Error getting loyal customers:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Failed to retrieve loyal customers data'
+        });
+    }
+};
+
 export {
     loginUser,
     registerUser,
@@ -913,5 +1053,6 @@ export {
     sendChangePasswordCode,
     verifyChangePasswordCode,
     googleAuthCallback,
-    facebookAuthCallback
+    facebookAuthCallback,
+    getLoyalCustomers
 };

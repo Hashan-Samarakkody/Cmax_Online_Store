@@ -269,11 +269,6 @@ const Edit = ({ token }) => {
             formData.append('imagesToDelete', JSON.stringify(imagesToDelete));
         }
 
-        // Debug what's being sent
-        console.log('Product ID:', id);
-        console.log('Existing images count:', existingUrlImages.length);
-        console.log('New images count:', newImageFiles.length);
-
         try {
             const response = await axios.put(`${backendUrl}/api/product/update`, formData, {
                 headers: {
