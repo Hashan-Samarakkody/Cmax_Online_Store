@@ -79,12 +79,114 @@ const addProduct = async (req, res) => {
     }
 };
 
-// Get all products function
-const getAllProducts = async (req, res) => {
-    try {    
-        const products = await productModel.find({})
+// Toggle product visibility function
+const toggleProductVisibility = async (req, res) => {
+    try {
+        const { productId, isVisible } = req.body;
+
+        if (!productId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Product ID is required'
+            });
+        }
+
+        const product = await productModel.findById(productId);
+
+        if (!product) {
+            return res.status(404).json({
+                success: false,
+                message: 'Product not found'
+            });
+        }
+
+        product.isVisible = isVisible;
+        await product.save();
+
+        // Get updated product data with populated fields for WebSocket broadcast
+        const updatedProduct = await productModel.findById(productId)
             .populate('category', 'name')
             .populate('subcategory', 'name');
+
+        res.json({
+            success: true,
+            message: `Product ${isVisible ? 'visible' : 'hidden'} successfully`,
+            product: updatedProduct
+        });
+
+        // Broadcast product visibility change
+        broadcast({
+            type: 'productVisibilityChanged',
+            productId,
+            isVisible,
+            product: updatedProduct
+        });
+
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// Get all products function
+const getAllProducts = async (req, res) => {
+    try {
+        // Join with categories and subcategories to get visibility information
+        const products = await productModel.aggregate([
+            {
+                $lookup: {
+                    from: "categories",
+                    localField: "category",
+                    foreignField: "_id",
+                    as: "categoryData"
+                }
+            },
+            {
+                $unwind: "$categoryData"
+            },
+            {
+                $lookup: {
+                    from: "subcategories",
+                    localField: "subcategory",
+                    foreignField: "_id",
+                    as: "subcategoryData"
+                }
+            },
+            {
+                $unwind: "$subcategoryData"
+            },
+            {
+                $match: {
+                    "categoryData.isVisible": true,
+                    "subcategoryData.isVisible": true,
+                    "isVisible": { $ne: false }
+                }
+            },
+            {
+                $project: {
+                    "_id": 1,
+                    "productId": 1,
+                    "name": 1,
+                    "description": 1,
+                    "price": 1,
+                    "bestseller": 1,
+                    "sizes": 1,
+                    "colors": 1,
+                    "images": 1,
+                    "hasSizes": 1,
+                    "hasColors": 1,
+                    "isVisible": 1,
+                    "category": {
+                        "_id": "$categoryData._id",
+                        "name": "$categoryData.name"
+                    },
+                    "subcategory": {
+                        "_id": "$subcategoryData._id",
+                        "name": "$subcategoryData.name"
+                    }
+                }
+            }
+        ]);
 
         res.json({ success: true, products });
     } catch (error) {
@@ -306,5 +408,6 @@ export {
     displaySingleProduct,
     getAllProducts,
     updateProduct,
-    getSingleProductDetails
+    getSingleProductDetails,
+    toggleProductVisibility
 };

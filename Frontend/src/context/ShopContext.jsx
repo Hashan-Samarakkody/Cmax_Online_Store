@@ -120,6 +120,27 @@ const ShopContextProvider = (props) => {
             }
         };
 
+        // Handle product visibility changes
+        const handleProductVisibilityChanged = (data) => {
+            if (!data.productId || data.isVisible === undefined) return;
+
+            // Update the products array with the new visibility setting
+            setProducts(prevProducts =>
+                prevProducts.map(product => {
+                    if (product._id === data.productId) {
+                        return { ...product, isVisible: data.isVisible };
+                    }
+                    return product;
+                }).filter(product => {
+                    // If product was hidden, remove it from user view
+                    if (product._id === data.productId && !data.isVisible) {
+                        return false;
+                    }
+                    return true;
+                })
+            );
+        };
+
         // Handle product updates at context level
         const handleUpdateProduct = (data) => {
             if (data && data.product) {
@@ -156,12 +177,13 @@ const ShopContextProvider = (props) => {
         WebSocketService.on('newProduct', handleNewProduct);
         WebSocketService.on('updateProduct', handleUpdateProduct);
         WebSocketService.on('deleteProduct', handleDeleteProduct);
-
+        WebSocketService.on('productVisibilityChanged', handleProductVisibilityChanged);
         return () => {
             // Cleanup handlers on unmount
             WebSocketService.off('newProduct', handleNewProduct);
             WebSocketService.off('updateProduct', handleUpdateProduct);
             WebSocketService.off('deleteProduct', handleDeleteProduct);
+            WebSocketService.off('productVisibilityChanged', handleProductVisibilityChanged);
         };
     }, []);
 

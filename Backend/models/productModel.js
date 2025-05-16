@@ -12,7 +12,8 @@ const productSchema = new mongoose.Schema({
     colors: { type: [String], default: [] },
     images: { type: [String], default: [] },
     hasSizes: { type: Boolean, default: false },
-    hasColors: { type: Boolean, default: false }
+    hasColors: { type: Boolean, default: false },
+    isVisible: { type: Boolean, default: true }
 });
 
 const productModel = mongoose.models.product || mongoose.model("product", productSchema);

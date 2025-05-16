@@ -88,11 +88,73 @@ const Collection = () => {
       ));
     };
 
+    const handleCategoryVisibilityChanged = (data) => {
+      if (!data.categoryId || data.isVisible === undefined) return;
+
+      // If the category is now hidden, remove its products from display
+      if (data.isVisible === false) {
+        setAllProducts(prev => prev.filter(product =>
+          product.category._id !== data.categoryId
+        ));
+        setOriginalProducts(prev => prev.filter(product =>
+          product.category._id !== data.categoryId
+        ));
+        setFilterProducts(prev => prev.filter(product =>
+          product.category._id !== data.categoryId
+        ));
+
+        // Also update the categories list for filters
+        setCategories(prev => prev.filter(cat =>
+          cat._id !== data.categoryId
+        ));
+
+        // Clear the category selection if it was selected
+        setCategory(prev => prev.filter(catId =>
+          catId !== data.categoryId
+        ));
+      } else {
+        // If a category became visible, we should refresh the data
+        fetchAllData();
+      }
+    };
+
+    const handleSubcategoryVisibilityChanged = (data) => {
+      if (!data.subcategoryId || data.isVisible === undefined) return;
+
+      // If the subcategory is now hidden, remove its products from display
+      if (data.isVisible === false) {
+        setAllProducts(prev => prev.filter(product =>
+          product.subcategory._id !== data.subcategoryId
+        ));
+        setOriginalProducts(prev => prev.filter(product =>
+          product.subcategory._id !== data.subcategoryId
+        ));
+        setFilterProducts(prev => prev.filter(product =>
+          product.subcategory._id !== data.subcategoryId
+        ));
+
+        // Also update subcategories for filters
+        setSubCategories(prev => prev.filter(sub =>
+          sub._id !== data.subcategoryId
+        ));
+
+        // Clear subcategory selection if it was selected
+        setSubCategory(prev => prev.filter(subId =>
+          subId !== data.subcategoryId
+        ));
+      } else {
+        // If a subcategory became visible, we should refresh the data
+        fetchAllData();
+      }
+    };
+
     // Connect to WebSocket and listen for new products
     WebSocketService.connect(() => {
       WebSocketService.on('newProduct', handleNewProduct);
       WebSocketService.on('updateProduct', handleUpdateProduct);
       WebSocketService.on('deleteProduct', handleDeleteProduct);
+      WebSocketService.on('categoryVisibilityChanged', handleCategoryVisibilityChanged);
+      WebSocketService.on('subcategoryVisibilityChanged', handleSubcategoryVisibilityChanged);
     });
 
     // Cleanup function to disconnect WebSocket and remove the listener
@@ -100,6 +162,8 @@ const Collection = () => {
       WebSocketService.off('newProduct', handleNewProduct);
       WebSocketService.off('updateProduct', handleUpdateProduct);
       WebSocketService.off('deleteProduct', handleDeleteProduct);
+      WebSocketService.off('categoryVisibilityChanged', handleCategoryVisibilityChanged);
+      WebSocketService.off('subcategoryVisibilityChanged', handleSubcategoryVisibilityChanged);
       WebSocketService.disconnect();
     };
   }, []);
