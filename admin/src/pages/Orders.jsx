@@ -16,6 +16,8 @@ const Orders = ({ token }) => {
     price: false,
     productDetails: false
   });
+  const [statusFilter, setStatusFilter] = useState('All');
+
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const [ordersPerPage, setOrdersPerPage] = useState(10);
@@ -42,6 +44,8 @@ const Orders = ({ token }) => {
       toast.error(error.message);
     }
   };
+
+  
 
   // Update pagination and displayed orders whenever filteredOrders or pagination settings change
   useEffect(() => {
@@ -72,6 +76,56 @@ const Orders = ({ token }) => {
     setCurrentPage(1); // Reset to first page when changing display count
   };
 
+  // Search and filter functionality
+  useEffect(() => {
+    // First filter by status
+    let statusFiltered = orders;
+    if (statusFilter !== 'All') {
+      statusFiltered = orders.filter(order => order.status === statusFilter);
+    }
+
+    // Then apply search term filter if present
+    if (!searchTerm.trim()) {
+      setFilteredOrders(statusFiltered);
+      return;
+    }
+
+    const filtered = statusFiltered.filter(order => {
+      const term = searchTerm.toLowerCase();
+
+      // Search by Order ID if selected
+      if (searchCriteria.orderId && order.orderId.toLowerCase().includes(term)) {
+        return true;
+      }
+
+      // Search by customer name if selected
+      if (searchCriteria.customerName) {
+        const fullName = `${order.address.firstName} ${order.address.lastName}`.toLowerCase();
+        if (fullName.includes(term)) {
+          return true;
+        }
+      }
+
+      // Search by price if selected
+      if (searchCriteria.price && order.amount.toString().includes(term)) {
+        return true;
+      }
+
+      // Search by product details (size/color) if selected
+      if (searchCriteria.productDetails) {
+        return order.items.some(item => {
+          const size = item.size ? item.size.toLowerCase() : '';
+          const color = item.color ? item.color.toLowerCase() : '';
+          return size.includes(term) || color.includes(term);
+        });
+      }
+
+      return false;
+    });
+
+    setFilteredOrders(filtered);
+  }, [searchTerm, searchCriteria, orders, statusFilter]);
+
   // Generate pagination buttons
   const renderPaginationButtons = () => {
     const buttons = [];
@@ -88,7 +142,6 @@ const Orders = ({ token }) => {
       </button>
     );
 
-    // Page number buttons - show 5 pages at most
     const startPage = Math.max(1, currentPage - 2);
     const endPage = Math.min(totalPages, startPage + 4);
 
@@ -291,6 +344,11 @@ const Orders = ({ token }) => {
     }));
   };
 
+  const handleStatusFilterChange = (e) => {
+    setStatusFilter(e.target.value);
+    setCurrentPage(1); // Reset to first page when changing filter
+  };
+
   // Validation function for item details
   const renderItemDetails = (item) => {
     const details = [];
@@ -346,6 +404,19 @@ const Orders = ({ token }) => {
             className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
+        <div>
+          <select
+            value={statusFilter}
+            onChange={handleStatusFilterChange}
+            className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="All">All Orders</option>
+            <option value="Order Placed">Order Placed</option>
+            <option value="Picking">Picking</option>
+            <option value="Out for Delivery">Out for Delivery</option>
+            <option value="Delivered">Delivered</option>
+          </select>
+        </div>
 
         <div className="flex flex-wrap gap-4 mt-2">
           <label className="flex items-center cursor-pointer">
@@ -389,6 +460,21 @@ const Orders = ({ token }) => {
           </label>
         </div>
       </div>
+
+      {/* Status filter indicators */}
+      {statusFilter !== 'All' && (
+        <div className="mb-4">
+          <span className="inline-block bg-blue-100 text-blue-800 text-sm font-semibold mr-2 px-3 py-1 rounded-full">
+            Filtered by status: {statusFilter}
+            <button
+              onClick={() => setStatusFilter('All')}
+              className="ml-2 text-blue-600 hover:text-blue-800"
+            >
+              ×
+            </button>
+          </span>
+        </div>
+      )}
 
       {/* Pagination Controls */}
       <div className="flex justify-between items-center mb-4">

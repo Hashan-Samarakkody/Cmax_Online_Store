@@ -28,6 +28,7 @@ const ReturnRequests = ({ token }) => {
 	const [searchType, setSearchType] = useState('id');
 	const [searchQuery, setSearchQuery] = useState('');
 	const [searchAmount, setSearchAmount] = useState('');
+	const [statusFilter, setStatusFilter] = useState('all');
 	const [dateRange, setDateRange] = useState({
 		startDate: null,
 		endDate: null
@@ -65,7 +66,6 @@ const ReturnRequests = ({ token }) => {
 		}
 	};
 
-	// Add the filtering logic function
 	const filterReturns = () => {
 		let results = [...returns];
 
@@ -97,10 +97,15 @@ const ReturnRequests = ({ token }) => {
 				}
 				return true;
 			});
+		} else if (searchType === 'status') {
+			// No need for additional search query, just use the statusFilter value
+			if (statusFilter !== 'all') {
+				results = results.filter(item => item.status === statusFilter);
+			}
 		}
 
 		setFilteredReturns(results);
-	};
+	  };
 
 	// Add search handler function
 	const handleSearch = (e) => {
@@ -109,15 +114,16 @@ const ReturnRequests = ({ token }) => {
 		filterReturns();
 	};
 
-	// Add reset search function
+	// Reset search filters
 	const resetSearch = () => {
 		setSearchType('id');
 		setSearchQuery('');
 		setSearchAmount('');
+		setStatusFilter('all');
 		setDateRange({ startDate: null, endDate: null });
 		setIsSearchActive(false);
 		setFilteredReturns(returns);
-	};
+  };
 
 	useEffect(() => {
 		if (token) {
@@ -277,6 +283,7 @@ const ReturnRequests = ({ token }) => {
 		setCurrentPage(1); // Reset to first page when changing items per page
 	};
 
+	// Update the SearchBox component
 	const SearchBox = () => {
 		return (
 			<div className="bg-white p-4 rounded-lg shadow mb-4">
@@ -333,7 +340,21 @@ const ReturnRequests = ({ token }) => {
 								onChange={() => setSearchType('date')}
 								className="mr-1"
 							/>
-							<label htmlFor="searchByDate" className="text-sm">Date Range</label>
+							<label htmlFor="searchByDate" className="mr-3 text-sm">Date Range</label>
+						</div>
+
+						{/* New Status filter radio button */}
+						<div className="flex items-center">
+							<input
+								type="radio"
+								id="searchByStatus"
+								name="searchType"
+								value="status"
+								checked={searchType === 'status'}
+								onChange={() => setSearchType('status')}
+								className="mr-1"
+							/>
+							<label htmlFor="searchByStatus" className="text-sm">Status</label>
 						</div>
 					</div>
 
@@ -391,6 +412,26 @@ const ReturnRequests = ({ token }) => {
 							</div>
 						)}
 
+						{/* New Status dropdown for status filtering */}
+						{searchType === 'status' && (
+							<div className="flex-1">
+								<select
+									value={statusFilter}
+									onChange={(e) => setStatusFilter(e.target.value)}
+									className="w-full p-2 border border-gray-300 rounded"
+								>
+									<option value="all">All Statuses</option>
+									<option value="Requested">Requested</option>
+									<option value="Approved">Approved</option>
+									<option value="In Transit">In Transit</option>
+									<option value="Received">Received</option>
+									<option value="Inspected">Inspected</option>
+									<option value="Completed">Completed</option>
+									<option value="Rejected">Rejected</option>
+								</select>
+							</div>
+						)}
+
 						<div className="flex gap-2">
 							<button type="submit" className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded flex items-center">
 								<FaSearch className="mr-1" /> Search
@@ -418,7 +459,7 @@ const ReturnRequests = ({ token }) => {
 				)}
 			</div>
 		);
-	};
+  };
 
 	// Create pagination UI component
 	const Pagination = () => {
