@@ -592,7 +592,7 @@ const SignUp = () => {
               <div className="text-center mt-6">
                 <span className="text-gray-600">Already have an account? </span>
                 <Link
-                  to="/login"
+                  to="/"
                   className="text-green-600 font-medium hover:text-green-800 hover:underline transition-colors duration-200"
                 >
                   Log in

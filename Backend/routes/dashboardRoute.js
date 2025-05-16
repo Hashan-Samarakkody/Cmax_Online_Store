@@ -9,6 +9,7 @@ import {
     generateReport,
     getRevenuePrediction,
     getUserActivityReport,
+    getUserActivityLog
 } from '../controllers/dashboardController.js';
 import { getLoyalCustomers } from '../controllers/userController.js';
 import adminAuth from '../middleware/adminAuth.js';
@@ -26,5 +27,6 @@ dashboardRouter.post('/generate-report', adminAuth, generateReport);
 dashboardRouter.get('/revenue-prediction', adminAuth, getRevenuePrediction);
 dashboardRouter.get('/user-activity-report', adminAuth, getUserActivityReport);
 dashboardRouter.get('/loyal-customers', adminAuth, getLoyalCustomers);
+dashboardRouter.get('/user-activity-log', adminAuth, getUserActivityLog);
 
 export default dashboardRouter;

@@ -2,6 +2,7 @@ import orderModel from '../models/orderModel.js';
 import userModel from '../models/userModel.js';
 import productModel from '../models/productModel.js';
 import returnModel from '../models/returnModel.js';
+import reviewModel from '../models/reviewModel.js';
 
 // Get dashboard overview statistics
 const getDashboardStats = async (req, res) => {
@@ -677,6 +678,278 @@ const getUserActivityReport = async (req, res) => {
     }
 };
 
+const getUserActivityLog = async (req, res) => {
+    try {
+        const { startDate, endDate } = req.query;
+
+        // Define date filters if provided
+        const dateFilter = {};
+        if (startDate && endDate) {
+            const startDateTime = new Date(startDate);
+            const endDateTime = new Date(endDate);
+            endDateTime.setHours(23, 59, 59, 999); // Include the entire end date
+        }
+
+        // Get all users first for reference
+        const users = await userModel.find()
+            .select('_id firstName lastName username email profileImage lastLogin createdAt');
+
+        // Create a map of userId -> user details for faster lookups
+        const userMap = {};
+        users.forEach(user => {
+            userMap[user._id.toString()] = {
+                userId: user._id,
+                firstName: user.firstName || '',
+                lastName: user.lastName || '',
+                username: user.username || '',
+                email: user.email || '',
+                profileImage: user.profileImage || '',
+                lastLogin: user.lastLogin || user.createdAt
+            };
+        });
+
+        // Get orders (for "Placed an order" activity)
+        let orderQuery = {};
+        if (startDate && endDate) {
+            const startDateTime = new Date(startDate);
+            const endDateTime = new Date(endDate);
+            endDateTime.setHours(23, 59, 59, 999);
+
+            orderQuery.date = {
+                $gte: startDateTime.getTime(),
+                $lte: endDateTime.getTime()
+            };
+        }
+
+        const orders = await orderModel.find(orderQuery)
+            .select('userId orderId date items amount')
+            .sort({ date: -1 });
+
+        // Get reviews (for "Added a review" activity)
+        let reviewQuery = {};
+        if (startDate && endDate) {
+            const startDateTime = new Date(startDate);
+            const endDateTime = new Date(endDate);
+            endDateTime.setHours(23, 59, 59, 999);
+
+            reviewQuery.createdAt = {
+                $gte: startDateTime,
+                $lte: endDateTime
+            };
+        }
+
+        const reviews = await reviewModel.find(reviewQuery)
+            .select('userId productId rating content createdAt _id')
+            .sort({ createdAt: -1 });
+
+        // Get returns (for "Placed a return request" activity)
+        let returnQuery = {};
+        if (startDate && endDate) {
+            const startDateTime = new Date(startDate);
+            const endDateTime = new Date(endDate);
+            endDateTime.setHours(23, 59, 59, 999);
+
+            returnQuery.requestedDate = {
+                $gte: startDateTime.getTime(),
+                $lte: endDateTime.getTime()
+            };
+        }
+
+        const returns = await returnModel.find(returnQuery)
+            .select('userId returnId requestedDate refundAmount')
+            .sort({ requestedDate: -1 });
+
+        // 1. Gather loyalty data for calculation
+        // First, get order data per user
+        const orderData = await orderModel.aggregate([
+            {
+                $group: {
+                    _id: '$userId',
+                    orderCount: { $sum: 1 },
+                    totalSpent: { $sum: '$amount' }
+                }
+            }
+        ]);
+
+        // Create order data map for faster lookups
+        const orderDataMap = {};
+        orderData.forEach(data => {
+            if (data._id) {
+                orderDataMap[data._id.toString()] = {
+                    orderCount: data.orderCount || 0,
+                    totalSpent: data.totalSpent || 0
+                };
+            }
+        });
+
+        // Get review data per user
+        const reviewData = await reviewModel.aggregate([
+            {
+                $group: {
+                    _id: '$userId',
+                    reviewCount: { $sum: 1 },
+                    averageRating: { $avg: '$rating' }
+                }
+            }
+        ]);
+
+        // Create review data map for faster lookups
+        const reviewDataMap = {};
+        reviewData.forEach(data => {
+            if (data._id) {
+                reviewDataMap[data._id.toString()] = {
+                    reviewCount: data.reviewCount || 0,
+                    averageRating: data.averageRating || 0
+                };
+            }
+        });
+
+        // 2. Calculate loyalty scores using the same formula from userController
+        const calculateLoyaltyScore = (userId) => {
+            if (!userId) return 0;
+
+            const userIdStr = userId.toString();
+            const orderInfo = orderDataMap[userIdStr] || { orderCount: 0, totalSpent: 0 };
+            const reviewInfo = reviewDataMap[userIdStr] || { reviewCount: 0, averageRating: 0 };
+
+            // Use the exact same formula as in userController
+            const score = (
+                (0.5 * orderInfo.orderCount) +
+                (0.3 * (orderInfo.totalSpent / 1000)) +
+                (0.2 * (reviewInfo.reviewCount * (reviewInfo.averageRating || 0) / 5))
+            ).toFixed(2);
+
+            return parseFloat(score);
+        };
+
+        // 3. Initialize combined activity array and add activities
+        let activities = [];
+
+        // Process orders
+        for (const order of orders) {
+            const userId = order.userId ? order.userId.toString() : null;
+            if (!userId) continue;
+
+            const user = userMap[userId];
+
+            if (user) {
+                activities.push({
+                    userId: userId,
+                    firstName: user.firstName,
+                    lastName: user.lastName,
+                    username: user.username,
+                    email: user.email,
+                    profileImage: user.profileImage,
+                    lastLogin: user.lastLogin,
+                    actionType: 'Placed an order',
+                    orderId: order.orderId,
+                    date: new Date(order.date),
+                    loyaltyScore: calculateLoyaltyScore(userId)
+                });
+            }
+        }
+
+        // Process reviews
+        for (const review of reviews) {
+            const userId = review.userId ? review.userId.toString() : null;
+            if (!userId) continue;
+
+            const user = userMap[userId];
+
+            if (user) {
+                activities.push({
+                    userId: userId,
+                    firstName: user.firstName,
+                    lastName: user.lastName,
+                    username: user.username,
+                    email: user.email,
+                    profileImage: user.profileImage,
+                    lastLogin: user.lastLogin,
+                    actionType: 'Added a review',
+                    reviewId: review._id,
+                    date: review.createdAt,
+                    loyaltyScore: calculateLoyaltyScore(userId)
+                });
+            }
+        }
+
+        // Process returns
+        for (const returnItem of returns) {
+            const userId = returnItem.userId ? returnItem.userId.toString() : null;
+            if (!userId) continue;
+
+            const user = userMap[userId];
+
+            if (user) {
+                activities.push({
+                    userId: userId,
+                    firstName: user.firstName,
+                    lastName: user.lastName,
+                    username: user.username,
+                    email: user.email,
+                    profileImage: user.profileImage,
+                    lastLogin: user.lastLogin,
+                    actionType: 'Placed a return request',
+                    returnId: returnItem.returnId,
+                    date: new Date(returnItem.requestedDate),
+                    loyaltyScore: calculateLoyaltyScore(userId)
+                });
+            }
+        }
+
+        // Process login activity
+        for (const userId in userMap) {
+            const user = userMap[userId];
+            if (user.lastLogin) {
+                // Only add login activity if it falls within the date range
+                const loginDate = new Date(user.lastLogin);
+
+                let includeLogin = true;
+                if (startDate && endDate) {
+                    const startDateTime = new Date(startDate);
+                    const endDateTime = new Date(endDate);
+                    endDateTime.setHours(23, 59, 59, 999);
+
+                    includeLogin = loginDate >= startDateTime && loginDate <= endDateTime;
+                }
+
+                if (includeLogin) {
+                    activities.push({
+                        userId: userId,
+                        firstName: user.firstName,
+                        lastName: user.lastName,
+                        username: user.username,
+                        email: user.email,
+                        profileImage: user.profileImage,
+                        lastLogin: user.lastLogin,
+                        actionType: 'Logged in',
+                        date: loginDate,
+                        loyaltyScore: calculateLoyaltyScore(userId)
+                    });
+                }
+            }
+        }
+
+        // Sort activities by date (newest first)
+        activities.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        // Limit to a reasonable number to avoid overwhelming the frontend
+        activities = activities.slice(0, 500);
+
+        res.json({
+            success: true,
+            activities
+        });
+    } catch (error) {
+        console.error('Error fetching user activity log:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch user activity log',
+            error: error.message
+        });
+    }
+};
+
 export {
     getDashboardStats,
     getSalesTrends,
@@ -686,5 +959,6 @@ export {
     getCategoryDistribution,
     generateReport,
     getRevenuePrediction,
-    getUserActivityReport
+    getUserActivityReport,
+    getUserActivityLog
 };

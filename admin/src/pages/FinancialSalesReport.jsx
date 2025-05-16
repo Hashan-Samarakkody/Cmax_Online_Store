@@ -119,7 +119,7 @@ const FinancialSalesReport = () => {
             const token = localStorage.getItem('adminToken');
 
             if (!token) {
-                navigate('/login');
+                navigate('/');
                 return;
             }
 
@@ -164,7 +164,7 @@ const FinancialSalesReport = () => {
             const token = localStorage.getItem('adminToken');
 
             if (!token) {
-                navigate('/login');
+                navigate('/');
                 return;
             }
 
