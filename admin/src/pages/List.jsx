@@ -50,6 +50,47 @@ const ProductList = ({ token }) => {
     }
   };
 
+  const toggleVisibility = async (id, isCurrentlyVisible) => {
+    try {
+      const response = await axios.post(
+        `${backendUrl}/api/product/toggle-visibility`,
+        {
+          productId: id,
+          isVisible: !isCurrentlyVisible
+        },
+        {
+          headers: { token }
+        }
+      );
+
+      if (response.data.success) {
+        toast.success(`Product ${!isCurrentlyVisible ? 'visible' : 'hidden'} successfully`, { autoClose: 1000 });
+
+        // Update the local state to reflect the change
+        setList(prevList =>
+          prevList.map(product =>
+            product._id === id
+              ? { ...product, isVisible: !isCurrentlyVisible }
+              : product
+          )
+        );
+
+        setFilteredList(prevList =>
+          prevList.map(product =>
+            product._id === id
+              ? { ...product, isVisible: !isCurrentlyVisible }
+              : product
+          )
+        );
+      } else {
+        toast.error(response.data.message);
+      }
+    } catch (error) {
+      console.log(error);
+      toast.error(error.response?.data?.message || error.message);
+    }
+  };
+
   const editProduct = (productId) => {
     navigate(`/edit/${productId}`);
   };
@@ -138,11 +179,33 @@ const ProductList = ({ token }) => {
       ));
     };
 
+    // Define handler for product visibility changes
+    const handleProductVisibilityChanged = (data) => {
+      if (data && data.productId) {
+        setList(prevList =>
+          prevList.map(product =>
+            product._id === data.productId
+              ? { ...product, isVisible: data.isVisible }
+              : product
+          )
+        );
+
+        setFilteredList(prevList =>
+          prevList.map(product =>
+            product._id === data.productId
+              ? { ...product, isVisible: data.isVisible }
+              : product
+          )
+        );
+      }
+    };
+
     // Connect to WebSocket and listen for product events
     WebSocketService.connect(() => {
       WebSocketService.on('newProduct', handleNewProduct);
       WebSocketService.on('deleteProduct', handleDeleteProduct);
       WebSocketService.on('updateProduct', handleUpdateProduct);
+      WebSocketService.on('productVisibilityChanged', handleProductVisibilityChanged);
     });
 
     // Cleanup function to disconnect WebSocket and remove the listeners
@@ -151,12 +214,13 @@ const ProductList = ({ token }) => {
       WebSocketService.off('newProduct', handleNewProduct);
       WebSocketService.off('deleteProduct', handleDeleteProduct);
       WebSocketService.off('updateProduct', handleUpdateProduct);
+      WebSocketService.off('productVisibilityChanged', handleProductVisibilityChanged);
     };
   }, []);
 
   return (
     <div className="container mx-auto px-4 sm:px-8">
-      
+
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-bold">Item List</h1>
       </div>
@@ -255,6 +319,7 @@ const ProductList = ({ token }) => {
                     <th className="px-5 py-3 text-left">Category</th>
                     <th className="px-5 py-3 text-left">Subcategory</th>
                     <th className="px-5 py-3 text-left">Price</th>
+                    <th className="px-5 py-3 text-center">Status</th>
                     <th className="px-5 py-3 text-center">Actions</th>
                   </tr>
                 </thead>
@@ -292,12 +357,30 @@ const ProductList = ({ token }) => {
                         <p className="text-gray-900 whitespace-no-wrap">{currency}{item.price}</p>
                       </td>
                       <td className="px-5 py-5 bg-white text-sm text-center">
+                        <span className={`inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none rounded-full 
+                          ${item.isVisible !== false
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-yellow-100 text-yellow-800'}`}
+                        >
+                          {item.isVisible !== false ? 'Visible' : 'Hidden'}
+                        </span>
+                      </td>
+                      <td className="px-5 py-5 bg-white text-sm text-center">
                         <div className="flex justify-center space-x-2">
                           <button
                             onClick={() => editProduct(item.productId)}
                             className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition duration-300 ease-in-out transform hover:scale-105"
                           >
                             Edit
+                          </button>
+                          <button
+                            onClick={() => toggleVisibility(item._id, item.isVisible !== false)}
+                            className={`px-4 py-2 rounded-md transition duration-300 ease-in-out transform hover:scale-105 
+                              ${item.isVisible !== false
+                                ? 'bg-yellow-500 text-white hover:bg-yellow-600'
+                                : 'bg-green-500 text-white hover:bg-green-600'}`}
+                          >
+                            {item.isVisible !== false ? 'Hide' : 'Show'}
                           </button>
                           <button
                             onClick={() => removeProduct(item._id)}

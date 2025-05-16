@@ -79,6 +79,55 @@ const addProduct = async (req, res) => {
     }
 };
 
+// Toggle product visibility function
+const toggleProductVisibility = async (req, res) => {
+    try {
+        const { productId, isVisible } = req.body;
+
+        if (!productId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Product ID is required'
+            });
+        }
+
+        const product = await productModel.findById(productId);
+
+        if (!product) {
+            return res.status(404).json({
+                success: false,
+                message: 'Product not found'
+            });
+        }
+
+        product.isVisible = isVisible;
+        await product.save();
+
+        // Get updated product data with populated fields for WebSocket broadcast
+        const updatedProduct = await productModel.findById(productId)
+            .populate('category', 'name')
+            .populate('subcategory', 'name');
+
+        res.json({
+            success: true,
+            message: `Product ${isVisible ? 'visible' : 'hidden'} successfully`,
+            product: updatedProduct
+        });
+
+        // Broadcast product visibility change
+        broadcast({
+            type: 'productVisibilityChanged',
+            productId,
+            isVisible,
+            product: updatedProduct
+        });
+
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
 // Get all products function
 const getAllProducts = async (req, res) => {
     try {
@@ -109,7 +158,8 @@ const getAllProducts = async (req, res) => {
             {
                 $match: {
                     "categoryData.isVisible": true,
-                    "subcategoryData.isVisible": true
+                    "subcategoryData.isVisible": true,
+                    "isVisible": { $ne: false }
                 }
             },
             {
@@ -125,6 +175,7 @@ const getAllProducts = async (req, res) => {
                     "images": 1,
                     "hasSizes": 1,
                     "hasColors": 1,
+                    "isVisible": 1,
                     "category": {
                         "_id": "$categoryData._id",
                         "name": "$categoryData.name"
@@ -357,5 +408,6 @@ export {
     displaySingleProduct,
     getAllProducts,
     updateProduct,
-    getSingleProductDetails
+    getSingleProductDetails,
+    toggleProductVisibility
 };

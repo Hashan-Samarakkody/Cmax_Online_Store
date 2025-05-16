@@ -1,5 +1,5 @@
 import express from 'express';
-import { addProduct, listProduct, removeProduct, displaySingleProduct, getAllProducts, updateProduct, getSingleProductDetails } from '../controllers/productController.js';
+import { addProduct, listProduct, removeProduct, displaySingleProduct, getAllProducts, updateProduct, getSingleProductDetails, toggleProductVisibility } from '../controllers/productController.js';
 import upload from '../middleware/multer.js';
 import adminAuth from '../middleware/adminAuth.js';
 
@@ -16,6 +16,6 @@ productRouter.get('/single/get/:productId', getSingleProductDetails);
 productRouter.get('/list', listProduct);
 productRouter.get('/', getAllProducts);
 productRouter.put('/update', adminAuth, upload.any(), updateProduct);
-
+productRouter.post('/toggle-visibility', adminAuth, toggleProductVisibility);
 
 export default productRouter;
