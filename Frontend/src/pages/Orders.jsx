@@ -26,7 +26,7 @@ const Orders = () => {
   const [selectedDate, setSelectedDate] = useState(null);
 
   // Filter states
-  const [filterPaymentMethod, setFilterPaymentMethod] = useState('all'); // 'all', 'cash', 'stripe'
+  const [filterPaymentMethod, setFilterPaymentMethod] = useState('all'); // 'all', 'cash on delivery', 'stripe'
   const [filterStatus, setFilterStatus] = useState('all'); // 'all', 'Order Placed', 'Picking', 'Out for Delivery', 'Delivered'
   const [datePickerOpen, setDatePickerOpen] = useState(false);
 
