@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { FiDollarSign, FiShoppingCart, FiUsers, FiShoppingBag } from 'react-icons/fi';
+import { FiDollarSign, FiShoppingCart, FiUsers, FiShoppingBag, FiRefreshCw } from 'react-icons/fi';
 import { Bar, Line, Pie } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Title, Tooltip, Legend } from 'chart.js';
 import { backendUrl } from '../App';
@@ -508,7 +508,7 @@ const Dashboard = () => {
       </select>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-5">
         {/* Sales Card */}
         <div className="bg-white rounded-lg shadow p-5">
           <div className="flex items-center">
@@ -534,6 +534,21 @@ const Dashboard = () => {
               <div className="text-gray-500 text-sm">Orders ({selectedPeriod})</div>
               <div className="text-2xl font-bold text-gray-900">
                 {stats ? stats.orders[selectedPeriod] || '0' : '0'}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Returns Card */}
+        <div className="bg-white rounded-lg shadow p-5">
+          <div className="flex items-center">
+            <div className="flex-shrink-0 h-12 w-12 rounded-full bg-orange-100 flex items-center justify-center">
+              <FiRefreshCw className="h-6 w-6 text-orange-600" />
+            </div>
+            <div className="ml-5">
+              <div className="text-gray-500 text-sm">Returns ({selectedPeriod})</div>
+              <div className="text-2xl font-bold text-gray-900">
+                {stats ? stats.returns?.[selectedPeriod] || '0' : '0'}
               </div>
             </div>
           </div>

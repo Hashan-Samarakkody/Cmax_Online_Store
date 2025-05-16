@@ -1,7 +1,7 @@
 import orderModel from '../models/orderModel.js';
 import userModel from '../models/userModel.js';
 import productModel from '../models/productModel.js';
-
+import returnModel from '../models/returnModel.js';
 
 // Get dashboard overview statistics
 const getDashboardStats = async (req, res) => {
@@ -21,6 +21,10 @@ const getDashboardStats = async (req, res) => {
         const startOfMonth = new Date(today);
         startOfMonth.setDate(today.getDate() - 30);
         startOfMonth.setHours(0, 0, 0, 0);
+
+        // Set up yearly date frame - first day of current year
+        const startOfYear = new Date(today.getFullYear(), 0, 1);
+        startOfYear.setHours(0, 0, 0, 0);
 
         // Get all orders if time-filtered queries return nothing
         let dailyOrders = await orderModel.find({
@@ -58,6 +62,24 @@ const getDashboardStats = async (req, res) => {
 
         const monthlyRevenue = monthlyOrders.reduce((sum, order) => sum + order.amount, 0);
         const monthlyOrderCount = monthlyOrders.length;
+
+        // Get returns data for different time periods using returnModel
+        const dailyReturns = await returnModel.countDocuments({
+            requestedDate: { $gte: startOfDay.getTime() }
+        });
+
+        const weeklyReturns = await returnModel.countDocuments({
+            requestedDate: { $gte: startOfWeek.getTime() }
+        });
+
+        const monthlyReturns = await returnModel.countDocuments({
+            requestedDate: { $gte: startOfMonth.getTime() }
+        });
+
+        const yearlyReturns = await returnModel.countDocuments({
+            requestedDate: { $gte: startOfYear.getTime() }
+        });
+
         const cashOrders = await orderModel.countDocuments({ paymentMethod: 'Cash On Delivery' });
         const stripeOrders = await orderModel.countDocuments({ paymentMethod: 'Stripe' });
         const totalUsers = await userModel.countDocuments({});
@@ -72,6 +94,12 @@ const getDashboardStats = async (req, res) => {
                 daily: dailyOrderCount,
                 weekly: weeklyOrderCount,
                 monthly: monthlyOrderCount
+            },
+            returns: {
+                daily: dailyReturns,
+                weekly: weeklyReturns,
+                monthly: monthlyReturns,
+                yearly: yearlyReturns
             },
             payments: {
                 cash: cashOrders,
@@ -88,6 +116,7 @@ const getDashboardStats = async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 };
+
 // Get sales trend data for charts
 const getSalesTrends = async (req, res) => {
     try {
@@ -591,8 +620,6 @@ const getUserActivityReport = async (req, res) => {
                     $lte: endDateWithTime
                 }
             };
-
-
         }
 
         // For debugging, count total documents that match the filter
@@ -649,6 +676,7 @@ const getUserActivityReport = async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 };
+
 export {
     getDashboardStats,
     getSalesTrends,
