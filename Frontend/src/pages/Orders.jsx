@@ -148,7 +148,7 @@ const Orders = () => {
   // Filter and search orders
   const filteredOrders = orderData.filter(order => {
     // Apply payment method filter
-    if (filterPaymentMethod === 'cash' && order.paymentMethod !== 'Cash on Delivery') {
+    if (filterPaymentMethod === 'Cash On Delivery' && order.paymentMethod !== 'Cash On Delivery') {
       return false;
     }
     if (filterPaymentMethod === 'stripe' && order.paymentMethod !== 'Stripe') {
@@ -314,7 +314,7 @@ const Orders = () => {
                 className='w-full border p-2 rounded'
               >
                 <option value="all">All Payment Methods</option>
-                <option value="cash">Cash on Delivery</option>
+                <option value="Cash On Delivery">Cash on Delivery</option>
                 <option value="stripe">Stripe</option>
               </select>
             </div>
@@ -382,7 +382,7 @@ const Orders = () => {
           )}
           {filterPaymentMethod !== 'all' && (
             <div className='bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded flex items-center'>
-              Payment: {filterPaymentMethod === 'cash' ? 'Cash on Delivery' : 'Stripe'}
+              Payment: {filterPaymentMethod === 'Cash On Delivery' ? 'Cash on Delivery' : 'Stripe'}
               <button
                 className='ml-1 text-green-600 hover:text-green-800'
                 onClick={() => setFilterPaymentMethod('all')}
@@ -462,8 +462,8 @@ const Orders = () => {
                     <div className='flex-1'>
                       <div className='flex items-center gap-2'>
                         <div className={`w-2.5 h-2.5 rounded-full ${order.status === 'Delivered' ? 'bg-blue-500' :
-                            order.status === 'Out for Delivery' ? 'bg-purple-500' :
-                              order.status === 'Picking' ? 'bg-yellow-500' : 'bg-green-500'
+                          order.status === 'Out for Delivery' ? 'bg-purple-500' :
+                            order.status === 'Picking' ? 'bg-yellow-500' : 'bg-green-500'
                           }`}></div>
                         <p className='font-semibold text-lg'>{order.status}</p>
                       </div>

@@ -403,7 +403,8 @@ const generateReport = async (req, res) => {
 // Get revenue prediction data
 const getRevenuePrediction = async (req, res) => {
     try {
-        const pastMonths = 24; // Use two years of historical data if available
+        // Look back further for better historical data - 36 months instead of 24
+        const pastMonths = 36;
         const today = new Date();
         let startDate = new Date(today);
         startDate.setMonth(today.getMonth() - pastMonths);
@@ -431,16 +432,50 @@ const getRevenuePrediction = async (req, res) => {
             orders: d.orderCount
         }));
 
-        // Calculate seasonal indices (for each month)
+        // Handle case with no historical data
+        if (historicalData.length === 0) {
+            return res.json({
+                success: true,
+                historicalData: [],
+                predictions: [
+                    {
+                        month: getMonthName(today.getMonth() + 1),
+                        year: today.getFullYear(),
+                        revenue: 0,
+                        confidence: 0
+                    },
+                    {
+                        month: getMonthName(today.getMonth() + 2),
+                        year: today.getFullYear(),
+                        revenue: 0,
+                        confidence: 0
+                    },
+                    {
+                        month: getMonthName(today.getMonth() + 3),
+                        year: today.getFullYear(),
+                        revenue: 0,
+                        confidence: 0
+                    }
+                ],
+                growthRate: 0
+            });
+        }
+
+        // Extract time series for modeling
+        const revenueData = historicalData.map(item => item.revenue);
+
+        // Calculate average revenue if we need a fallback
+        const avgRevenue = revenueData.reduce((sum, val) => sum + val, 0) / revenueData.length;
+
+        // Calculate seasonal indices (one for each month)
         const monthlyData = Array(12).fill(0).map(() => []);
 
         // Group data by month
         salesData.forEach(d => {
-            const monthIndex = d._id.month - 1;
-            monthlyData[monthIndex].push(d.revenue);
+            monthlyData[d._id.month - 1].push(d.revenue);
         });
 
-        // Calculate average revenue for each month
+        // Calculate monthly averages
         const monthlyAvgs = monthlyData.map(values =>
             values.length > 0 ? values.reduce((sum, val) => sum + val, 0) / values.length : null);
 
@@ -448,144 +483,104 @@ const getRevenuePrediction = async (req, res) => {
         const validAvgs = monthlyAvgs.filter(avg => avg !== null);
         const overallAvg = validAvgs.length > 0
             ? validAvgs.reduce((sum, avg) => sum + avg, 0) / validAvgs.length
-            : 1;
+            : avgRevenue;
 
-        // Calculate seasonal indices
+        // Calculate seasonal indices (normalized)
         const seasonalIndices = monthlyAvgs.map(avg =>
             avg !== null ? avg / overallAvg : 1);
 
-        // Apply exponential smoothing with trend detection
-        const alpha = 0.3; // Smoothing factor for level
-        const beta = 0.2;  // Smoothing factor for trend
-        const gamma = 0.5; // Smoothing factor for seasonality
+        // Calculate trend using linear regression
+        let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+        const n = revenueData.length;
 
-        const yValues = salesData.map(d => d.revenue);
-        const n = yValues.length;
-
-        if (n < 2) {
-            // Calculate trend using simple regression
-            const xValues = Array.from({ length: n }, (_, i) => i);
-
-            // Simple linear regression
-            const sumX = xValues.reduce((a, b) => a + b, 0);
-            const sumY = yValues.reduce((a, b) => a + b, 0);
-            const sumXY = xValues.reduce((sum, x, i) => sum + x * yValues[i], 0);
-            const sumXX = xValues.reduce((sum, x) => sum + x * x, 0);
-
-            // Calculate regression coefficients
-            let slope = 0;
-            let intercept = 0;
-            let growthRate = 0.05; // default value
-
-            if (n > 1) {
-                slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
-                intercept = (sumY - slope * sumX) / n;
-                growthRate = intercept > 0 ? slope / intercept : 0.05;
-            }
-
-            // Predict next 3 months
-            const predictions = [];
-
-            for (let i = 1; i <= 3; i++) {
-                const futureMonth = (today.getMonth() + i) % 12;
-                const futureYear = today.getFullYear() + Math.floor((today.getMonth() + i) / 12);
-
-                // Calculate base trend prediction
-                const x = n + i - 1;
-                let predictedValue = intercept + slope * x;
-
-                // Apply seasonal factor if available
-                predictedValue *= seasonalIndices[futureMonth];
-
-                // Make sure prediction is positive
-                predictedValue = Math.max(100, predictedValue);
-
-                predictions.push({
-                    month: new Date(futureYear, futureMonth).toLocaleString('default', { month: 'long' }),
-                    year: futureYear,
-                    revenue: Math.round(predictedValue * 100) / 100,
-                    confidence: Math.max(0, 95 - (i * 15))
-                });
-            }
-
-            res.json({
-                success: true,
-                historicalData,
-                predictions,
-                growthRate: 0.05
-            });
-
-            return;
+        for (let i = 0; i < n; i++) {
+            sumX += i;
+            sumY += revenueData[i];
+            sumXY += i * revenueData[i];
+            sumX2 += i * i;
         }
 
-        // Initialize level, trend, and seasonal components
-        let level = yValues[0];
-        let trend = (yValues[1] - yValues[0]);
-        const seasonals = Array(12).fill(1);
+        const slope = n > 1 ? (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX) : 0;
+        const intercept = (sumY - slope * sumX) / n;
 
-        // Update initial seasonal components if we have enough data
-        if (n >= 12) {
-            for (let i = 0; i < 12; i++) {
-                seasonals[i] = seasonalIndices[i] || 1;
+        // Calculate growth rate based on recent months (last 6 months trend)
+        let recentGrowthRate = 0;
+        if (revenueData.length >= 6) {
+            const recent = revenueData.slice(-6);
+            let sumPctChange = 0;
+            let countPctChange = 0;
+
+            for (let i = 1; i < recent.length; i++) {
+                if (recent[i - 1] > 0) {
+                    sumPctChange += (recent[i] - recent[i - 1]) / recent[i - 1];
+                    countPctChange++;
+                }
             }
+
+            recentGrowthRate = countPctChange > 0
+                ? sumPctChange / countPctChange
+                : (revenueData[revenueData.length - 1] - revenueData[0]) / (revenueData[0] || 1) / revenueData.length;
         }
 
-        // Perform exponential smoothing
-        for (let i = 1; i < n; i++) {
-            const monthIndex = salesData[i]._id.month - 1;
-            const oldLevel = level;
+        // Use exponential weighted moving average for short-term prediction
+        const alpha = 0.3; // Smoothing factor
+        let lastSmoothedValue = revenueData[revenueData.length - 1];
+        let lastTrend = slope;
 
-            // Update level, trend and seasonal components
-            level = alpha * (yValues[i] / seasonals[monthIndex]) + (1 - alpha) * (level + trend);
-            trend = beta * (level - oldLevel) + (1 - beta) * trend;
-            seasonals[monthIndex] = gamma * (yValues[i] / level) + (1 - gamma) * seasonals[monthIndex];
-        }
+        // Apply bounds to growth rate 
+        recentGrowthRate = Math.max(-0.15, Math.min(0.25, recentGrowthRate));
 
-        // Calculate average growth rate
-        let avgGrowth;
+        // Calculate volatility based on historical data (for confidence)
+        const volatility = calculateVolatility(revenueData);
 
-        if (n > 12) {
-            // Compare last 12 months to previous 12 months
-            const recent = yValues.slice(-12);
-            const older = yValues.slice(-24, -12);
-
-            if (older.length === 12) {
-                const recentSum = recent.reduce((sum, val) => sum + val, 0);
-                const olderSum = older.reduce((sum, val) => sum + val, 0);
-                avgGrowth = olderSum > 0 ? (recentSum / olderSum - 1) : 0.05;
-            } else {
-                avgGrowth = 0.05;
-            }
-        } else {
-            avgGrowth = trend / level || 0.05;
-        }
-
-        // Cap growth rate to reasonable values
-        avgGrowth = Math.max(-0.2, Math.min(0.5, avgGrowth));
+        // Get current month and year
+        const currentMonth = today.getMonth();
+        const currentYear = today.getFullYear();
 
         // Predict next 3 months
         const predictions = [];
 
         for (let i = 1; i <= 3; i++) {
-            const futureMonth = (today.getMonth() + i) % 12;
-            const futureYear = today.getFullYear() + Math.floor((today.getMonth() + i) / 12);
+            const predictedMonth = (currentMonth + i) % 12;
+            const predictedYear = currentMonth + i >= 12
+                ? currentYear + 1 : currentYear;
 
-            // Calculate HW prediction
-            const forecastLevel = level + (i * trend);
-            const forecastSeasonal = seasonals[futureMonth];
-            let predictedValue = forecastLevel * forecastSeasonal;
+            const seasonalFactor = seasonalIndices[predictedMonth] || 1;
+            const timeIndex = n + i - 1;
 
-            // Make sure prediction is positive
-            predictedValue = Math.max(100, predictedValue);
+            // Prediction methods
+            // 1. Linear regression
+            const linearPrediction = intercept + slope * timeIndex;
 
-            // Calculate confidence based on distance and data quantity
-            const confidenceBase = n >= 12 ? 95 : 85;
-            const confidence = Math.max(50, confidenceBase - (i * 12));
+            // 2. Exponential smoothing
+            const smoothedValue = lastSmoothedValue + lastTrend;
+            lastSmoothedValue = smoothedValue;
+
+            // 3. Growth-based
+            const lastValue = revenueData[revenueData.length - 1];
+            const growthPrediction = lastValue * Math.pow(1 + recentGrowthRate, i);
+
+            // Combine predictions with weights
+            const combinedPrediction = (
+                0.3 * linearPrediction +
+                0.3 * smoothedValue +
+                0.4 * growthPrediction
+            ) * seasonalFactor; // Apply seasonality
+
+            // Never predict less than 50% of average revenue unless growth is negative
+            const finalPrediction = recentGrowthRate < 0
+                ? Math.max(combinedPrediction, avgRevenue * 0.5)
+                : Math.max(combinedPrediction, lastValue * 0.8);
+
+            // Calculate confidence based on prediction horizon and volatility
+            const confidenceBase = 90 - (i * 10); // Start at 90%, decrease by 10% each month
+            const volatilityAdjustment = Math.min(20, Math.round(volatility * 100)); // Up to 20% reduction
+            const confidence = Math.max(40, confidenceBase - volatilityAdjustment);
 
             predictions.push({
-                month: new Date(futureYear, futureMonth).toLocaleString('default', { month: 'long' }),
-                year: futureYear,
-                revenue: Math.round(predictedValue * 100) / 100,
+                month: getMonthName(predictedMonth + 1),
+                year: predictedYear,
+                revenue: Math.max(10, finalPrediction), // Never predict less than Rs.10
                 confidence: confidence
             });
         }
@@ -594,13 +589,32 @@ const getRevenuePrediction = async (req, res) => {
             success: true,
             historicalData,
             predictions,
-            growthRate: avgGrowth
+            growthRate: recentGrowthRate
         });
     } catch (error) {
         console.error(error);
         res.status(500).json({ success: false, message: error.message });
     }
 };
+
+// Helper function to calculate volatility (coefficient of variation)
+function calculateVolatility(data) {
+    if (!data || data.length < 2) return 0;
+
+    const mean = data.reduce((sum, val) => sum + val, 0) / data.length;
+    const variance = data.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / data.length;
+
+    return mean > 0 ? Math.sqrt(variance) / mean : 0;
+}
+
+// Helper function to get month name
+function getMonthName(monthNum) {
+    const months = [
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+    ];
+    return months[(monthNum - 1) % 12];
+}
 
 // Get detailed user activity data for reporting
 const getUserActivityReport = async (req, res) => {
