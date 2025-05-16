@@ -20,6 +20,30 @@ const ProductList = ({ token }) => {
     price: false
   });
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [paginatedList, setPaginatedList] = useState([]);
+
+  useEffect(() => {
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    setPaginatedList(filteredList.slice(indexOfFirstItem, indexOfLastItem));
+  }, [filteredList, currentPage, itemsPerPage]);
+
+  // Reset to first page when search results change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filteredList]);
+
+  const paginate = (pageNumber) => setCurrentPage(pageNumber);
+
+  const handleItemsPerPageChange = (e) => {
+    setItemsPerPage(Number(e.target.value));
+    setCurrentPage(1); // Reset to first page when changing items per page
+  };
+
+
   const fetchList = async () => {
     try {
       const response = await axios.get(backendUrl + '/api/product/list');
@@ -295,6 +319,109 @@ const ProductList = ({ token }) => {
             </label>
           </div>
         </div>
+
+        {/* Pagination controls - top */}
+        <div className="flex justify-between items-center mb-4">
+          <div className="flex items-center">
+            <label htmlFor="itemsPerPage" className="mr-2 text-sm font-medium text-gray-700">
+              Show:
+            </label>
+            <select
+              id="itemsPerPage"
+              value={itemsPerPage}
+              onChange={handleItemsPerPageChange}
+              className="border border-gray-300 rounded-md px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value={10}>10</option>
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+              <option value={200}>200</option>
+              <option value={300}>300</option>
+            </select>
+          </div>
+          <div className="text-sm text-gray-600">
+            Showing {filteredList.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0} to {Math.min(currentPage * itemsPerPage, filteredList.length)} of {filteredList.length} products
+          </div>
+        </div>
+
+        {filteredList.length > 0 && (
+          <div className="flex justify-between items-center mt-6">
+            <button
+              onClick={() => paginate(currentPage - 1)}
+              disabled={currentPage === 1}
+              className={`px-4 py-2 border rounded ${currentPage === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-blue-500 hover:bg-blue-50'}`}
+            >
+              Previous
+            </button>
+
+            <div className="flex items-center">
+              {/* Display page numbers */}
+              {Array.from({ length: Math.min(5, Math.ceil(filteredList.length / itemsPerPage)) }, (_, i) => {
+                // Ensure we show the correct page numbers around the current page
+                let pageNum;
+                const totalPages = Math.ceil(filteredList.length / itemsPerPage);
+
+                if (totalPages <= 5) {
+                  // If total pages are 5 or less, show all pages
+                  pageNum = i + 1;
+                } else {
+                  // Otherwise show pages around the current page
+                  if (currentPage <= 3) {
+                    // At the beginning
+                    pageNum = i + 1;
+                  } else if (currentPage >= totalPages - 2) {
+                    // At the end
+                    pageNum = totalPages - 4 + i;
+                  } else {
+                    // In the middle
+                    pageNum = currentPage - 2 + i;
+                  }
+                }
+
+                return (
+                  <button
+                    key={pageNum}
+                    onClick={() => paginate(pageNum)}
+                    className={`mx-1 px-4 py-2 border rounded ${currentPage === pageNum
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-white text-blue-500 hover:bg-blue-50'
+                      }`}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              })}
+
+              {/* Show ellipsis and last page if there are many pages */}
+              {Math.ceil(filteredList.length / itemsPerPage) > 5 && (
+                <>
+                  <span className="mx-1">...</span>
+                  <button
+                    onClick={() => paginate(Math.ceil(filteredList.length / itemsPerPage))}
+                    className={`mx-1 px-4 py-2 border rounded ${currentPage === Math.ceil(filteredList.length / itemsPerPage)
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-white text-blue-500 hover:bg-blue-50'
+                      }`}
+                  >
+                    {Math.ceil(filteredList.length / itemsPerPage)}
+                  </button>
+                </>
+              )}
+            </div>
+
+            <button
+              onClick={() => paginate(currentPage + 1)}
+              disabled={currentPage === Math.ceil(filteredList.length / itemsPerPage)}
+              className={`px-4 py-2 border rounded ${currentPage === Math.ceil(filteredList.length / itemsPerPage)
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  : 'bg-white text-blue-500 hover:bg-blue-50'
+                }`}
+            >
+              Next
+            </button>
+          </div>
+        )}
 
         <div className="-mx-4 sm:-mx-8 px-4 sm:px-8 py-4 overflow-x-auto">
           <div className="inline-block min-w-full shadow rounded-lg overflow-hidden">
