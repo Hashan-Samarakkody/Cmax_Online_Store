@@ -82,7 +82,7 @@ const Orders = ({ token }) => {
         key="prev"
         onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
         disabled={currentPage === 1}
-        className="px-3 py-1 rounded border bg-green-400 disabled:opacity-50"
+        className="px-3 py-1 rounded border bg-gray-200 disabled:opacity-50"
       >
         &laquo;
       </button>
@@ -97,7 +97,7 @@ const Orders = ({ token }) => {
         <button
           key={i}
           onClick={() => handlePageChange(i)}
-          className={`px-3 py-1 rounded border ${currentPage === i ? 'bg-blue-500 text-white' : 'bg-green-400'
+          className={`px-3 py-1 rounded border ${currentPage === i ? 'bg-blue-500 text-white' : 'bg-gray-200'
             }`}
         >
           {i}
