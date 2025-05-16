@@ -17,6 +17,11 @@ const ReturnRequests = ({ token }) => {
 	const [orderDetails, setOrderDetails] = useState({});
 	const [isLoadingOrder, setIsLoadingOrder] = useState(false);
 
+	// Pagination state
+	const [currentPage, setCurrentPage] = useState(1);
+	const [itemsPerPage, setItemsPerPage] = useState(10);
+	const [totalReturns, setTotalReturns] = useState(0);
+
 	useEffect(() => {
 		if (token) {
 			fetchReturns();
@@ -43,16 +48,21 @@ const ReturnRequests = ({ token }) => {
 				WebSocketService.off('returnStatusUpdate', handleReturnStatusUpdate);
 			};
 		}
-	}, [token]);
+	}, [token, currentPage, itemsPerPage]); 
 
 	const fetchReturns = async () => {
 		try {
 			const response = await axios.get(`${backendUrl}/api/returns/admin`, {
-				headers: { token }
+				headers: { token },
+				params: {
+					page: currentPage,
+					limit: itemsPerPage
+				}
 			});
 
 			if (response.data.success) {
 				setReturns(response.data.returns);
+				setTotalReturns(response.data.total || response.data.returns.length);
 			}
 		} catch (error) {
 			console.error('Error fetching returns:', error);
@@ -177,6 +187,129 @@ const ReturnRequests = ({ token }) => {
 		});
 	};
 
+	const totalPages = Math.ceil(totalReturns / itemsPerPage);
+
+	const handlePageChange = (page) => {
+		setCurrentPage(page);
+	};
+
+	const handleItemsPerPageChange = (e) => {
+		const newLimit = parseInt(e.target.value, 10);
+		setItemsPerPage(newLimit);
+		setCurrentPage(1); // Reset to first page when changing items per page
+	};
+
+	// Create pagination UI component
+	const Pagination = () => {
+		const pageNumbers = [];
+
+		// Logic to show only a range of page numbers (max 5) around current page
+		let startPage = Math.max(1, currentPage - 2);
+		let endPage = Math.min(totalPages, startPage + 4);
+
+		// Adjust if we're near the end
+		if (endPage - startPage < 4 && startPage > 1) {
+			startPage = Math.max(1, endPage - 4);
+		}
+
+		for (let i = startPage; i <= endPage; i++) {
+			pageNumbers.push(i);
+		}
+
+		return (
+			<div className="flex items-center justify-between mt-4 bg-white p-4 rounded-lg shadow">
+				<div className="flex items-center">
+					<span className="text-sm text-gray-700 mr-2">Show</span>
+					<select
+						value={itemsPerPage}
+						onChange={handleItemsPerPageChange}
+						className="p-1 border rounded text-sm"
+					>
+						<option value={10}>10</option>
+						<option value={25}>25</option>
+						<option value={50}>50</option>
+						<option value={100}>100</option>
+						<option value={200}>200</option>
+						<option value={300}>300</option>
+					</select>
+					<span className="text-sm text-gray-700 ml-2">per page</span>
+				</div>
+
+				<div className="flex items-center">
+					<span className="text-sm text-gray-700 mr-4">
+						Showing {returns.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0} to {Math.min(currentPage * itemsPerPage, totalReturns)} of {totalReturns} returns
+					</span>
+
+					<nav className="flex items-center">
+						<button
+							onClick={() => handlePageChange(1)}
+							disabled={currentPage === 1}
+							className={`px-2 py-1 text-sm rounded-l-md border ${currentPage === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'hover:bg-gray-50'}`}
+						>
+							&laquo;
+						</button>
+						<button
+							onClick={() => handlePageChange(currentPage - 1)}
+							disabled={currentPage === 1}
+							className={`px-2 py-1 text-sm border-t border-b ${currentPage === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'hover:bg-gray-50'}`}
+						>
+							&lsaquo;
+						</button>
+
+						{startPage > 1 && (
+							<>
+								<button
+									onClick={() => handlePageChange(1)}
+									className="px-2 py-1 text-sm border-t border-b hover:bg-gray-50"
+								>
+									1
+								</button>
+								{startPage > 2 && <span className="px-2 py-1 border-t border-b">&hellip;</span>}
+							</>
+						)}
+
+						{pageNumbers.map(number => (
+							<button
+								key={number}
+								onClick={() => handlePageChange(number)}
+								className={`px-3 py-1 text-sm border-t border-b ${currentPage === number ? 'bg-blue-500 text-white' : 'hover:bg-gray-50'}`}
+							>
+								{number}
+							</button>
+						))}
+
+						{endPage < totalPages && (
+							<>
+								{endPage < totalPages - 1 && <span className="px-2 py-1 border-t border-b">&hellip;</span>}
+								<button
+									onClick={() => handlePageChange(totalPages)}
+									className="px-2 py-1 text-sm border-t border-b hover:bg-gray-50"
+								>
+									{totalPages}
+								</button>
+							</>
+						)}
+
+						<button
+							onClick={() => handlePageChange(currentPage + 1)}
+							disabled={currentPage === totalPages}
+							className={`px-2 py-1 text-sm border-t border-b ${currentPage === totalPages ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'hover:bg-gray-50'}`}
+						>
+							&rsaquo;
+						</button>
+						<button
+							onClick={() => handlePageChange(totalPages)}
+							disabled={currentPage === totalPages}
+							className={`px-2 py-1 text-sm rounded-r-md border ${currentPage === totalPages ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'hover:bg-gray-50'}`}
+						>
+							&raquo;
+						</button>
+					</nav>
+				</div>
+			</div>
+		);
+	};
+
 	// Render the original order details
 	const renderOrderDetails = (orderId) => {
 		const order = orderDetails[orderId];
@@ -293,6 +426,7 @@ const ReturnRequests = ({ token }) => {
 			{/* Table to display return requests */}
 			<div className="bg-white rounded-lg shadow overflow-hidden">
 				<div className="overflow-x-auto">
+					<Pagination/>
 					<table className="min-w-full divide-y divide-gray-500">
 						<thead className="bg-gray-50">
 							<tr>
