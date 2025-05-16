@@ -4,8 +4,10 @@ import { backendUrl } from '../App';
 import WebSocketService from '../services/WebSocketService';
 import { format } from 'date-fns';
 import { toast } from 'react-toastify';
-import { FaImage, FaVideo, FaPlayCircle } from 'react-icons/fa';
+import { FaImage, FaVideo, FaPlayCircle, FaSearch, FaCalendarAlt } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 
 const ReturnRequests = ({ token }) => {
 	const [returns, setReturns] = useState([]);
@@ -21,6 +23,101 @@ const ReturnRequests = ({ token }) => {
 	const [currentPage, setCurrentPage] = useState(1);
 	const [itemsPerPage, setItemsPerPage] = useState(10);
 	const [totalReturns, setTotalReturns] = useState(0);
+
+	// Add new search state variables
+	const [searchType, setSearchType] = useState('id');
+	const [searchQuery, setSearchQuery] = useState('');
+	const [searchAmount, setSearchAmount] = useState('');
+	const [dateRange, setDateRange] = useState({
+		startDate: null,
+		endDate: null
+	});
+	const [filteredReturns, setFilteredReturns] = useState([]);
+	const [isSearchActive, setIsSearchActive] = useState(false);
+
+	useEffect(() => {
+		if (isSearchActive) {
+			filterReturns();
+		} else {
+			setFilteredReturns(returns);
+		}
+	}, [isSearchActive, searchQuery, searchType, searchAmount, dateRange, returns]);
+
+	const fetchReturns = async () => {
+		try {
+			const response = await axios.get(`${backendUrl}/api/returns/admin`, {
+				headers: { token },
+				params: {
+					page: currentPage,
+					limit: itemsPerPage
+				}
+			});
+
+			if (response.data.success) {
+				const fetchedReturns = response.data.returns;
+				setReturns(fetchedReturns);
+				setFilteredReturns(fetchedReturns); // Initialize filtered with all returns
+				setTotalReturns(response.data.total || fetchedReturns.length);
+			}
+		} catch (error) {
+			console.error('Error fetching returns:', error);
+			toast.error('Failed to load return requests');
+		}
+	};
+
+	// Add the filtering logic function
+	const filterReturns = () => {
+		let results = [...returns];
+
+		if (searchType === 'id' && searchQuery) {
+			results = results.filter(item =>
+				item.returnId.toLowerCase().includes(searchQuery.toLowerCase())
+			);
+		} else if (searchType === 'customer' && searchQuery) {
+			results = results.filter(item =>
+				item.userName.toLowerCase().includes(searchQuery.toLowerCase())
+			);
+		} else if (searchType === 'amount' && searchAmount) {
+			const amount = parseFloat(searchAmount);
+			if (!isNaN(amount)) {
+				results = results.filter(item =>
+					parseFloat(item.refundAmount) === amount
+				);
+			}
+		} else if (searchType === 'date' && (dateRange.startDate || dateRange.endDate)) {
+			results = results.filter(item => {
+				const returnDate = new Date(item.requestedDate);
+
+				if (dateRange.startDate && dateRange.endDate) {
+					return returnDate >= dateRange.startDate && returnDate <= dateRange.endDate;
+				} else if (dateRange.startDate) {
+					return returnDate >= dateRange.startDate;
+				} else if (dateRange.endDate) {
+					return returnDate <= dateRange.endDate;
+				}
+				return true;
+			});
+		}
+
+		setFilteredReturns(results);
+	};
+
+	// Add search handler function
+	const handleSearch = (e) => {
+		e.preventDefault();
+		setIsSearchActive(true);
+		filterReturns();
+	};
+
+	// Add reset search function
+	const resetSearch = () => {
+		setSearchType('id');
+		setSearchQuery('');
+		setSearchAmount('');
+		setDateRange({ startDate: null, endDate: null });
+		setIsSearchActive(false);
+		setFilteredReturns(returns);
+	};
 
 	useEffect(() => {
 		if (token) {
@@ -50,25 +147,6 @@ const ReturnRequests = ({ token }) => {
 		}
 	}, [token, currentPage, itemsPerPage]); 
 
-	const fetchReturns = async () => {
-		try {
-			const response = await axios.get(`${backendUrl}/api/returns/admin`, {
-				headers: { token },
-				params: {
-					page: currentPage,
-					limit: itemsPerPage
-				}
-			});
-
-			if (response.data.success) {
-				setReturns(response.data.returns);
-				setTotalReturns(response.data.total || response.data.returns.length);
-			}
-		} catch (error) {
-			console.error('Error fetching returns:', error);
-			toast.error('Failed to load return requests');
-		}
-	};
 
 	// Fetch original order details
 	const fetchOrderDetails = async (orderId) => {
@@ -197,6 +275,149 @@ const ReturnRequests = ({ token }) => {
 		const newLimit = parseInt(e.target.value, 10);
 		setItemsPerPage(newLimit);
 		setCurrentPage(1); // Reset to first page when changing items per page
+	};
+
+	const SearchBox = () => {
+		return (
+			<div className="bg-white p-4 rounded-lg shadow mb-4">
+				<form onSubmit={handleSearch} className="space-y-3">
+					<div className="flex flex-wrap items-center gap-4 mb-3">
+						<h3 className="font-semibold text-lg mr-2">Search by:</h3>
+
+						<div className="flex items-center">
+							<input
+								type="radio"
+								id="searchById"
+								name="searchType"
+								value="id"
+								checked={searchType === 'id'}
+								onChange={() => setSearchType('id')}
+								className="mr-1"
+							/>
+							<label htmlFor="searchById" className="mr-3 text-sm">Return ID</label>
+						</div>
+
+						<div className="flex items-center">
+							<input
+								type="radio"
+								id="searchByCustomer"
+								name="searchType"
+								value="customer"
+								checked={searchType === 'customer'}
+								onChange={() => setSearchType('customer')}
+								className="mr-1"
+							/>
+							<label htmlFor="searchByCustomer" className="mr-3 text-sm">Customer</label>
+						</div>
+
+						<div className="flex items-center">
+							<input
+								type="radio"
+								id="searchByAmount"
+								name="searchType"
+								value="amount"
+								checked={searchType === 'amount'}
+								onChange={() => setSearchType('amount')}
+								className="mr-1"
+							/>
+							<label htmlFor="searchByAmount" className="mr-3 text-sm">Amount</label>
+						</div>
+
+						<div className="flex items-center">
+							<input
+								type="radio"
+								id="searchByDate"
+								name="searchType"
+								value="date"
+								checked={searchType === 'date'}
+								onChange={() => setSearchType('date')}
+								className="mr-1"
+							/>
+							<label htmlFor="searchByDate" className="text-sm">Date Range</label>
+						</div>
+					</div>
+
+					<div className="flex flex-wrap gap-4">
+						{(searchType === 'id' || searchType === 'customer') && (
+							<div className="flex-1">
+								<input
+									type="text"
+									placeholder={searchType === 'id' ? "Enter Return ID..." : "Enter Customer Name..."}
+									value={searchQuery}
+									onChange={(e) => setSearchQuery(e.target.value)}
+									className="w-full p-2 border border-gray-300 rounded"
+								/>
+							</div>
+						)}
+
+						{searchType === 'amount' && (
+							<div className="flex-1">
+								<input
+									type="number"
+									step="0.01"
+									placeholder="Enter Amount..."
+									value={searchAmount}
+									onChange={(e) => setSearchAmount(e.target.value)}
+									className="w-full p-2 border border-gray-300 rounded"
+								/>
+							</div>
+						)}
+
+						{searchType === 'date' && (
+							<div className="flex flex-col sm:flex-row gap-2 flex-1">
+								<div className="flex items-center flex-1 relative">
+									<label className="text-sm mr-2">From:</label>
+									<DatePicker
+										selected={dateRange.startDate}
+										onChange={(date) => setDateRange({ ...dateRange, startDate: date })}
+										className="w-full p-2 border border-gray-300 rounded"
+										placeholderText="Start Date"
+										dateFormat="dd/MM/yyyy"
+									/>
+									<FaCalendarAlt className="absolute right-2 text-gray-400" />
+								</div>
+								<div className="flex items-center flex-1 relative">
+									<label className="text-sm mr-2">To:</label>
+									<DatePicker
+										selected={dateRange.endDate}
+										onChange={(date) => setDateRange({ ...dateRange, endDate: date })}
+										className="w-full p-2 border border-gray-300 rounded"
+										placeholderText="End Date"
+										dateFormat="dd/MM/yyyy"
+										minDate={dateRange.startDate}
+									/>
+									<FaCalendarAlt className="absolute right-2 text-gray-400" />
+								</div>
+							</div>
+						)}
+
+						<div className="flex gap-2">
+							<button type="submit" className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded flex items-center">
+								<FaSearch className="mr-1" /> Search
+							</button>
+							{isSearchActive && (
+								<button
+									type="button"
+									onClick={resetSearch}
+									className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded"
+								>
+									Reset
+								</button>
+							)}
+						</div>
+					</div>
+				</form>
+
+				{isSearchActive && (
+					<div className="mt-3 text-sm text-gray-600">
+						Found {filteredReturns.length} results
+						{isSearchActive && filteredReturns.length === 0 && (
+							<span className="ml-2 text-red-500">No returns match your search criteria</span>
+						)}
+					</div>
+				)}
+			</div>
+		);
 	};
 
 	// Create pagination UI component
@@ -422,6 +643,8 @@ const ReturnRequests = ({ token }) => {
 					Return Analysis
 				</button>
 			</div>
+
+			<SearchBox/>
 
 			{/* Table to display return requests */}
 			<div className="bg-white rounded-lg shadow overflow-hidden">
