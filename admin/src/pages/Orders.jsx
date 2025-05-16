@@ -16,6 +16,11 @@ const Orders = ({ token }) => {
     price: false,
     productDetails: false
   });
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [ordersPerPage, setOrdersPerPage] = useState(10);
+  const [totalPages, setTotalPages] = useState(1);
+  const [displayedOrders, setDisplayedOrders] = useState([]);
 
   const fetchAllOrders = async () => {
     if (!token) {
@@ -36,6 +41,83 @@ const Orders = ({ token }) => {
       console.log(error);
       toast.error(error.message);
     }
+  };
+
+  // Update pagination and displayed orders whenever filteredOrders or pagination settings change
+  useEffect(() => {
+    const totalItems = filteredOrders.length;
+    const pages = Math.ceil(totalItems / ordersPerPage);
+    setTotalPages(pages || 1);
+
+    // Reset to first page when filters change
+    if (currentPage > pages) {
+      setCurrentPage(1);
+    }
+
+    // Calculate which orders to display on current page
+    const startIndex = (currentPage - 1) * ordersPerPage;
+    const endIndex = startIndex + ordersPerPage;
+    setDisplayedOrders(filteredOrders.slice(startIndex, endIndex));
+  }, [filteredOrders, currentPage, ordersPerPage]);
+
+  // Handle changing page
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
+
+  // Handle changing orders per page
+  const handleOrdersPerPageChange = (e) => {
+    const value = parseInt(e.target.value, 10);
+    setOrdersPerPage(value);
+    setCurrentPage(1); // Reset to first page when changing display count
+  };
+
+  // Generate pagination buttons
+  const renderPaginationButtons = () => {
+    const buttons = [];
+
+    // Previous button
+    buttons.push(
+      <button
+        key="prev"
+        onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
+        disabled={currentPage === 1}
+        className="px-3 py-1 rounded border bg-green-400 disabled:opacity-50"
+      >
+        &laquo;
+      </button>
+    );
+
+    // Page number buttons - show 5 pages at most
+    const startPage = Math.max(1, currentPage - 2);
+    const endPage = Math.min(totalPages, startPage + 4);
+
+    for (let i = startPage; i <= endPage; i++) {
+      buttons.push(
+        <button
+          key={i}
+          onClick={() => handlePageChange(i)}
+          className={`px-3 py-1 rounded border ${currentPage === i ? 'bg-blue-500 text-white' : 'bg-green-400'
+            }`}
+        >
+          {i}
+        </button>
+      );
+    }
+
+    // Next button
+    buttons.push(
+      <button
+        key="next"
+        onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
+        disabled={currentPage === totalPages}
+        className="px-3 py-1 rounded border bg-gray-100 disabled:opacity-50"
+      >
+        &raquo;
+      </button>
+    );
+
+    return buttons;
   };
 
   // PDF Generation Function
@@ -72,6 +154,7 @@ const Orders = ({ token }) => {
       toast.error(error.response?.data?.message || 'Failed to generate PDF');
     }
   };
+
   // Label Generation Function
   const generateOrderLabel = async (orderId, labelType = 'standard') => {
     try {
@@ -307,9 +390,39 @@ const Orders = ({ token }) => {
         </div>
       </div>
 
+      {/* Pagination Controls */}
+      <div className="flex justify-between items-center mb-4">
+        <div className="flex items-center">
+          <span className="mr-2">Orders per page:</span>
+          <select
+            value={ordersPerPage}
+            onChange={handleOrdersPerPageChange}
+            className="p-1 border border-gray-300 rounded"
+          >
+            <option value={10}>10</option>
+            <option value={20}>20</option>
+            <option value={50}>50</option>
+            <option value={100}>100</option>
+            <option value={200}>200</option>
+            <option value={300}>300</option>
+          </select>
+        </div>
+        <div className="text-sm text-gray-600">
+          Showing {filteredOrders.length > 0 ? (currentPage - 1) * ordersPerPage + 1 : 0} - {Math.min(currentPage * ordersPerPage, filteredOrders.length)} of {filteredOrders.length} orders
+        </div>
+      </div>
+
+      {filteredOrders.length > ordersPerPage && (
+        <div className="mt-6 flex justify-center">
+          <div className="flex gap-2">
+            {renderPaginationButtons()}
+          </div>
+        </div>
+      )}
+
       <div>
-        {filteredOrders.length > 0 ? (
-          filteredOrders.map((order, index) => {
+        {displayedOrders.length > 0 ? (
+          displayedOrders.map((order, index) => {
             // Determine the background color class based on the order status
             const statusClass =
               order.status === "Order Placed" ? "bg-green-200" :
