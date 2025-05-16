@@ -846,7 +846,7 @@ async function processSalesData(orders) {
             subcategoryEntries.push({
                 category: '',
                 subcategory: '',
-                itemName: `Total in Subcategory: ${subcategoryName}`,
+                itemName: `Subcategory: ${subcategoryName}`,
                 color: '',
                 size: '',
                 quantity: '',
@@ -861,7 +861,7 @@ async function processSalesData(orders) {
         categoryEntries.push({
             category: '',
             subcategory: '',
-            itemName: `Total in Category: ${categoryName}`,
+            itemName: `Category: ${categoryName}`,
             color: '',
             size: '',
             quantity: '',

@@ -81,10 +81,61 @@ const addProduct = async (req, res) => {
 
 // Get all products function
 const getAllProducts = async (req, res) => {
-    try {    
-        const products = await productModel.find({})
-            .populate('category', 'name')
-            .populate('subcategory', 'name');
+    try {
+        // Join with categories and subcategories to get visibility information
+        const products = await productModel.aggregate([
+            {
+                $lookup: {
+                    from: "categories",
+                    localField: "category",
+                    foreignField: "_id",
+                    as: "categoryData"
+                }
+            },
+            {
+                $unwind: "$categoryData"
+            },
+            {
+                $lookup: {
+                    from: "subcategories",
+                    localField: "subcategory",
+                    foreignField: "_id",
+                    as: "subcategoryData"
+                }
+            },
+            {
+                $unwind: "$subcategoryData"
+            },
+            {
+                $match: {
+                    "categoryData.isVisible": true,
+                    "subcategoryData.isVisible": true
+                }
+            },
+            {
+                $project: {
+                    "_id": 1,
+                    "productId": 1,
+                    "name": 1,
+                    "description": 1,
+                    "price": 1,
+                    "bestseller": 1,
+                    "sizes": 1,
+                    "colors": 1,
+                    "images": 1,
+                    "hasSizes": 1,
+                    "hasColors": 1,
+                    "category": {
+                        "_id": "$categoryData._id",
+                        "name": "$categoryData.name"
+                    },
+                    "subcategory": {
+                        "_id": "$subcategoryData._id",
+                        "name": "$subcategoryData.name"
+                    }
+                }
+            }
+        ]);
 
         res.json({ success: true, products });
     } catch (error) {
