@@ -3,7 +3,7 @@ import { useEffect, useState, useContext } from 'react'
 import { assets } from '../assets/assets'
 import { NavLink, Link } from 'react-router-dom'
 import { ShopContext } from '../context/ShopContext'
-import { FiHome, FiGrid, FiHeart, FiPackage, FiRefreshCw, FiUser, FiInfo, FiMessageSquare, FiX, FiChevronLeft } from 'react-icons/fi'
+import { FiHome, FiGrid, FiHeart, FiPackage, FiRefreshCw, FiUser, FiInfo, FiMessageSquare, FiX } from 'react-icons/fi'
 
 const Navbar = () => {
 	const [visible, setVisible] = useState(false);
@@ -91,20 +91,95 @@ const Navbar = () => {
 				<img onClick={() => setShowSearch(true)} src={assets.search_icon} alt="" className='w-5 cursor-pointer' />
 
 				<div className='group relative'>
-					<img onClick={() => token ? null : navigate('/')} src={assets.profile_icon} alt="" className='w-5 cursor-pointer' />
+					<div className='flex items-center cursor-pointer'>
+						{token? (
+							<div className='flex items-center gap-2'>
+								<div className='w-8 h-8 rounded-full overflow-hidden border-2 border-gray-200'>
+									{user?.profileImage ? (
+										<img
+											src={user.profileImage}
+											alt="Profile"
+											className="w-full h-full object-cover"
+										/>
+									) : (
+										<div className="w-full h-full flex items-center justify-center bg-green-500 text-white font-medium">
+											{user?.firstName ? user.firstName.charAt(0).toUpperCase() : 'A'}
+										</div>
+									)}
+								</div>
+								<span className='hidden md:block text-sm font-medium truncate max-w-[100px]'>
+									{user?.firstName || 'Account'}
+								</span>
+							</div>
+						) : (
+							<img
+								onClick={() => token ? null : navigate('/')}
+								src={assets.profile_icon}
+								alt=""
+								className='w-5 cursor-pointer'
+							/>
+						)}
+					</div>
 
 					{/* Dropdown Menu */}
 					{token &&
 						<div className='group-hover:block hidden absolute dropdown-menu right-0 pt-4 z-[60]'>
-							<div className='flex flex-col gap-2 w-36 py-3 px-5 bg-slate-100 text-gray-500 rounded'>
-								<p onClick={() => navigate('/profile')} className='cursor-pointer hover:text-black'>My Profile</p>
-								<p onClick={() => navigate('/orders')} className='cursor-pointer hover:text-black'>My Orders</p>
-								<p onClick={() => navigate('/returns')} className='cursor-pointer hover:text-black'>My Returns</p>
-								<p onClick={logout} className='cursor-pointer hover:text-black'>Logout</p>
+							<div className='shadow-lg w-70 py-3 bg-white rounded-lg border border-gray-100 overflow-hidden'>
+								{/* User info section */}
+								<div className='px-5 pb-3 mb-2 border-b border-gray-100'>
+									<div className='flex items-center gap-3 mb-1'>
+										<div className='w-10 h-10 rounded-full overflow-hidden'>
+											{user?.profileImage ? (
+												<img
+													src={user.profileImage}
+													alt="Profile"
+													className="w-full h-full object-cover"
+												/>
+											) : (
+												<div className="w-full h-full flex items-center justify-center bg-green-500 text-white text-xl font-medium">
+													{user?.firstName ? user.firstName.charAt(0).toUpperCase() : 'A'}
+												</div>
+											)}
+										</div>
+										<div className='overflow-hidden'>
+											<p className='font-medium text-sm text-black truncate'>
+												{user?.firstName ? `${user.firstName} ${user.lastName || ''}` : 'Hello User'}
+											</p>
+											<p className='text-[10px] text-gray-500 truncate'>{user?.email || ''}</p>
+										</div>
+									</div>
+								</div>
+
+								{/* Menu items */}
+								<div className='px-2'>
+									<div onClick={() => navigate('/profile')}
+										className='flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-gray-50 rounded-md transition-colors'>
+										<FiUser className="w-4 h-4 text-gray-500" />
+										<span className='text-gray-700 hover:text-black'>My Profile</span>
+									</div>
+									<div onClick={() => navigate('/orders')}
+										className='flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-gray-50 rounded-md transition-colors'>
+										<FiPackage className="w-4 h-4 text-gray-500" />
+										<span className='text-gray-700 hover:text-black'>My Orders</span>
+									</div>
+									<div onClick={() => navigate('/returns')}
+										className='flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-gray-50 rounded-md transition-colors'>
+										<FiRefreshCw className="w-4 h-4 text-gray-500" />
+										<span className='text-gray-700 hover:text-black'>My Returns</span>
+									</div>
+									<div onClick={logout}
+										className='flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-gray-50 rounded-md mt-2 text-red-500 border-t border-gray-100 pt-2'>
+										<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+											<path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+										</svg>
+										<span>Logout</span>
+									</div>
+								</div>
 							</div>
 						</div>
 					}
 				</div>
+
 				<Link to='/cart' className='relative'>
 					<img src={assets.cart_icon} alt="" className='w-5 min-w-5 cursor-pointer' />
 					<p className='absolute right-[-5px] bottom-[-5px] w-4 text-center leading-4 bg-black text-white aspect-square rounded-full text-[10.5px]'>{getCartCount()}</p>
