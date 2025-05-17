@@ -475,7 +475,10 @@ const UserActivityReport = () => {
         return date.toLocaleDateString('en-US', {
             year: 'numeric',
             month: 'short',
-            day: 'numeric'
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true        
         });
     };
 
@@ -485,7 +488,7 @@ const UserActivityReport = () => {
 
 
     return (
-        <div className="p-6 max-w-7xl mx-auto">
+        <div className="p-6 mx-auto">
             <div className="flex items-center justify-between mb-6">
                 <h1 className="text-2xl font-bold">User Activity Report</h1>
                 <button
@@ -613,12 +616,11 @@ const UserActivityReport = () => {
                                     <table className="min-w-full divide-y divide-gray-200">
                                         <thead className="bg-gray-50">
                                             <tr>
-                                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User Info</th>
-                                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Login</th>
-                                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Activity</th>
-                                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reference ID</th>
-                                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Loyalty Score</th>
-                                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                                <th className="px-4 py-3 text-left text-md font-semibold text-gray-500 uppercase tracking-wider">User Info</th>
+                                                <th className="px-4 py-3 text-left text-md font-semibold text-gray-500 uppercase tracking-wider">Last Login</th>
+                                                <th className="px-4 py-3 text-left text-md font-semibold text-gray-500 uppercase tracking-wider">Activity</th>
+                                                <th className="px-4 py-3 text-left text-md font-semibold text-gray-500 uppercase tracking-wider">Reference ID</th>
+                                                <th className="px-4 py-3 text-left text-md font-semibold text-gray-500 uppercase tracking-wider">Loyalty Score</th>
                                             </tr>
                                         </thead>
                                         <tbody className="bg-white divide-y divide-gray-200">
@@ -655,7 +657,7 @@ const UserActivityReport = () => {
                                                                     </div>
                                                                     <div className="ml-4">
                                                                         <div className="text-sm font-medium text-gray-900">{activity.firstName} {activity.lastName}</div>
-                                                                        <div className="text-sm text-gray-500">{activity.email}</div>
+                                                                        <div className="text-xs text-gray-500">{activity.email}</div>
                                                                         <div className="text-xs text-gray-400">@{activity.username}</div>
                                                                     </div>
                                                                 </div>
@@ -687,9 +689,6 @@ const UserActivityReport = () => {
                                                                         ></div>
                                                                     </div>
                                                                 </div>
-                                                            </td>
-                                                            <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                                {formatDate(activity.date)}
                                                             </td>
                                                         </tr>
                                                     );

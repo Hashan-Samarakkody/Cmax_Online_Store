@@ -141,6 +141,13 @@ const ShopContextProvider = (props) => {
             );
         };
 
+        // Handle cart updates
+        const handleCartUpdate = (data) => {
+            if (data && data.cartData) {
+                setCartItems(data.cartData);
+            }
+        };
+
         // Handle product updates at context level
         const handleUpdateProduct = (data) => {
             if (data && data.product) {
@@ -178,12 +185,14 @@ const ShopContextProvider = (props) => {
         WebSocketService.on('updateProduct', handleUpdateProduct);
         WebSocketService.on('deleteProduct', handleDeleteProduct);
         WebSocketService.on('productVisibilityChanged', handleProductVisibilityChanged);
+        WebSocketService.on('cartUpdate', handleCartUpdate);
         return () => {
             // Cleanup handlers on unmount
             WebSocketService.off('newProduct', handleNewProduct);
             WebSocketService.off('updateProduct', handleUpdateProduct);
             WebSocketService.off('deleteProduct', handleDeleteProduct);
             WebSocketService.off('productVisibilityChanged', handleProductVisibilityChanged);
+            WebSocketService.off('cartUpdate', handleCartUpdate);
         };
     }, []);
 
@@ -243,27 +252,60 @@ const ShopContextProvider = (props) => {
     }
 
     const updateQuantity = async (itemId, cartKey, quantity) => {
+        // Create a deep copy of current cart items
         let cartData = structuredClone(cartItems);
 
-        cartData[itemId][cartKey] = quantity;
+        if (quantity === 0) {
+            // If quantity is 0, remove the item completely
+            if (cartData[itemId] && cartData[itemId][cartKey]) {
+                delete cartData[itemId][cartKey];
 
-        setCartItems(cartData)
+                // If no more items with this ID, remove the entire product entry
+                if (Object.keys(cartData[itemId]).length === 0) {
+                    delete cartData[itemId];
+                }
+            }
+        } else {
+            // Otherwise just update the quantity
+            if (!cartData[itemId]) cartData[itemId] = {};
+            cartData[itemId][cartKey] = quantity;
+        }
 
+        // Update local state immediately for better UI responsiveness
+        setCartItems({ ...cartData });
+
+        // Then update server state
         if (token) {
             try {
                 // Parse the cartKey to extract size and color
                 const [size, color] = cartKey.split('_');
-                await axios.post(backendUrl + '/api/cart/update', {
+                const response = await axios.post(backendUrl + '/api/cart/update', {
                     itemId,
                     size: size !== 'undefined' ? size : null,
                     color: color !== 'undefined' ? color : null,
                     quantity
                 }, { headers: { token } });
+
+                // Ensure cartItems state is updated to match the server response
+                if (response.data.success) {
+                    // Re-fetch cart if needed to ensure complete sync
+                    if (quantity === 0) {
+                        // For delete operations, ensure we're in sync with server
+                        await getUserCart(token);
+                    }
+                }
+
+                return response;
             } catch (error) {
-                console.log(error)
-                toast.error(error.message)
+                console.error("Failed to update cart on server:", error);
+                toast.error("Failed to update cart");
+                // Rollback to server state on error
+                await getUserCart(token);
+                throw error;
             }
         }
+
+        return Promise.resolve();
     }
 
     const getCartAmount = () => {

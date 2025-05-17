@@ -34,9 +34,27 @@ const Cart = () => {
     }
   }, [cartItems, products]);
 
-  const handleRemoveProduct = (productId, size, color) => {
-    updateQuantity(productId, `${size || 'undefined'}_${color || 'undefined'}`, 0);
-    toast.info('Product removed from cart!', { autoClose: 1000 });
+  const handleRemoveProduct = async (productId, size, color) => {
+    const cartKey = `${size || 'undefined'}_${color || 'undefined'}`;
+
+    try {
+      // Wait for the updateQuantity to complete
+      await updateQuantity(productId, cartKey, 0);
+
+      // Update the local cartData to reflect removal immediately
+      setCartData(prevCartData => {
+        return prevCartData.filter(item =>
+          !(item._id === productId &&
+            item.size === size &&
+            item.color === color)
+        );
+      });
+
+      toast.info('Product removed from cart!', { autoClose: 1000 });
+    } catch (error) {
+      console.error('Error removing product:', error);
+      toast.error('Could not remove product. Please try again.');
+    }
   };
 
   return (
@@ -67,8 +85,8 @@ const Cart = () => {
             }
 
             // Prepare size and color display
-            const sizeInfo = item.size ? ` Size: ${item.size}` : '';
-            const colorInfo = item.color ? ` Color: ${item.color}` : '';
+            const sizeInfo = item.size && item.size !== 'null' ? ` Size: ${item.size}` : '';
+            const colorInfo = item.color && item.color !== 'null' ? ` Color: ${item.color}` : '';
 
             return (
               <div

@@ -498,14 +498,6 @@ const Orders = ({ token }) => {
         </div>
       </div>
 
-      {filteredOrders.length > ordersPerPage && (
-        <div className="mt-6 flex justify-center">
-          <div className="flex gap-2">
-            {renderPaginationButtons()}
-          </div>
-        </div>
-      )}
-
       <div>
         {displayedOrders.length > 0 ? (
           displayedOrders.map((order, index) => {
@@ -620,6 +612,13 @@ const Orders = ({ token }) => {
           </div>
         )}
       </div>
+      {filteredOrders.length > ordersPerPage && (
+        <div className="mt-6 flex justify-center">
+          <div className="flex gap-2">
+            {renderPaginationButtons()}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
