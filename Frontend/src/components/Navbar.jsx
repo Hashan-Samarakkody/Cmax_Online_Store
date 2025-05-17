@@ -7,7 +7,7 @@ import { FiHome, FiGrid, FiHeart, FiPackage, FiRefreshCw, FiUser, FiInfo, FiMess
 
 const Navbar = () => {
 	const [visible, setVisible] = useState(false);
-	const { setShowSearch, getCartCount, navigate, token, setToken, setCartItems } = useContext(ShopContext);
+	const { setShowSearch, getCartCount, navigate, token, setToken, setCartItems, cartItems } = useContext(ShopContext);
 	const [activeMobileCategory, setActiveMobileCategory] = useState('');
 	const [user, setUser] = useState(null);
 	const backendUrl = import.meta.env.VITE_BACKEND_URL;

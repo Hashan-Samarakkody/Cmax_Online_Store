@@ -32,23 +32,36 @@ const addToCart = async (req, res) => {
 // Update cart
 const updateCart = async (req, res) => {
     try {
-        const { userId, itemId, size, quantity } = req.body
+        const { userId, itemId, size, quantity } = req.body;
 
-        const userData = await userModel.findById(userId)
-        let cartData = await userData.cartData
+        const userData = await userModel.findById(userId);
+        let cartData = userData.cartData || {};
 
-        cartData[itemId][size] = quantity
+        if (quantity === 0) {
+            // Remove the item completely if quantity is zero
+            if (cartData[itemId] && cartData[itemId][size]) {
+                delete cartData[itemId][size];
 
-        await userModel.findByIdAndUpdate(userId, { cartData })
+                // If no more items with this ID, remove the entire product
+                if (Object.keys(cartData[itemId]).length === 0) {
+                    delete cartData[itemId];
+                }
+            }
+        } else {
+            // Otherwise update the quantity
+            if (!cartData[itemId]) cartData[itemId] = {};
+            cartData[itemId][size] = quantity;
+        }
 
-        res.json({ success: true, message: 'Cart updated!' })
+        await userModel.findByIdAndUpdate(userId, { cartData });
+
+        res.json({ success: true, message: 'Cart updated!' });
 
     } catch (error) {
-        console.log(error)
-        res.json({ success: false, message: error.message })
+        console.log(error);
+        res.json({ success: false, message: error.message });
     }
-    
-}
+};
 
 // Get cart data
 const getUserCart = async (req, res) => {
