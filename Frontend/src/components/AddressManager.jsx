@@ -119,13 +119,13 @@ const AddressManager = ({ user, setUser }) => {
             return false;
         }
 
-        const streetRegex = /^[a-zA-Z0-9\s.,-/]+$/;
+        const streetRegex = /^[a-zA-Z0-9\s.,\-/]+$/;
         if (!sanitizedData.street || sanitizedData.street.length < 2 || !streetRegex.test(sanitizedData.street)) {
             toast.error('Street must be at least 2 characters long and can only contain letters, numbers, spaces, and special characters (.,-/).');
             return false;
         }
 
-        const cityRegex = /^[a-zA-Z0-9\s.,-]+$/;
+        const cityRegex = /^[a-zA-Z0-9\s.,\-/]+$/;
         if (!sanitizedData.city || sanitizedData.city.length < 2 || !cityRegex.test(sanitizedData.city)) {
             toast.error('City must be at least 2 characters long and can only contain letters, numbers, spaces, and special characters (.,-/).');
             return false;
