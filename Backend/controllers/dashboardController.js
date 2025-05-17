@@ -3,6 +3,7 @@ import userModel from '../models/userModel.js';
 import productModel from '../models/productModel.js';
 import returnModel from '../models/returnModel.js';
 import reviewModel from '../models/reviewModel.js';
+import predictionService from '../services/predictionService.js';
 
 // Get dashboard overview statistics
 const getDashboardStats = async (req, res) => {
@@ -403,6 +404,11 @@ const generateReport = async (req, res) => {
 // Get revenue prediction data
 const getRevenuePrediction = async (req, res) => {
     try {
+        // Initialize prediction service if not already done
+        if (!predictionService.modelComponents) {
+            predictionService.initialize();
+        }
+
         // Look back further for better historical data - 36 months instead of 24
         const pastMonths = 36;
         const today = new Date();
@@ -432,7 +438,7 @@ const getRevenuePrediction = async (req, res) => {
             orders: d.orderCount
         }));
 
-        // Handle case with no historical data
+        // If we have no historical data, return empty predictions
         if (historicalData.length === 0) {
             return res.json({
                 success: true,
@@ -461,141 +467,29 @@ const getRevenuePrediction = async (req, res) => {
             });
         }
 
-        // Extract time series for modeling
-        const revenueData = historicalData.map(item => item.revenue);
-
-        // Calculate average revenue if we need a fallback
-        const avgRevenue = revenueData.reduce((sum, val) => sum + val, 0) / revenueData.length;
-
-        // Calculate seasonal indices (one for each month)
-        const monthlyData = Array(12).fill(0).map(() => []);
-
-        // Group data by month
-        salesData.forEach(d => {
-            monthlyData[d._id.month - 1].push(d.revenue);
-        });
-
-        // Calculate monthly averages
-        const monthlyAvgs = monthlyData.map(values =>
-            values.length > 0 ? values.reduce((sum, val) => sum + val, 0) / values.length : null);
-
-        // Calculate overall average (ignoring null values)
-        const validAvgs = monthlyAvgs.filter(avg => avg !== null);
-        const overallAvg = validAvgs.length > 0
-            ? validAvgs.reduce((sum, avg) => sum + avg, 0) / validAvgs.length
-            : avgRevenue;
-
-        // Calculate seasonal indices (normalized)
-        const seasonalIndices = monthlyAvgs.map(avg =>
-            avg !== null ? avg / overallAvg : 1);
-
-        // Calculate trend using linear regression
-        let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
-        const n = revenueData.length;
-
-        for (let i = 0; i < n; i++) {
-            sumX += i;
-            sumY += revenueData[i];
-            sumXY += i * revenueData[i];
-            sumX2 += i * i;
-        }
-
-        const slope = n > 1 ? (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX) : 0;
-        const intercept = (sumY - slope * sumX) / n;
-
-        // Calculate growth rate based on recent months (last 6 months trend)
-        let recentGrowthRate = 0;
-        if (revenueData.length >= 6) {
-            const recent = revenueData.slice(-6);
-            let sumPctChange = 0;
-            let countPctChange = 0;
-
-            for (let i = 1; i < recent.length; i++) {
-                if (recent[i - 1] > 0) {
-                    sumPctChange += (recent[i] - recent[i - 1]) / recent[i - 1];
-                    countPctChange++;
-                }
-            }
-
-            recentGrowthRate = countPctChange > 0
-                ? sumPctChange / countPctChange
-                : (revenueData[revenueData.length - 1] - revenueData[0]) / (revenueData[0] || 1) / revenueData.length;
-        }
-
-        // Use exponential weighted moving average for short-term prediction
-        const alpha = 0.3; // Smoothing factor
-        let lastSmoothedValue = revenueData[revenueData.length - 1];
-        let lastTrend = slope;
-
-        // Apply bounds to growth rate 
-        recentGrowthRate = Math.max(-0.15, Math.min(0.25, recentGrowthRate));
-
-        // Calculate volatility based on historical data (for confidence)
-        const volatility = calculateVolatility(revenueData);
-
-        // Get current month and year
-        const currentMonth = today.getMonth();
-        const currentYear = today.getFullYear();
-
-        // Predict next 3 months
-        const predictions = [];
-
-        for (let i = 1; i <= 3; i++) {
-            const predictedMonth = (currentMonth + i) % 12;
-            const predictedYear = currentMonth + i >= 12
-                ? currentYear + 1 : currentYear;
-
-            const seasonalFactor = seasonalIndices[predictedMonth] || 1;
-            const timeIndex = n + i - 1;
-
-            // Prediction methods
-            // 1. Linear regression
-            const linearPrediction = intercept + slope * timeIndex;
-
-            // 2. Exponential smoothing
-            const smoothedValue = lastSmoothedValue + lastTrend;
-            lastSmoothedValue = smoothedValue;
-
-            // 3. Growth-based
-            const lastValue = revenueData[revenueData.length - 1];
-            const growthPrediction = lastValue * Math.pow(1 + recentGrowthRate, i);
-
-            // Combine predictions with weights
-            const combinedPrediction = (
-                0.3 * linearPrediction +
-                0.3 * smoothedValue +
-                0.4 * growthPrediction
-            ) * seasonalFactor; // Apply seasonality
-
-            // Never predict less than 50% of average revenue unless growth is negative
-            const finalPrediction = recentGrowthRate < 0
-                ? Math.max(combinedPrediction, avgRevenue * 0.5)
-                : Math.max(combinedPrediction, lastValue * 0.8);
-
-            // Calculate confidence based on prediction horizon and volatility
-            const confidenceBase = 90 - (i * 10); // Start at 90%, decrease by 10% each month
-            const volatilityAdjustment = Math.min(20, Math.round(volatility * 100)); // Up to 20% reduction
-            const confidence = Math.max(40, confidenceBase - volatilityAdjustment);
-
-            predictions.push({
-                month: getMonthName(predictedMonth + 1),
-                year: predictedYear,
-                revenue: Math.max(10, finalPrediction), // Never predict less than Rs.10
-                confidence: confidence
-            });
-        }
+        // Get predictions from the service
+        const { predictions, growthRate } = await predictionService.getRevenuePredictions(historicalData);
 
         res.json({
             success: true,
             historicalData,
             predictions,
-            growthRate: recentGrowthRate
+            growthRate
         });
     } catch (error) {
         console.error(error);
         res.status(500).json({ success: false, message: error.message });
     }
 };
+
+// Helper function to get month name remains the same
+function getMonthName(monthNum) {
+    const months = [
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+    ];
+    return months[(monthNum - 1) % 12];
+}
 
 // Helper function to calculate volatility (coefficient of variation)
 function calculateVolatility(data) {
@@ -605,15 +499,6 @@ function calculateVolatility(data) {
     const variance = data.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / data.length;
 
     return mean > 0 ? Math.sqrt(variance) / mean : 0;
-}
-
-// Helper function to get month name
-function getMonthName(monthNum) {
-    const months = [
-        "January", "February", "March", "April", "May", "June",
-        "July", "August", "September", "October", "November", "December"
-    ];
-    return months[(monthNum - 1) % 12];
 }
 
 // Get detailed user activity data for reporting
@@ -964,6 +849,56 @@ const getUserActivityLog = async (req, res) => {
     }
 };
 
+const exportHistoricalDataToCsv = async (req, res) => {
+    try {
+        // Look back up to 36 months
+        const pastMonths = 36;
+        const today = new Date();
+        let startDate = new Date(today);
+        startDate.setMonth(today.getMonth() - pastMonths);
+
+        // Aggregate monthly sales data
+        const historicalData = await orderModel.aggregate([
+            { $match: { date: { $gte: startDate.getTime() } } },
+            {
+                $group: {
+                    _id: {
+                        year: { $year: { $toDate: "$date" } },
+                        month: { $month: { $toDate: "$date" } }
+                    },
+                    revenue: { $sum: "$amount" },
+                    orders: { $sum: 1 }
+                }
+            },
+            { $sort: { "_id.year": 1, "_id.month": 1 } }
+        ]);
+
+        // Format for CSV
+        const csvHeader = "year,month,revenue,orders\n";
+        const csvRows = historicalData.map(item => {
+            return `${item._id.year},${item._id.month},${item.revenue},${item.orders}`;
+        }).join('\n');
+
+        const csvContent = csvHeader + csvRows;
+
+        // Save to file system
+        const filePath = path.join(__dirname, '../models/ml/historical_data.csv');
+        fs.writeFileSync(filePath, csvContent);
+
+        // Return both the file path and the data
+        res.json({
+            success: true,
+            message: 'Historical data exported to CSV successfully',
+            filePath: filePath,
+            data: historicalData
+        });
+    } catch (error) {
+        console.error('Error exporting historical data:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+
 export {
     getDashboardStats,
     getSalesTrends,
@@ -973,6 +908,7 @@ export {
     getCategoryDistribution,
     generateReport,
     getRevenuePrediction,
+    exportHistoricalDataToCsv,
     getUserActivityReport,
     getUserActivityLog
-};
+  };

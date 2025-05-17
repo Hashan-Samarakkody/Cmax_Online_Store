@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { FiDollarSign, FiShoppingCart, FiUsers, FiShoppingBag, FiRefreshCw } from 'react-icons/fi';
+import { FiDollarSign, FiShoppingCart, FiUsers, FiShoppingBag, FiRefreshCw, FiTrendingUp, FiTrendingDown } from 'react-icons/fi';
 import { Bar, Line, Pie } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Title, Tooltip, Legend } from 'chart.js';
 import { backendUrl } from '../App';
@@ -69,6 +69,57 @@ const Dashboard = () => {
       setError(`API error: ${apiError.message}`);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Calculate the sales trend
+  const calculateTrend = () => {
+    if (salesTrends.length < 2) return '0%';
+
+    // Sort data by date if needed
+    const sortedData = [...salesTrends].sort((a, b) => {
+      if (a._id && b._id) {
+        // Try to extract dates for comparison if possible
+        return a._id.localeCompare(b._id);
+      }
+      return 0;
+    });
+
+    const firstPeriod = sortedData[0]?.revenue || 0;
+    const lastPeriod = sortedData[sortedData.length - 1]?.revenue || 0;
+
+    if (firstPeriod === 0) return '0%';
+
+    const percentChange = ((lastPeriod - firstPeriod) / firstPeriod) * 100;
+    return `${percentChange.toFixed(1)}%`;
+  };
+
+
+  // Get appropriate trend icon
+  const getTrendIcon = () => {
+    const trend = calculateTrend();
+    const numericTrend = parseFloat(trend);
+
+    if (numericTrend > 0) {
+      return <FiTrendingUp className="h-5 w-5" />;
+    } else if (numericTrend < 0) {
+      return <FiTrendingDown className="h-5 w-5" />;
+    } else {
+      return <span>—</span>;
+    }
+  };
+
+  // Get appropriate color based on trend
+  const getTrendColor = () => {
+    const trend = calculateTrend();
+    const numericTrend = parseFloat(trend);
+
+    if (numericTrend > 0) {
+      return 'text-green-600';
+    } else if (numericTrend < 0) {
+      return 'text-red-600';
+    } else {
+      return 'text-gray-600';
     }
   };
 
@@ -589,7 +640,7 @@ const Dashboard = () => {
       {/* Charts */}
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         {/* Sales Chart */}
-        <div className="bg-white rounded-lg shadow p-5">
+        <div className="bg-white rounded-lg shadow p-5 max-h-[635px]">
           <h2 className="text-xl font-semibold mb-4">Sales Trends ({selectedPeriod})</h2>
           <div className="h-80">
             <Line
@@ -604,6 +655,33 @@ const Dashboard = () => {
                 }
               }}
             />
+          </div>
+
+          {/* Add this sales summary section */}
+          <div className="mt-4 grid grid-cols-3 gap-4 pt-3 border-t border-gray-100">
+            <div className="text-center">
+              <p className="text-gray-500 text-xs uppercase font-medium tracking-wide">Average</p>
+              <p className="mt-1 text-lg font-bold text-gray-800">
+                Rs.{salesTrends.length > 0
+                  ? (salesTrends.reduce((sum, item) => sum + item.revenue, 0) / salesTrends.length).toFixed(2)
+                  : '0.00'}
+              </p>
+            </div>
+            <div className="text-center">
+              <p className="text-gray-500 text-xs uppercase font-medium tracking-wide">Peak {selectedPeriod}</p>
+              <p className="mt-1 text-lg font-bold text-gray-800">
+                Rs.{salesTrends.length > 0
+                  ? Math.max(...salesTrends.map(item => item.revenue)).toFixed(2)
+                  : '0.00'}
+              </p>
+            </div>
+            <div className="text-center">
+              <p className="text-gray-500 text-xs uppercase font-medium tracking-wide">Trend</p>
+              <p className={`mt-1 text-lg font-bold flex items-center justify-center ${getTrendColor()}`}>
+                {getTrendIcon()}
+                <span className="ml-1">{calculateTrend()}</span>
+              </p>
+            </div>
           </div>
         </div>
 
