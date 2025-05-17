@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { FiDollarSign, FiShoppingCart, FiUsers, FiShoppingBag, FiRefreshCw } from 'react-icons/fi';
+import { FiDollarSign, FiShoppingCart, FiUsers, FiShoppingBag, FiRefreshCw, FiTrendingUp, FiTrendingDown } from 'react-icons/fi';
 import { Bar, Line, Pie } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Title, Tooltip, Legend } from 'chart.js';
 import { backendUrl } from '../App';
@@ -24,7 +24,43 @@ const Dashboard = () => {
   const [subcategoryDistribution, setSubcategoryDistribution] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedPeriod, setSelectedPeriod] = useState('monthly');
-  const [categoryMap, setCategoryMap] = useState({}); // Map of category names to IDs
+  const [categoryMap, setCategoryMap] = useState({});
+  const [admin, setAdmin] = useState(null);
+
+  // Fetch admin profile to check role
+  useEffect(() => {
+    const fetchAdminProfile = async () => {
+      try {
+        const token = localStorage.getItem('adminToken');
+        if (token) {
+          const response = await axios.get(`${backendUrl}/api/admin/profile`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+
+          if (response.data.success) {
+            setAdmin(response.data.admin);
+            // Store role in localStorage for quick access
+            localStorage.setItem('adminRole', response.data.admin.role);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching admin profile:', error);
+        // Try to use cached role if available
+        const cachedRole = localStorage.getItem('adminRole');
+        if (cachedRole) {
+          setAdmin({ role: cachedRole });
+        }
+      }
+    };
+
+    fetchAdminProfile();
+
+    // Try to use cached role initially for faster rendering
+    const cachedRole = localStorage.getItem('adminRole');
+    if (cachedRole) {
+      setAdmin({ role: cachedRole });
+    }
+  }, []);
 
   // Function to fetch all dashboard data
   const fetchAllData = async () => {
@@ -69,6 +105,57 @@ const Dashboard = () => {
       setError(`API error: ${apiError.message}`);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Calculate the sales trend
+  const calculateTrend = () => {
+    if (salesTrends.length < 2) return '0%';
+
+    // Sort data by date if needed
+    const sortedData = [...salesTrends].sort((a, b) => {
+      if (a._id && b._id) {
+        // Try to extract dates for comparison if possible
+        return a._id.localeCompare(b._id);
+      }
+      return 0;
+    });
+
+    const firstPeriod = sortedData[0]?.revenue || 0;
+    const lastPeriod = sortedData[sortedData.length - 1]?.revenue || 0;
+
+    if (firstPeriod === 0) return '0%';
+
+    const percentChange = ((lastPeriod - firstPeriod) / firstPeriod) * 100;
+    return `${percentChange.toFixed(1)}%`;
+  };
+
+
+  // Get appropriate trend icon
+  const getTrendIcon = () => {
+    const trend = calculateTrend();
+    const numericTrend = parseFloat(trend);
+
+    if (numericTrend > 0) {
+      return <FiTrendingUp className="h-5 w-5" />;
+    } else if (numericTrend < 0) {
+      return <FiTrendingDown className="h-5 w-5" />;
+    } else {
+      return <span>—</span>;
+    }
+  };
+
+  // Get appropriate color based on trend
+  const getTrendColor = () => {
+    const trend = calculateTrend();
+    const numericTrend = parseFloat(trend);
+
+    if (numericTrend > 0) {
+      return 'text-green-600';
+    } else if (numericTrend < 0) {
+      return 'text-red-600';
+    } else {
+      return 'text-gray-600';
     }
   };
 
@@ -467,32 +554,38 @@ const Dashboard = () => {
     );
   }
 
+
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="space-y-6 px-2 sm:px-0">
+      <div className="flex flex-col sm:flex-row justify-between items-center gap-3 sm:gap-0">
         <h1 className="text-2xl font-bold">Dashboard Overview</h1>
 
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => navigate('/financial-sales-report')}
-            className="flex items-center px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors"
-          >
-            Financial Sales Report
-          </button>
+        <div className="flex flex-wrap justify-center sm:justify-end items-center gap-2 sm:gap-4">
+          {/* Only show report buttons if user is not staff */}
+          {admin && admin.role !== 'staff' && (
+            <>
+              <button
+                onClick={() => navigate('/financial-sales-report')}
+                className="flex items-center px-3 sm:px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors text-sm sm:text-base"
+              >
+                Financial Sales Report
+              </button>
 
-          <button
-            onClick={() => navigate('/sales')}
-            className="flex items-center px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors"
-          >
-            Sold Items Count Report
-          </button>
+              <button
+                onClick={() => navigate('/sales')}
+                className="flex items-center px-3 sm:px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors text-sm sm:text-base"
+              >
+                Sold Items Count Report
+              </button>
 
-          <button
-            onClick={() => navigate('/user-activity-report')}
-            className="flex items-center px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors"
-          >
-            User Activity Report
-          </button>
+              <button
+                onClick={() => navigate('/user-activity-report')}
+                className="flex items-center px-3 sm:px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors text-sm sm:text-base"
+              >
+                User Activity Report
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -507,17 +600,17 @@ const Dashboard = () => {
         <option value="yearly">Yearly</option>
       </select>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-5">
-        {/* Sales Card */}
-        <div className="bg-white rounded-lg shadow p-5">
+      {/* Stats Cards - keep the same grid but better small screen support */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-5">
+        {/* Same card structure for all 5 cards - only showing first as example */}
+        <div className="bg-white rounded-lg shadow p-4 sm:p-5">
           <div className="flex items-center">
-            <div className="flex-shrink-0 h-12 w-12 rounded-full bg-indigo-100 flex items-center justify-center">
-              <FiDollarSign className="h-6 w-6 text-indigo-600" />
+            <div className="flex-shrink-0 h-10 sm:h-12 w-10 sm:w-12 rounded-full bg-indigo-100 flex items-center justify-center">
+              <FiDollarSign className="h-5 sm:h-6 w-5 sm:w-6 text-indigo-600" />
             </div>
-            <div className="ml-5">
-              <div className="text-gray-500 text-sm">Total Sales ({selectedPeriod})</div>
-              <div className="text-2xl font-bold text-gray-900">
+            <div className="ml-3 sm:ml-5">
+              <div className="text-gray-500 text-xs sm:text-sm">Total Sales ({selectedPeriod})</div>
+              <div className="text-xl sm:text-2xl font-bold text-gray-900">
                 Rs.{stats ? stats.revenue[selectedPeriod]?.toFixed(2) || '0.00' : '0.00'}
               </div>
             </div>
@@ -589,9 +682,9 @@ const Dashboard = () => {
       {/* Charts */}
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         {/* Sales Chart */}
-        <div className="bg-white rounded-lg shadow p-5">
+        <div className="bg-white rounded-lg shadow p-4 sm:p-5 max-h-[635px]">
           <h2 className="text-xl font-semibold mb-4">Sales Trends ({selectedPeriod})</h2>
-          <div className="h-80">
+          <div className="h-60 sm:h-80">
             <Line
               data={salesChartData}
               options={{
@@ -604,6 +697,33 @@ const Dashboard = () => {
                 }
               }}
             />
+          </div>
+
+          {/* Add this sales summary section */}
+          <div className="mt-4 grid grid-cols-3 gap-2 sm:gap-4 pt-3 border-t border-gray-100">
+            <div className="text-center">
+              <p className="text-gray-500 text-xs uppercase font-medium tracking-wide">Average</p>
+              <p className="mt-1 text-sm sm:text-lg font-bold text-gray-800">
+                Rs.{salesTrends.length > 0
+                  ? (salesTrends.reduce((sum, item) => sum + item.revenue, 0) / salesTrends.length).toFixed(2)
+                  : '0.00'}
+              </p>
+            </div>
+            <div className="text-center">
+              <p className="text-gray-500 text-xs uppercase font-medium tracking-wide">Peak {selectedPeriod}</p>
+              <p className="mt-1 text-lg font-bold text-gray-800">
+                Rs.{salesTrends.length > 0
+                  ? Math.max(...salesTrends.map(item => item.revenue)).toFixed(2)
+                  : '0.00'}
+              </p>
+            </div>
+            <div className="text-center">
+              <p className="text-gray-500 text-xs uppercase font-medium tracking-wide">Trend</p>
+              <p className={`mt-1 text-lg font-bold flex items-center justify-center ${getTrendColor()}`}>
+                {getTrendIcon()}
+                <span className="ml-1">{calculateTrend()}</span>
+              </p>
+            </div>
           </div>
         </div>
 
@@ -664,21 +784,21 @@ const Dashboard = () => {
         </div>
 
         {/* Subcategory Distribution Chart */}
-        <div className="bg-white rounded-lg shadow p-5">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold">
-              {selectedCategory ? `Subcategory distribution in "${selectedCategory.category}" category` : 'All Subcategory Distribution'}
+        <div className="bg-white rounded-lg shadow p-4 sm:p-5">
+          <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-4 gap-2 sm:gap-0">
+            <h2 className="text-lg sm:text-xl font-semibold">
+              {selectedCategory ? `Subcategory in "${selectedCategory.category}"` : 'All Subcategory Distribution'}
             </h2>
             {selectedCategory && (
               <button
                 onClick={clearCategorySelection}
-                className="px-2 py-1 text-sm bg-black text-white rounded hover:bg-white hover:text-black border border-gray-800 transition-colors duration-300"
+                className="px-2 py-1 text-sm bg-black text-white rounded hover:bg-white hover:text-black border border-gray-800 transition-colors duration-300 w-fit"
               >
                 Show All
               </button>
             )}
           </div>
-          <div className="h-80">
+          <div className="h-60 sm:h-80">
             <Bar
               data={subcategoryData}
               options={{
@@ -686,7 +806,7 @@ const Dashboard = () => {
                 maintainAspectRatio: false,
                 plugins: {
                   legend: {
-                    display: false 
+                    display: false
                   }
                 },
                 scales: {
@@ -706,20 +826,20 @@ const Dashboard = () => {
 
       {/* Top Products Table */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="px-5 py-4 border-b border-gray-200">
+        <div className="px-4 sm:px-5 py-4 border-b border-gray-200">
           <h2 className="text-xl font-semibold">Top Selling Products</h2>
         </div>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Product
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Quantity Sold
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Revenue
                 </th>
               </tr>
@@ -741,7 +861,7 @@ const Dashboard = () => {
             </tbody>
           </table>
         </div>
-        <div className="px-5 py-4 border-t border-gray-200 text-right">
+        <div className="px-4 sm:px-5 py-4 border-t border-gray-200 text-right">
           <button onClick={() => navigate(`/list`)} className="text-sm text-indigo-600 hover:text-indigo-900">
             View All Products
           </button>

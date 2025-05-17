@@ -106,6 +106,7 @@ const registerAdmin = async (req, res) => {
                 profileImageUrl = result.secure_url;
             } catch (uploadError) {
                 // Continue with default image if upload fails
+                console.error('Error uploading image to Cloudinary:', uploadError);
             }
         }
 
@@ -113,7 +114,8 @@ const registerAdmin = async (req, res) => {
         const permissions = {
             manageProducts: role === 'superadmin' || role === 'manager',
             manageOrders: true,
-            manageUsers: role === 'superadmin' || role === 'manager',
+            manageInventory: true,
+            mangeReturns: true,
             manageAdmins: role === 'superadmin',
             viewReports: role === 'superadmin' || role === 'manager'
         };

@@ -140,6 +140,89 @@ const CategoryManager = () => {
         setCategories(currentItems);
     };
 
+    const openDeleteModal = (item, type) => {
+        setItemToDelete(item);
+        setDeleteType(type);
+        setDeleteWithProducts(false);
+        setShowDeleteModal(true);
+    };
+
+    const handleDeleteConfirm = async () => {
+        if (deleteType === "category") {
+            await deleteCategoryHandler(itemToDelete._id);
+        } else if (deleteType === "subcategory") {
+            await deleteSubcategoryHandler(itemToDelete._id);
+        }
+        setShowDeleteModal(false);
+        setItemToDelete(null);
+        setDeleteWithProducts(false);
+    };
+
+    const deleteCategoryHandler = async (id) => {
+        try {
+            const endpoint = deleteWithProducts ?
+                `/api/categories/${id}/with-products` :
+                `/api/categories/${id}`;
+
+            await axios.delete(backendUrl + endpoint);
+            fetchCategories();
+            toast.success(deleteWithProducts ?
+                "Category and all its products deleted successfully!" :
+                "Category deleted successfully!",
+                { autoClose: 1000 });
+
+            WebSocketService.send({
+                type: 'deleteCategory',
+                categoryId: id,
+                withProducts: deleteWithProducts
+            });
+        } catch (err) {
+            console.error("Error deleting category:", err);
+            if (err.response && err.response.data && err.response.data.message) {
+                const errorMessage = err.response.data.message;
+                if (errorMessage.includes("contains products")) {
+                    toast.error("This category contains products. Use the 'Delete with products' option to remove it.");
+                } else {
+                    toast.error(errorMessage);
+                }
+            } else {
+                toast.error("Failed to delete category.");
+            }
+        }
+    };
+
+    const deleteSubcategoryHandler = async (id) => {
+        try {
+            const endpoint = deleteWithProducts ?
+                `/api/categories/subcategories/${id}/with-products` :
+                `/api/categories/subcategories/${id}`;
+
+            await axios.delete(backendUrl + endpoint);
+            fetchCategories();
+            toast.success(deleteWithProducts ?
+                "Subcategory and all its products deleted successfully!" :
+                "Subcategory deleted successfully!",
+                { autoClose: 1000 });
+
+            WebSocketService.send({
+                type: 'deleteSubcategory',
+                subcategoryId: id,
+                withProducts: deleteWithProducts
+            });
+        } catch (err) {
+            console.error("Error deleting subcategory:", err);
+            if (err.response && err.response.data && err.response.data.message) {
+                const errorMessage = err.response.data.message;
+                if (errorMessage.includes("contains products")) {
+                    toast.error("This subcategory contains products. Use the 'Delete with products' option to remove it.");
+                } else {
+                    toast.error(errorMessage);
+                }
+            } else {
+                toast.error("Failed to delete subcategory.");
+            }
+        }
+    };
     const fetchCategories = async () => {
         try {
             const { data } = await axios.get(backendUrl + "/api/categories");
@@ -294,43 +377,24 @@ const CategoryManager = () => {
                 });
 
             } else if (type === "subcategory") {
-                // Find parent category
-                let parentCategoryId;
-                for (const cat of allCategories) {
-                    if (cat.subcategories && cat.subcategories.some(sub => sub._id === item._id)) {
-                        parentCategoryId = cat._id;
-                        break;
-                    }
-                }
+                await axios.patch(`${backendUrl}/api/categories/subcategories/${item._id}/visibility`, {
+                    isVisible: !newVisibility
+                });
 
-                if (parentCategoryId) {
-                    await axios.patch(
-                        `${backendUrl}/api/categories/${parentCategoryId}/subcategories/${item._id}/visibility`,
-                        { isVisible: !newVisibility }
-                    );
-
-                    // Send WebSocket notification
-                    WebSocketService.send({
-                        type: 'subcategoryVisibilityChange',
-                        subcategoryId: item._id,
-                        isVisible: !newVisibility
-                    });
-                }
+                // Send WebSocket notification
+                WebSocketService.send({
+                    type: 'subcategoryVisibilityChange',
+                    subcategoryId: item._id,
+                    isVisible: !newVisibility
+                });
             }
 
             fetchCategories();
             toast.success(`${type === "category" ? "Category" : "Subcategory"} ${newVisibility ? "hidden" : "visible"} successfully!`);
         } catch (err) {
             console.error(`Error updating ${type} visibility:`, err);
-            toast.error(`Failed to update ${type} visibility.`);
+            toast.error(`Failed to update ${type} visibility: ${err.response?.data?.message || 'Server error'}`);
         }
-    };
-
-    const openDeleteModal = (item, type) => {
-        setItemToDelete(item);
-        setDeleteType(type);
-        setDeleteWithProducts(false);
-        setShowDeleteModal(true);
     };
 
     const addCategory = async () => {
@@ -382,36 +446,36 @@ const CategoryManager = () => {
     };
 
     return (
-        <div className="p-6">
-            <h2 className="text-3xl font-bold mb-4">Manage Categories & Subcategories</h2>
+        <div className="p-4 sm:p-6">
+            <h2 className="text-2xl sm:text-3xl font-bold mb-4">Manage Categories & Subcategories</h2>
 
-            {/* Add Category */}
+            {/* Add Category - more responsive layout */}
             <div className="mb-6">
-                <h3 className="text-xl font-semibold mb-2">Add New Category</h3>
-                <div className="flex">
+                <h3 className="text-lg sm:text-xl font-semibold mb-2">Add New Category</h3>
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-0">
                     <input
                         value={categoryName}
                         onChange={(e) => setCategoryName(e.target.value)}
                         placeholder="New Category Name"
-                        className="border p-2 rounded-l mr-1 w-64"
+                        className="border p-2 rounded sm:rounded-l sm:mr-1 w-full sm:w-64"
                     />
                     <button
                         onClick={addCategory}
-                        className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                        className="bg-blue-500 text-white px-4 py-2 rounded sm:rounded-r hover:bg-blue-600"
                     >
                         Add Category
                     </button>
                 </div>
             </div>
 
-            {/* Add Subcategory */}
+            {/* Add Subcategory - more responsive layout */}
             <div className="mb-8">
-                <h3 className="text-xl font-semibold mb-2">Add New Subcategory</h3>
-                <div className="flex flex-wrap gap-2">
+                <h3 className="text-lg sm:text-xl font-semibold mb-2">Add New Subcategory</h3>
+                <div className="flex flex-col sm:flex-wrap gap-2">
                     <select
                         onChange={(e) => setSelectedCategory(e.target.value)}
                         value={selectedCategory}
-                        className="border p-2 rounded w-64"
+                        className="border p-2 rounded w-full sm:w-64"
                     >
                         <option value="">Select Parent Category</option>
                         {allCategories.map((cat) => (
@@ -420,12 +484,12 @@ const CategoryManager = () => {
                             </option>
                         ))}
                     </select>
-                    <div className="flex">
+                    <div className="flex flex-col sm:flex-row gap-2 sm:gap-0">
                         <input
                             value={subcategoryName}
                             onChange={(e) => setSubcategoryName(e.target.value)}
                             placeholder="New Subcategory Name"
-                            className="border p-2 rounded-l mr-1 w-64"
+                            className="border p-2 rounded sm:rounded-l sm:mr-1 w-full sm:w-64"
                         />
                         <button
                             onClick={addSubcategory}
@@ -441,12 +505,12 @@ const CategoryManager = () => {
                 </div>
             </div>
 
-            {/* Search and Pagination Controls */}
+            {/* Search and Pagination Controls - mobile friendly adjustments */}
             <div className="mt-8 mb-4">
-                <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-                    <h2 className="text-2xl font-bold pb-2">Categories and Subcategories</h2>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+                    <h2 className="text-xl sm:text-2xl font-bold pb-2">Categories and Subcategories</h2>
 
-                    <div className="flex items-center space-x-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:space-x-4">
                         {/* Search Input */}
                         <div className="relative">
                             <input
@@ -454,7 +518,7 @@ const CategoryManager = () => {
                                 value={searchTerm}
                                 onChange={handleSearchChange}
                                 placeholder="Search categories..."
-                                className="border p-2 pl-8 rounded w-64"
+                                className="border p-2 pl-8 rounded w-full sm:w-64"
                             />
                             <svg
                                 xmlns="http://www.w3.org/2000/svg"
@@ -499,7 +563,7 @@ const CategoryManager = () => {
                 </div>
             </div>
 
-            {/* Display Categories and Subcategories */}
+            {/* Display Categories and Subcategories - improve for mobile */}
             <div>
                 {categories.length === 0 ? (
                     <div className="text-center p-8 bg-gray-50 rounded-lg border-2 border-dashed">
@@ -509,9 +573,9 @@ const CategoryManager = () => {
                     </div>
                 ) : (
                     categories.map((cat) => (
-                        <div key={cat._id} className="mb-6 p-4 border rounded-lg shadow-sm hover:shadow-md transition-shadow">
-                            {/* Category content - same as before */}
-                            <div className="flex items-center justify-between mb-2">
+                        <div key={cat._id} className="mb-6 p-3 sm:p-4 border rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                            {/* Category header - better stacking on mobile */}
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2 gap-2">
                                 {editMode && editMode.type === "category" && editMode.id === cat._id ? (
                                     <div className="flex items-center gap-2 flex-1">
                                         <input
@@ -534,7 +598,7 @@ const CategoryManager = () => {
                                         </button>
                                     </div>
                                 ) : (
-                                    <h3 className="text-xl font-semibold flex items-center gap-2">
+                                    <h3 className="text-lg sm:text-xl font-semibold flex flex-wrap items-center gap-2">
                                         {cat.name}
                                         <span className="text-sm font-normal text-gray-500">({cat.productCount || 0} items)</span>
                                         {cat.isVisible === false && (
@@ -543,7 +607,7 @@ const CategoryManager = () => {
                                     </h3>
                                 )}
 
-                                <div className="flex gap-2">
+                                <div className="flex flex-wrap gap-2">
                                     {!(editMode && editMode.type === "category" && editMode.id === cat._id) && (
                                         <>
                                             <button
@@ -572,17 +636,16 @@ const CategoryManager = () => {
                                 </div>
                             </div>
 
-                            {/* Subcategories - same as before */}
+                            {/* Subcategories - adjust padding for mobile */}
                             {cat.subcategories && cat.subcategories.length > 0 ? (
-                                <div className="ml-6 mt-3">
+                                <div className="ml-4 sm:ml-6 mt-3">
                                     <h4 className="text-sm font-medium text-gray-500 mb-2">Subcategories:</h4>
                                     <div className="bg-gray-50 rounded-lg p-2">
                                         {cat.subcategories.map((sub) => (
-                                            <div key={sub._id} className="flex justify-between items-center py-2 px-3 border-b last:border-b-0">
-                                                {/* Subcategory content - same as before */}
-                                                {/* ... */}
+                                            <div key={sub._id} className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center py-2 px-2 sm:px-3 border-b last:border-b-0 gap-2">
+                                                {/* Subcategory with responsive layout */}
                                                 {editMode && editMode.type === "subcategory" && editMode.id === sub._id ? (
-                                                    <div className="flex items-center gap-2 flex-1">
+                                                    <div className="flex items-center gap-2 flex-1 w-full">
                                                         <input
                                                             value={editName}
                                                             onChange={(e) => setEditName(e.target.value)}
@@ -612,7 +675,7 @@ const CategoryManager = () => {
                                                     </span>
                                                 )}
 
-                                                <div className="flex gap-1">
+                                                <div className="flex gap-1 ml-0 sm:ml-2">
                                                     {!(editMode && editMode.type === "subcategory" && editMode.id === sub._id) && (
                                                         <>
                                                             <button
@@ -644,21 +707,21 @@ const CategoryManager = () => {
                                     </div>
                                 </div>
                             ) : (
-                                <p className="ml-6 mt-2 text-gray-400 text-sm italic">No subcategories</p>
+                                <p className="ml-4 sm:ml-6 mt-2 text-gray-400 text-sm italic">No subcategories</p>
                             )}
                         </div>
                     ))
                 )}
             </div>
 
-            {/* Pagination Controls */}
+            {/* Pagination Controls - make touch-friendly */}
             {totalPages > 1 && (
-                <div className="flex justify-center mt-6">
+                <div className="flex justify-center mt-6 overflow-x-auto py-2">
                     <nav className="flex items-center gap-1">
                         <button
                             onClick={() => goToPage(1)}
                             disabled={currentPage === 1}
-                            className={`px-3 py-1 rounded ${currentPage === 1 ? 'text-gray-400' : 'hover:bg-gray-100'}`}
+                            className={`px-3 py-1.5 rounded ${currentPage === 1 ? 'text-gray-400' : 'hover:bg-gray-100'}`}
                         >
                             &laquo;
                         </button>
@@ -666,17 +729,17 @@ const CategoryManager = () => {
                         <button
                             onClick={() => goToPage(currentPage - 1)}
                             disabled={currentPage === 1}
-                            className={`px-3 py-1 rounded ${currentPage === 1 ? 'text-gray-400' : 'hover:bg-gray-100'}`}
+                            className={`px-3 py-1.5 rounded ${currentPage === 1 ? 'text-gray-400' : 'hover:bg-gray-100'}`}
                         >
                             &lsaquo;
                         </button>
 
-                        {/* Page numbers */}
+                        {/* Page numbers with improved touch targets */}
                         {[...Array(totalPages)].map((_, index) => {
                             const pageNum = index + 1;
 
                             // Show limited page numbers with ellipsis for large number of pages
-                            if (totalPages <= 7 ||
+                            if (totalPages <= 5 ||
                                 pageNum === 1 ||
                                 pageNum === totalPages ||
                                 (pageNum >= currentPage - 1 && pageNum <= currentPage + 1)) {
@@ -684,7 +747,7 @@ const CategoryManager = () => {
                                     <button
                                         key={pageNum}
                                         onClick={() => goToPage(pageNum)}
-                                        className={`px-3 py-1 rounded ${currentPage === pageNum
+                                        className={`px-3 py-1.5 rounded ${currentPage === pageNum
                                             ? 'bg-blue-500 text-white'
                                             : 'hover:bg-gray-100'}`}
                                     >
@@ -703,7 +766,7 @@ const CategoryManager = () => {
                         <button
                             onClick={() => goToPage(currentPage + 1)}
                             disabled={currentPage === totalPages}
-                            className={`px-3 py-1 rounded ${currentPage === totalPages ? 'text-gray-400' : 'hover:bg-gray-100'}`}
+                            className={`px-3 py-1.5 rounded ${currentPage === totalPages ? 'text-gray-400' : 'hover:bg-gray-100'}`}
                         >
                             &rsaquo;
                         </button>
@@ -711,7 +774,7 @@ const CategoryManager = () => {
                         <button
                             onClick={() => goToPage(totalPages)}
                             disabled={currentPage === totalPages}
-                            className={`px-3 py-1 rounded ${currentPage === totalPages ? 'text-gray-400' : 'hover:bg-gray-100'}`}
+                            className={`px-3 py-1.5 rounded ${currentPage === totalPages ? 'text-gray-400' : 'hover:bg-gray-100'}`}
                         >
                             &raquo;
                         </button>
@@ -722,7 +785,55 @@ const CategoryManager = () => {
             {/* Delete Confirmation Modal - same as before */}
             {showDeleteModal && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-                    {/* Modal content remains the same */}
+                    <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6 animate-fade-in-down">
+                        <h3 className="text-xl font-bold text-gray-900 mb-4">
+                            Delete {deleteType === "category" ? "Category" : "Subcategory"}
+                        </h3>
+                        <p className="text-gray-600 mb-6">
+                            Are you sure you want to delete <span className="font-semibold">{itemToDelete?.name}</span>?
+                            {itemToDelete?.productCount > 0 && (
+                                <span className="block mt-2 text-red-600">
+                                    This {deleteType} contains {itemToDelete.productCount} product{itemToDelete.productCount !== 1 ? 's' : ''}.
+                                </span>
+                            )}
+                        </p>
+
+                        {itemToDelete?.productCount > 0 && (
+                            <div className="mb-4">
+                                <label className="flex items-center space-x-2 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={deleteWithProducts}
+                                        onChange={() => setDeleteWithProducts(!deleteWithProducts)}
+                                        className="form-checkbox h-4 w-4 text-red-600"
+                                    />
+                                    <span className="text-red-600">Delete all products in this {deleteType}</span>
+                                </label>
+                                <p className="text-xs text-gray-500 mt-1 ml-6">
+                                    Warning: This action cannot be undone!
+                                </p>
+                            </div>
+                        )}
+
+                        <div className="flex justify-end gap-3">
+                            <button
+                                onClick={() => setShowDeleteModal(false)}
+                                className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleDeleteConfirm}
+                                disabled={itemToDelete?.productCount > 0 && !deleteWithProducts}
+                                className={`px-4 py-2 rounded-lg transition-colors ${itemToDelete?.productCount > 0 && !deleteWithProducts
+                                    ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                                    : "bg-red-600 hover:bg-red-700 text-white"
+                                    }`}
+                            >
+                                Delete
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

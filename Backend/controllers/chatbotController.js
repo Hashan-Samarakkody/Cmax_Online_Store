@@ -18,13 +18,25 @@ const processMessage = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Message content is required' });
         }
 
-        // Get response from Gemini API with context
-        const response = await getGeminiResponse(message, pageContext, userId);
+        try {
+            // Try to get response from Gemini API with context
+            const response = await getGeminiResponse(message, pageContext, userId);
 
-        res.json({
-            success: true,
-            reply: response
-        });
+            res.json({
+                success: true,
+                reply: response
+            });
+        } catch (error) {
+            // If Gemini API fails, use fallback
+            console.error('Error with Gemini API:', error);
+            const fallbackResponse = handleFallbackResponse(message, pageContext);
+
+            res.json({
+                success: true,
+                reply: fallbackResponse,
+                fromFallback: true
+            });
+        }
     } catch (error) {
         console.error('Error processing chatbot message:', error);
         res.status(500).json({
@@ -36,93 +48,92 @@ const processMessage = async (req, res) => {
 
 // Function to get responses from Gemini API
 const getGeminiResponse = async (message, pageContext, userId) => {
-    try {
-        // Create contextual system prompt based on page and user
-        let systemPrompt = `You are a helpful shopping assistant for Cmax Online Store.
+    // Create contextual system prompt based on page and user
+    let systemPrompt = `You are a helpful shopping assistant for Cmax Online Store.
 Be friendly, concise, and helpful. Keep responses under 80 words.
 The user is currently on the "${pageContext}" page of our website.`;
 
-        // Add page-specific context
-        switch (pageContext) {
-            case 'home':
-                systemPrompt += `
+    // Add page-specific context
+    switch (pageContext) {
+        case 'home':
+            systemPrompt += `
 On this page, users can see featured products, promotions, and navigate to other sections of the site.
 Common questions are about new arrivals, promotions, deals, and finding specific products.`;
-                break;
+            break;
 
-            case 'collection':
-                systemPrompt += `
+        case 'collection':
+            systemPrompt += `
 On this page, users can browse products by category, filter, and sort them.
 Common questions are about product availability, filtering, sorting, and categories.`;
-                break;
+            break;
 
-            case 'orders':
-                systemPrompt += `
+        case 'orders':
+            systemPrompt += `
 On this page, users can view their order history, track orders, and see order details.
 Common questions are about order status, tracking, cancellation, and returns.`;
-                break;
+            break;
 
-            case 'placeorder':
-                systemPrompt += `
+        case 'placeorder':
+            systemPrompt += `
 On this page, users are finalizing their purchase.
 Common questions are about payment methods, delivery options, address changes, and discounts.
 We accept Cash on Delivery and Credit/Debit cards via Stripe.`;
-                break;
+            break;
 
-            case 'about':
-                systemPrompt += `
+        case 'about':
+            systemPrompt += `
 On this page, users learn about Cmax Online Store's history and mission.
 Common questions are about the company history, values, team, and business practices.`;
-                break;
+            break;
 
-            case 'contact':
-                systemPrompt += `
+        case 'contact':
+            systemPrompt += `
 On this page, users can find ways to get in touch with Cmax support.
 Our email is cmaxinfohelp@gmail.com and phone is 075-96352164.
 Common questions are about support hours, response times, and contact methods.`;
-                break;
+            break;
 
-            case 'cart':
-                systemPrompt += `
+        case 'cart':
+            systemPrompt += `
 On this page, users can view items in their shopping cart, update quantities, and proceed to checkout.
 Common questions are about adding/removing items, price calculations, discounts, and checkout process.`;
-                break;
+            break;
 
-            case 'returns':
-                systemPrompt += `
+        case 'returns':
+            systemPrompt += `
 On this page, users can initiate and track product returns.
 Common questions are about return policy, how to return items, refund timeframes, and return status tracking.
 Items can be returned within 7 days of delivery.`;
-                break;
+            break;
 
-            case 'profile':
-                systemPrompt += `
+        case 'profile':
+            systemPrompt += `
 On this page, users can view and update their account information, addresses, and preferences.
 Common questions are about changing personal information, adding addresses, and account security.`;
-                break;
-        }
+            break;
+    }
 
-        // Add user-specific context if available
-        if (userId) {
-            systemPrompt += `\nThe user is logged in to their account.`;
+    // Add user-specific context if available
+    if (userId) {
+        systemPrompt += `\nThe user is logged in to their account.`;
 
-            // Optional: Add user's order history context
-            try {
-                const recentOrder = await orderModel.findOne({ userId }).sort({ date: -1 });
-                if (recentOrder) {
-                    const timeAgo = formatDistanceToNow(new Date(recentOrder.date), { addSuffix: true });
-                    systemPrompt += `
+        // Optional: Add user's order history context
+        try {
+            const recentOrder = await orderModel.findOne({ userId }).sort({ date: -1 });
+            if (recentOrder) {
+                const timeAgo = formatDistanceToNow(new Date(recentOrder.date), { addSuffix: true });
+                systemPrompt += `
 Their most recent order was placed ${timeAgo} and is currently "${recentOrder.status}".`;
-                }
-            } catch (err) {
-                console.error("Error fetching user order data:", err);
             }
-        } else {
-            systemPrompt += `\nThe user is not logged in.`;
+        } catch (err) {
+            console.error("Error fetching user order data:", err);
         }
+    } else {
+        systemPrompt += `\nThe user is not logged in.`;
+    }
 
-        // Add store info context
-        systemPrompt += `
+    // Add store info context
+    systemPrompt += `
 Store information:
 - Email: cmaxhelp@info.com
 - Phone: 075-96352164
@@ -130,40 +141,51 @@ Store information:
 - Free shipping on orders over Rs. 5000
 - Returns accepted within 7 days of delivery`;
 
-        // Initialize the Gemini model
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+    try {
+        // Try using gemini-1.5-flash first (less likely to hit rate limits)
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-        // Create chat session
-        const chat = model.startChat({
-            history: [
+        // Send message to Gemini with direct content generation
+        const result = await model.generateContent({
+            contents: [
                 {
                     role: "user",
-                    parts: [{ text: "Hi there" }],
-                },
-                {
-                    role: "model",
-                    parts: [{ text: "Hello! Welcome to Cmax Online Store. How can I help you with your shopping today?" }],
+                    parts: [{ text: `${systemPrompt}\n\nUser message: ${message}` }]
                 }
             ],
             generationConfig: {
                 temperature: 0.7,
-                topK: 40,
-                topP: 0.95,
                 maxOutputTokens: 200,
-            },
+            }
         });
-
-        // Send message to Gemini with context
-        const result = await chat.sendMessage(
-            `${systemPrompt}\n\nUser message: ${message}`
-        );
 
         const response = result.response.text();
         return response;
     } catch (error) {
-        console.error('Error with Gemini API:', error);
-        // Fallback response if Gemini fails
-        return handleFallbackResponse(message, pageContext);
+        // If first attempt fails with 429, throw the error to trigger fallback
+        if (error.status === 429) {
+            throw error;
+        }
+
+        // If it's some other error, try one more time with fewer parameters
+        try {
+            const model = genAI.getGenerativeModel({ model: "gemini-1.0-pro" });
+
+            // Simplified request with fewer tokens
+            const result = await model.generateContent({
+                contents: [{ text: `You are a shopping assistant. User asks: ${message}` }],
+                generationConfig: {
+                    temperature: 0.5,
+                    maxOutputTokens: 100,
+                }
+            });
+
+            const response = result.response.text();
+            return response;
+        } catch (retryError) {
+            // If retry also fails, throw to trigger fallback
+            throw retryError;
+        }
     }
 };
 
@@ -182,6 +204,22 @@ const handleFallbackResponse = (message, pageContext) => {
 
     if (message_lower.includes('hello') || message_lower.includes('hi ') || message_lower === 'hi') {
         return "Hello there! How can I assist you with your shopping today?";
+    }
+
+    if (message_lower.includes('ship') || message_lower.includes('delivery')) {
+        return "We offer standard delivery in 3-5 business days. Orders over Rs. 5000 qualify for free shipping!";
+    }
+
+    if (message_lower.includes('return') || message_lower.includes('refund')) {
+        return "You can return items within 7 days of delivery. Visit our Returns page to start the process.";
+    }
+
+    if (message_lower.includes('payment') || message_lower.includes('pay')) {
+        return "We accept Cash on Delivery and Credit/Debit cards via Stripe.";
+    }
+
+    if (message_lower.includes('track') || message_lower.includes('order status')) {
+        return "You can track your orders in the Orders section of your account. Need help finding your order?";
     }
 
     // Page-specific fallback responses
@@ -219,7 +257,6 @@ const handleFallbackResponse = (message, pageContext) => {
 };
 
 // Process admin chatbot messages
-// Process admin chatbot messages
 const processAdminChatbotMessage = async (req, res) => {
     try {
         const { message, pageContext } = req.body;
@@ -229,13 +266,25 @@ const processAdminChatbotMessage = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Message content is required' });
         }
 
-        // Get response from Gemini API with admin context
-        const response = await getAdminGeminiResponse(message, pageContext, adminId);
+        try {
+            // Try to get response from Gemini API with admin context
+            const response = await getAdminGeminiResponse(message, pageContext, adminId);
 
-        res.json({
-            success: true,
-            reply: response
-        });
+            res.json({
+                success: true,
+                reply: response
+            });
+        } catch (error) {
+            // If Gemini API fails, use fallback
+            console.error('Error with Gemini API for admin chat:', error);
+            const fallbackResponse = handleAdminFallbackResponse(message, pageContext);
+
+            res.json({
+                success: true,
+                reply: fallbackResponse,
+                fromFallback: true
+            });
+        }
     } catch (error) {
         console.error('Error processing admin chatbot message:', error);
         res.status(500).json({
@@ -248,105 +297,104 @@ const processAdminChatbotMessage = async (req, res) => {
 
 // Function to get admin-specific responses from Gemini API
 const getAdminGeminiResponse = async (message, pageContext, adminId) => {
-    try {
-        // Create system prompt for admin context
-        let adminSystemPrompt = `You are an AI assistant for Cmax Online Store's admin panel.
+    // Create system prompt for admin context
+    let adminSystemPrompt = `You are an AI assistant for Cmax Online Store's admin panel.
 Be professional, concise, and helpful. Keep responses under 100 words.
 The admin is currently on the "${pageContext}" page of the admin panel.`;
 
-        // Add page-specific admin context
-        switch (pageContext) {
-            case 'admin_dashboard':
-                adminSystemPrompt += `
+    // Add page-specific admin context
+    switch (pageContext) {
+        case 'admin_dashboard':
+            adminSystemPrompt += `
 On this page, admins can view sales overview, recent orders, and performance metrics.
 Common questions are about sales trends, daily metrics, and store performance.`;
-                break;
+            break;
 
-            case 'admin_orders':
-                adminSystemPrompt += `
+        case 'admin_orders':
+            adminSystemPrompt += `
 On this page, admins can manage customer orders, update order status, and generate labels.
 Common questions are about order processing, status updates, and shipping labels.`;
-                break;
+            break;
 
-            case 'admin_products':
-                adminSystemPrompt += `
+        case 'admin_products':
+            adminSystemPrompt += `
 On this page, admins can view, search and manage the product inventory.
 Common questions are about product management, editing listings, and inventory.`;
-                break;
+            break;
 
-            case 'admin_add_product':
-                adminSystemPrompt += `
+        case 'admin_add_product':
+            adminSystemPrompt += `
 On this page, admins can add new products to the store.
 Common questions are about product details, categories, images, and pricing.`;
-                break;
+            break;
 
-            case 'admin_edit_product':
-                adminSystemPrompt += `
+        case 'admin_edit_product':
+            adminSystemPrompt += `
 On this page, admins can modify existing product listings.
 Common questions are about updating product information, images, and availability.`;
-                break;
+            break;
 
-            case 'admin_categories':
-                adminSystemPrompt += `
+        case 'admin_categories':
+            adminSystemPrompt += `
 On this page, admins can manage product categories and subcategories.
 Common questions are about creating categories, organizing products, and category relationships.`;
-                break;
+            break;
 
-            case 'admin_management':
-                adminSystemPrompt += `
+        case 'admin_management':
+            adminSystemPrompt += `
 On this page, admins can manage other admin accounts and permissions.
 Common questions are about user roles, permissions, and account management.`;
-                break;
+            break;
 
-            case 'admin_profile':
-                adminSystemPrompt += `
+        case 'admin_profile':
+            adminSystemPrompt += `
 On this page, admins can view and update their own account information.
 Common questions are about profile settings, security, and account preferences.`;
-                break;
+            break;
 
-            case 'admin_sales_report':
-                adminSystemPrompt += `
+        case 'admin_sales_report':
+            adminSystemPrompt += `
 On this page, admins can generate and view detailed sales reports.
 Common questions are about report generation, date ranges, and data export.`;
-                break;
+            break;
 
-            case 'admin_returns':
-                adminSystemPrompt += `
+        case 'admin_returns':
+            adminSystemPrompt += `
 On this page, admins can manage customer return requests.
 Common questions are about handling returns, refunds, and return status updates.`;
-                break;
+            break;
 
-            case 'admin_return_analysis':
-                adminSystemPrompt += `
+        case 'admin_return_analysis':
+            adminSystemPrompt += `
 On this page, admins can view analytics about product returns.
 Common questions are about return rates, reasons for returns, and product quality issues.`;
-                break;
+            break;
 
-            case 'admin_user_activity':
-                adminSystemPrompt += `
+        case 'admin_user_activity':
+            adminSystemPrompt += `
 On this page, admins can view reports on user activity and engagement.
 Common questions are about user behavior, engagement metrics, and traffic patterns.`;
-                break;
+            break;
 
-            default:
-                adminSystemPrompt += `
+        default:
+            adminSystemPrompt += `
 You can help with general admin tasks including product management, order processing, category management, and reporting.`;
-        }
+    }
 
-        // Add admin-specific info
-        if (adminId) {
-            try {
-                const admin = await adminModel.findById(adminId);
-                if (admin) {
-                    adminSystemPrompt += `\nYou're speaking with ${admin.name}, who is an administrator.`;
-                }
-            } catch (err) {
-                console.error("Error fetching admin data:", err);
+    // Add admin-specific info
+    if (adminId) {
+        try {
+            const admin = await adminModel.findById(adminId);
+            if (admin) {
+                adminSystemPrompt += `\nYou're speaking with ${admin.name}, who is an administrator.`;
             }
+        } catch (err) {
+            console.error("Error fetching admin data:", err);
         }
+    }
 
-        // Add admin-specific information about store operations
-        adminSystemPrompt += `
+    // Add admin-specific information about store operations
+    adminSystemPrompt += `
 Admin panel functionality:
 - Dashboard: View sales metrics and store performance
 - Products: Add, edit, and manage product listings
@@ -356,40 +404,51 @@ Admin panel functionality:
 - Reports: Generate sales and activity reports
 - Admin Management: Manage admin accounts and permissions`;
 
-        // Initialize the Gemini model
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+    try {
+        // Try using gemini-1.5-flash first to avoid rate limits
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-        // Create admin-specific chat session
-        const chat = model.startChat({
-            history: [
+        // Send message to Gemini with direct content generation
+        const result = await model.generateContent({
+            contents: [
                 {
                     role: "user",
-                    parts: [{ text: "Hello, I need help with the admin panel" }],
-                },
-                {
-                    role: "model",
-                    parts: [{ text: "Hello! I'm here to help you with the Cmax admin panel. What would you like to know?" }],
+                    parts: [{ text: `${adminSystemPrompt}\n\nAdmin message: ${message}` }]
                 }
             ],
             generationConfig: {
                 temperature: 0.6,
-                topK: 40,
-                topP: 0.95,
                 maxOutputTokens: 200,
-            },
+            }
         });
-
-        // Send message to Gemini with admin context
-        const result = await chat.sendMessage(
-            `${adminSystemPrompt}\n\nAdmin message: ${message}`
-        );
 
         const response = result.response.text();
         return response;
     } catch (error) {
-        console.error('Error with Gemini API for admin chat:', error);
-        // Fallback response if Gemini fails
-        return handleAdminFallbackResponse(message, pageContext);
+        // If first attempt fails with 429, throw the error to trigger fallback
+        if (error.status === 429) {
+            throw error;
+        }
+
+        // If it's some other error, try one more time with fewer parameters
+        try {
+            const model = genAI.getGenerativeModel({ model: "gemini-1.0-pro" });
+
+            // Simplified request with fewer tokens
+            const result = await model.generateContent({
+                contents: [{ text: `You are an admin assistant. Admin asks: ${message}` }],
+                generationConfig: {
+                    temperature: 0.5,
+                    maxOutputTokens: 100,
+                }
+            });
+
+            const response = result.response.text();
+            return response;
+        } catch (retryError) {
+            // If retry also fails, throw to trigger fallback
+            throw retryError;
+        }
     }
 };
 
@@ -465,6 +524,5 @@ const handleAdminFallbackResponse = (message, pageContext) => {
             return "I can help you navigate the admin panel and provide information about its features. What would you like to know?";
     }
 };
-
 
 export { processMessage, processAdminChatbotMessage };

@@ -2,6 +2,7 @@ import Category from "../models/categoryModel.js";
 import Subcategory from "../models/subcategoryModel.js";
 import Product from "../models/productModel.js";
 import mongoose from "mongoose";
+import { broadcast } from "../server.js";
 
 // Add Category
 const addCategory = async (req, res) => {
@@ -144,7 +145,7 @@ const updateSubcategory = async (req, res) => {
     }
 };
 
-// Toggle Category Visibility
+// Update the toggleCategoryVisibility function
 const toggleCategoryVisibility = async (req, res) => {
     try {
         const { id } = req.params;
@@ -156,13 +157,28 @@ const toggleCategoryVisibility = async (req, res) => {
         category.isVisible = isVisible;
         await category.save();
 
+        // If hiding the category, also hide all products in this category
+        if (isVisible === false) {
+            await Product.updateMany({ category: id }, { isVisible: false });
+
+            // Broadcast product visibility changes via WebSocket
+            const affectedProducts = await Product.find({ category: id });
+            affectedProducts.forEach(product => {
+                broadcast({
+                    type: 'productVisibilityChanged',
+                    productId: product._id,
+                    isVisible: false
+                });
+            });
+        }
+
         res.status(200).json({ message: "Category visibility updated successfully", isVisible });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 };
 
-// Toggle Subcategory Visibility
+// Update the toggleSubcategoryVisibility function
 const toggleSubcategoryVisibility = async (req, res) => {
     try {
         const { id } = req.params;
@@ -173,6 +189,21 @@ const toggleSubcategoryVisibility = async (req, res) => {
 
         subcategory.isVisible = isVisible;
         await subcategory.save();
+
+        // If hiding the subcategory, also hide all products in this subcategory
+        if (isVisible === false) {
+            await Product.updateMany({ subcategory: id }, { isVisible: false });
+
+            // Broadcast product visibility changes via WebSocket
+            const affectedProducts = await Product.find({ subcategory: id });
+            affectedProducts.forEach(product => {
+                broadcast({
+                    type: 'productVisibilityChanged',
+                    productId: product._id,
+                    isVisible: false
+                });
+            });
+        }
 
         res.status(200).json({ message: "Subcategory visibility updated successfully", isVisible });
     } catch (err) {

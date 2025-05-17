@@ -18,6 +18,7 @@ const ReturnRequests = ({ token }) => {
 	const [mediaPreview, setMediaPreview] = useState(null);
 	const [orderDetails, setOrderDetails] = useState({});
 	const [isLoadingOrder, setIsLoadingOrder] = useState(false);
+	const [admin, setAdmin] = useState(null);
 
 	// Pagination state
 	const [currentPage, setCurrentPage] = useState(1);
@@ -35,6 +36,39 @@ const ReturnRequests = ({ token }) => {
 	});
 	const [filteredReturns, setFilteredReturns] = useState([]);
 	const [isSearchActive, setIsSearchActive] = useState(false);
+
+	useEffect(() => {
+		const fetchAdminProfile = async () => {
+			try {
+				if (token) {
+					const response = await axios.get(`${backendUrl}/api/admin/profile`, {
+						headers: { Authorization: `Bearer ${token}` }
+					});
+
+					if (response.data.success) {
+						setAdmin(response.data.admin);
+						// Store role in localStorage for quick access
+						localStorage.setItem('adminRole', response.data.admin.role);
+					}
+				}
+			} catch (error) {
+				console.error('Error fetching admin profile:', error);
+				// Try to use cached role if available
+				const cachedRole = localStorage.getItem('adminRole');
+				if (cachedRole) {
+					setAdmin({ role: cachedRole });
+				}
+			}
+		};
+
+		fetchAdminProfile();
+
+		// Try to use cached role initially for faster rendering
+		const cachedRole = localStorage.getItem('adminRole');
+		if (cachedRole) {
+			setAdmin({ role: cachedRole });
+		}
+	}, [token]);
 
 	useEffect(() => {
 		if (isSearchActive) {
@@ -676,13 +710,15 @@ const ReturnRequests = ({ token }) => {
 			<div className="flex justify-between items-center mb-6">
 				<h1 className="text-2xl font-bold">Return Requests</h1>
 
-				{/* Button positioned at the same height as the heading on the right side */}
-				<button
-					onClick={() => navigate('/return-analysis')}
-					className="flex items-center px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors"
-				>
-					Return Analysis
-				</button>
+				{/* Only show Return Analysis button for non-staff users */}
+				{admin && admin.role !== 'staff' && (
+					<button
+						onClick={() => navigate('/return-analysis')}
+						className="flex items-center px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors"
+					>
+						Return Analysis
+					</button>
+				)}
 			</div>
 
 			<SearchBox/>

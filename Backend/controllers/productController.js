@@ -157,9 +157,17 @@ const getAllProducts = async (req, res) => {
             },
             {
                 $match: {
-                    "categoryData.isVisible": true,
-                    "subcategoryData.isVisible": true,
-                    "isVisible": { $ne: false }
+                    $and: [
+                        {
+                            $or: [
+                                {
+                                    "isVisible": true,
+                                    "categoryData.isVisible": true,
+                                    "subcategoryData.isVisible": true
+                                }
+                            ]
+                        }
+                    ]
                 }
             },
             {
@@ -178,11 +186,20 @@ const getAllProducts = async (req, res) => {
                     "isVisible": 1,
                     "category": {
                         "_id": "$categoryData._id",
-                        "name": "$categoryData.name"
+                        "name": "$categoryData.name",
+                        "isVisible": "$categoryData.isVisible"
                     },
                     "subcategory": {
                         "_id": "$subcategoryData._id",
-                        "name": "$subcategoryData.name"
+                        "name": "$subcategoryData.name",
+                        "isVisible": "$subcategoryData.isVisible"
+                    },
+                    "effectiveVisibility": {
+                        $and: [
+                            "$isVisible",
+                            "$categoryData.isVisible",
+                            "$subcategoryData.isVisible"
+                        ]
                     }
                 }
             }
@@ -198,9 +215,56 @@ const getAllProducts = async (req, res) => {
 // Total product list function
 const listProduct = async (req, res) => {
     try {
-        const products = await productModel.find({})
-            .populate('category', 'name')
-            .populate('subcategory', 'name');
+        const products = await productModel.aggregate([
+            {
+                $lookup: {
+                    from: "categories",
+                    localField: "category",
+                    foreignField: "_id",
+                    as: "categoryData"
+                }
+            },
+            {
+                $unwind: "$categoryData"
+            },
+            {
+                $lookup: {
+                    from: "subcategories",
+                    localField: "subcategory",
+                    foreignField: "_id",
+                    as: "subcategoryData"
+                }
+            },
+            {
+                $unwind: "$subcategoryData"
+            },
+            {
+                $project: {
+                    "_id": 1,
+                    "productId": 1,
+                    "name": 1,
+                    "description": 1,
+                    "price": 1,
+                    "bestseller": 1,
+                    "sizes": 1,
+                    "colors": 1,
+                    "images": 1,
+                    "hasSizes": 1,
+                    "hasColors": 1,
+                    "isVisible": 1,
+                    "category": {
+                        "_id": "$categoryData._id",
+                        "name": "$categoryData.name",
+                        "isVisible": "$categoryData.isVisible"
+                    },
+                    "subcategory": {
+                        "_id": "$subcategoryData._id",
+                        "name": "$subcategoryData.name",
+                        "isVisible": "$subcategoryData.isVisible"
+                    }
+                }
+            }
+        ]);
 
         res.json({ success: true, products });
     } catch (error) {
