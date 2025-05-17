@@ -48,8 +48,17 @@ const ProductList = ({ token }) => {
     try {
       const response = await axios.get(backendUrl + '/api/product/list');
       if (response.data.success) {
-        setList(response.data.products);
-        setFilteredList(response.data.products);
+        // Process products to determine effective visibility
+        const products = response.data.products.map(product => ({
+          ...product,
+          effectivelyVisible:
+            product.isVisible &&
+            product.category?.isVisible !== false &&
+            product.subcategory?.isVisible !== false
+        }));
+
+        setList(products);
+        setFilteredList(products);
       } else {
         toast.error(response.data.message);
       }
@@ -366,15 +375,12 @@ const ProductList = ({ token }) => {
                   // If total pages are 5 or less, show all pages
                   pageNum = i + 1;
                 } else {
-                  // Otherwise show pages around the current page
+                  
                   if (currentPage <= 3) {
-                    // At the beginning
                     pageNum = i + 1;
                   } else if (currentPage >= totalPages - 2) {
-                    // At the end
                     pageNum = totalPages - 4 + i;
                   } else {
-                    // In the middle
                     pageNum = currentPage - 2 + i;
                   }
                 }

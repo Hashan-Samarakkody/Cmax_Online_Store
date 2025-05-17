@@ -113,7 +113,8 @@ const registerAdmin = async (req, res) => {
         const permissions = {
             manageProducts: role === 'superadmin' || role === 'manager',
             manageOrders: true,
-            manageUsers: role === 'superadmin' || role === 'manager',
+            manageInventory: true,
+            mangeReturns: true,
             manageAdmins: role === 'superadmin',
             viewReports: role === 'superadmin' || role === 'manager'
         };

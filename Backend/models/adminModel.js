@@ -32,9 +32,10 @@ const adminSchema = new mongoose.Schema({
     permissions: {
         manageProducts: { type: Boolean, default: false },
         manageOrders: { type: Boolean, default: true },
-        manageUsers: { type: Boolean, default: false },
         manageAdmins: { type: Boolean, default: false },
-        viewReports: { type: Boolean, default: false }
+        viewReports: { type: Boolean, default: false },
+        manageInventory: { type: Boolean, default: false },
+        manageReturns: { type: Boolean, default: true }
     },
     lastLogin: {
         type: Date,

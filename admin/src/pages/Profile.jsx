@@ -364,25 +364,25 @@ const Profile = ({ token, setToken }) => {
         <div className="bg-gray-50 min-h-screen">
             <ToastContainer position="top-right" autoClose={500} />
 
-            <div className="container mx-auto px-4 py-6">
+            <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
                 {/* Page Header */}
-                <div className="mb-6">
-                    <h1 className="text-2xl font-bold text-gray-800">Administrator Profile</h1>
-                    <p className="text-gray-500">Manage your account settings and preferences</p>
+                <div className="mb-4 sm:mb-6">
+                    <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Administrator Profile</h1>
+                    <p className="text-sm sm:text-base text-gray-500">Manage your account settings and preferences</p>
                 </div>
 
-                <div className="flex flex-col lg:flex-row gap-6">
+                <div className="flex flex-col lg:flex-row gap-4 sm:gap-6">
                     {/* Left Sidebar - Profile Summary */}
                     <div className="w-full lg:w-1/3">
                         <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                            <div className="bg-gray-800 p-4 text-white">
-                                <h2 className="font-semibold">Profile Information</h2>
+                            <div className="bg-gray-800 p-3 sm:p-4 text-white">
+                                <h2 className="font-semibold text-sm sm:text-base">Profile Information</h2>
                             </div>
 
                             {/* Profile Image and Basic Info */}
-                            <div className="p-5 flex flex-col items-center">
+                            <div className="p-4 sm:p-5 flex flex-col items-center">
                                 <div className="relative mb-4">
-                                    <div className="h-28 w-28 rounded-full overflow-hidden border-2 border-gray-200">
+                                    <div className="h-24 w-24 sm:h-28 sm:w-28 rounded-full overflow-hidden border-2 border-gray-200">
                                         <img
                                             src={previewImage || (admin?.profileImage
                                                 ? (admin.profileImage.includes('http')
@@ -408,15 +408,15 @@ const Profile = ({ token, setToken }) => {
                                     </div>
                                 </div>
 
-                                <h3 className="text-xl font-bold text-gray-800">{admin?.name}</h3>
-                                <p className="text-gray-500 mb-2">@{admin?.username}</p>
+                                <h3 className="text-lg sm:text-xl font-bold text-gray-800">{admin?.name}</h3>
+                                <p className="text-gray-500 mb-2 text-sm sm:text-base">@{admin?.username}</p>
                                 <span className="bg-blue-100 text-blue-700 text-xs font-medium px-2.5 py-0.5 rounded-full">
                                     {admin?.role.charAt(0).toUpperCase() + admin?.role.slice(1)}
                                 </span>
                             </div>
 
                             {/* Contact Information */}
-                            <div className="border-t border-gray-100 p-5">
+                            <div className="border-t border-gray-100 p-4 sm:p-5">
                                 <h3 className="text-sm font-medium text-gray-600 uppercase mb-3">Contact Details</h3>
                                 <div className="space-y-2 text-sm">
                                     <div className="flex items-center">
@@ -424,21 +424,21 @@ const Profile = ({ token, setToken }) => {
                                             <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
                                             <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
                                         </svg>
-                                        <span className="text-gray-800">{admin?.email}</span>
+                                        <span className="text-gray-800 text-xs sm:text-sm break-all">{admin?.email}</span>
                                     </div>
                                     <div className="flex items-center">
                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
                                             <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
                                         </svg>
-                                        <span className="text-gray-800 capitalize">{admin?.role}</span>
+                                        <span className="text-gray-800 capitalize text-xs sm:text-sm">{admin?.role}</span>
                                     </div>
                                 </div>
                             </div>
 
                             {/* Quick Actions */}
-                            <div className="border-t border-gray-100 p-5">
+                            <div className="border-t border-gray-100 p-4 sm:p-5">
                                 <h3 className="text-sm font-medium text-gray-600 uppercase mb-3">Quick Actions</h3>
-                                <div className="space-y-2">
+                                <div className="space-y-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-1">
                                     <button
                                         onClick={openEditModal}
                                         className="w-full text-left px-3 py-2 flex items-center text-sm rounded hover:bg-gray-100 transition-colors"
@@ -481,37 +481,37 @@ const Profile = ({ token, setToken }) => {
                     </div>
 
                     {/* Right Content - Admin Details */}
-                    <div className="w-full lg:w-2/3">
+                    <div className="w-full lg:w-2/3 mt-4 lg:mt-0">
                         {/* Admin Information Section */}
-                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
-                            <div className="bg-gray-800 p-4 text-white">
-                                <h2 className="font-semibold">Administrative Details</h2>
+                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-4 sm:mb-6">
+                            <div className="bg-gray-800 p-3 sm:p-4 text-white">
+                                <h2 className="font-semibold text-sm sm:text-base">Administrative Details</h2>
                             </div>
-                            <div className="p-5">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="p-4 sm:p-5">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                                     <div>
                                         <h3 className="text-sm font-medium text-gray-600 uppercase mb-3">Basic Information</h3>
                                         <div className="space-y-3">
                                             <div>
                                                 <label className="block text-gray-500 text-xs mb-1">Full Name</label>
-                                                <p className="text-gray-800 font-medium">{admin?.name}</p>
+                                                <p className="text-gray-800 font-medium text-sm sm:text-base">{admin?.name}</p>
                                             </div>
                                             <div>
                                                 <label className="block text-gray-500 text-xs mb-1">Username</label>
-                                                <p className="text-gray-800 font-medium">{admin?.username}</p>
+                                                <p className="text-gray-800 font-medium text-sm sm:text-base">{admin?.username}</p>
                                             </div>
                                         </div>
                                     </div>
-                                    <div>
+                                    <div className="mt-4 md:mt-0">
                                         <h3 className="text-sm font-medium text-gray-600 uppercase mb-3">System Information</h3>
                                         <div className="space-y-3">
                                             <div>
                                                 <label className="block text-gray-500 text-xs mb-1">Email Address</label>
-                                                <p className="text-gray-800 font-medium">{admin?.email}</p>
+                                                <p className="text-gray-800 font-medium text-sm sm:text-base break-all">{admin?.email}</p>
                                             </div>
                                             <div>
                                                 <label className="block text-gray-500 text-xs mb-1">Role</label>
-                                                <p className="text-gray-800 font-medium capitalize">{admin?.role}</p>
+                                                <p className="text-gray-800 font-medium text-sm sm:text-base capitalize">{admin?.role}</p>
                                             </div>
                                         </div>
                                     </div>
@@ -521,17 +521,17 @@ const Profile = ({ token, setToken }) => {
 
                         {/* Admin Permissions Section */}
                         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-                            <div className="bg-gray-800 p-4 text-white">
-                                <h2 className="font-semibold">Permissions & Access Control</h2>
+                            <div className="bg-gray-800 p-3 sm:p-4 text-white">
+                                <h2 className="font-semibold text-sm sm:text-base">Permissions & Access Control</h2>
                             </div>
-                            <div className="p-5">
+                            <div className="p-4 sm:p-5">
                                 <h3 className="text-sm font-medium text-gray-600 uppercase mb-3">Assigned Permissions</h3>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 sm:gap-3">
                                     {Object.entries(admin?.permissions || {}).map(([key, value]) => (
                                         value && (
-                                            <div key={key} className="bg-gray-50 border border-gray-200 rounded p-2 flex items-center">
-                                                <span className="h-2 w-2 rounded-full bg-blue-500 mr-2"></span>
-                                                <span className="text-sm text-gray-700">
+                                            <div key={key} className="bg-gray-50 border border-gray-200 rounded p-2 flex items-center text-xs sm:text-sm">
+                                                <span className="h-2 w-2 rounded-full bg-blue-500 mr-2 flex-shrink-0"></span>
+                                                <span className="text-gray-700 truncate">
                                                     {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
                                                 </span>
                                             </div>
@@ -546,10 +546,10 @@ const Profile = ({ token, setToken }) => {
 
             {/* Edit Modal */}
             {showEditModal && (
-                <div className="fixed inset-0 bg-green-900/30 backdrop-blur-sm flex items-center justify-center z-50">
-                    <div className="bg-gradient-to-br from-white to-green-50 rounded-2xl shadow-xl p-6 w-full max-w-lg border border-green-200 animate-fade-in-up">
-                        <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-2xl font-bold text-gray-800">Edit Profile</h2>
+                <div className="fixed inset-0 bg-green-900/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-gradient-to-br from-white to-green-50 rounded-2xl shadow-xl p-4 sm:p-6 w-full max-w-lg border border-green-200 animate-fade-in-up">
+                        <div className="flex justify-between items-center mb-4 sm:mb-6">
+                            <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Edit Profile</h2>
                             <button onClick={() => setShowEditModal(false)} className="text-gray-500 hover:text-gray-800 transition-colors">
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -558,9 +558,9 @@ const Profile = ({ token, setToken }) => {
                         </div>
 
                         <form onSubmit={handleSubmit}>
-                            <div className="flex justify-center mb-6">
+                            <div className="flex justify-center mb-5 sm:mb-6">
                                 <div className="relative">
-                                    <div className="h-32 w-32 rounded-2xl overflow-hidden border-4 border-green-400/30">
+                                    <div className="h-24 w-24 sm:h-32 sm:w-32 rounded-2xl overflow-hidden border-4 border-green-400/30">
                                         <img
                                             src={previewImage || (admin?.profileImage?.includes('http') ? admin.profileImage : `${backendUrl}/uploads/${admin.profileImage}`)}
                                             alt={admin.name}
@@ -594,7 +594,7 @@ const Profile = ({ token, setToken }) => {
                                 </div>
                             </div>
                             <div className="mt-6 flex justify-end">
-                                <button type="submit" disabled={updateLoading} className="bg-green-600 hover:bg-reen-700 text-white font-bold py-2.5 px-6 rounded-lg flex items-center shadow-md">
+                                <button type="submit" disabled={updateLoading} className="bg-green-600 hover:bg-reen-700 text-white font-bold py-2.5 px-4 sm:px-6 rounded-lg flex items-center shadow-md">
                                     {updateLoading && (
                                         <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -602,6 +602,139 @@ const Profile = ({ token, setToken }) => {
                                         </svg>
                                     )}
                                     Save Changes
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Password Change Modal */}
+            {showPasswordModal && (
+                <div className="fixed inset-0 bg-yellow-900/20 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-gradient-to-br from-white to-yellow-50 rounded-2xl shadow-xl p-4 sm:p-6 w-full max-w-lg border border-yellow-200 animate-fade-in-up overflow-y-auto max-h-[90vh]">
+                        <div className="flex justify-between items-center mb-4 sm:mb-6">
+                            <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Change Password</h2>
+                            <button onClick={() => setShowPasswordModal(false)} className="text-gray-500 hover:text-gray-800 transition-colors">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        {/* Request verification code */}
+                        <div className="mb-4">
+                            <button
+                                type="button"
+                                className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded w-full sm:w-auto"
+                                onClick={async () => {
+                                    try {
+                                        const res = await axios.post(`${backendUrl}/api/admin/send-code`, {}, {
+                                            headers: { Authorization: `Bearer ${token}` }
+                                        });
+                                        toast[res.data.success ? 'success' : 'error'](res.data.message);
+                                    } catch (err) {
+                                        toast.error("Failed to send code");
+                                    }
+                                }}
+                            >
+                                Send Verification Code to Email
+                            </button>
+                        </div>
+
+                        {/* Code input + Verify */}
+                        <div className="mb-4">
+                            <label className="block mb-1 text-sm text-gray-700">Verification Code</label>
+                            <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+                                <input
+                                    type="text"
+                                    className="w-full border rounded px-3 py-2"
+                                    placeholder="Enter code from email"
+                                    value={passwordData.code}
+                                    onChange={(e) => setPasswordData({ ...passwordData, code: e.target.value })}
+                                />
+                                <button
+                                    type="button"
+                                    className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded sm:whitespace-nowrap"
+                                    onClick={async () => {
+                                        try {
+                                            const res = await axios.post(`${backendUrl}/api/admin/verify-code`, {
+                                                code: passwordData.code
+                                            }, {
+                                                headers: { Authorization: `Bearer ${token}` }
+                                            });
+                                            toast[res.data.success ? 'success' : 'error'](res.data.message);
+                                        } catch (err) {
+                                            toast.error("Failed to verify code");
+                                        }
+                                    }}
+                                >
+                                    Verify Code
+                                </button>
+                            </div>
+                        </div>
+
+                        <form onSubmit={handlePasswordSubmit}>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="currentPassword">
+                                        Current Password
+                                    </label>
+                                    <input
+                                        type="password"
+                                        id="currentPassword"
+                                        name="currentPassword"
+                                        value={passwordData.currentPassword}
+                                        onChange={handlePasswordChange}
+                                        className="w-full bg-white border border-yellow-200 rounded-lg py-2.5 px-4 text-gray-800 focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 shadow-sm"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="newPassword">
+                                        New Password
+                                    </label>
+                                    <input
+                                        type="password"
+                                        id="newPassword"
+                                        name="newPassword"
+                                        value={passwordData.newPassword}
+                                        onChange={handlePasswordChange}
+                                        className="w-full bg-white border border-yellow-200 rounded-lg py-2.5 px-4 text-gray-800 focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 shadow-sm"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="confirmPassword">
+                                        Confirm New Password
+                                    </label>
+                                    <input
+                                        type="password"
+                                        id="confirmPassword"
+                                        name="confirmPassword"
+                                        value={passwordData.confirmPassword}
+                                        onChange={handlePasswordChange}
+                                        className="w-full bg-white border border-yellow-200 rounded-lg py-2.5 px-4 text-gray-800 focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 shadow-sm"
+                                        required
+                                    />
+                                </div>
+                                <p className="text-xs text-gray-600 mt-2">
+                                    Password must be at least 8 characters and include letters, numbers, and special characters.
+                                </p>
+                            </div>
+                            <div className="mt-6 flex justify-end">
+                                <button
+                                    type="submit"
+                                    disabled={updateLoading}
+                                    className="bg-yellow-500 hover:bg-yellow-600 text-black hover:text-white font-bold py-2.5 px-4 sm:px-6 rounded-lg flex items-center shadow-md transition-colors"
+                                >
+                                    {updateLoading && (
+                                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                        </svg>
+                                    )}
+                                    Update Password
                                 </button>
                             </div>
                         </form>
@@ -662,137 +795,6 @@ const Profile = ({ token, setToken }) => {
                                 )}
                             </button>
                         </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Password Change Modal */}
-            {showPasswordModal && (
-                <div className="fixed inset-0 bg-yellow-900/20 backdrop-blur-sm flex items-center justify-center z-50">
-                    <div className="bg-gradient-to-br from-white to-yellow-50 rounded-2xl shadow-xl p-6 w-full max-w-lg border border-yellow-200 animate-fade-in-up">
-                        <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-2xl font-bold text-gray-800">Change Password</h2>
-                            <button onClick={() => setShowPasswordModal(false)} className="text-gray-500 hover:text-gray-800 transition-colors">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
-                        </div>
-
-                        {/* Request verification code */}
-                        <div className="mb-4">
-                            <button
-                                type="button"
-                                className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded"
-                                onClick={async () => {
-                                    try {
-                                        const res = await axios.post(`${backendUrl}/api/admin/send-code`, {}, {
-                                            headers: { Authorization: `Bearer ${token}` }
-                                        });
-                                        toast[res.data.success ? 'success' : 'error'](res.data.message);
-                                    } catch (err) {
-                                        toast.error("Failed to send code");
-                                    }
-                                }}
-                            >
-                                Send Verification Code to Email
-                            </button>
-                        </div>
-
-                        {/* Code input + Verify */}
-                        <div className="mb-4">
-                            <label className="block mb-1 text-sm text-gray-700">Verification Code</label>
-                            <input
-                                type="text"
-                                className="w-full border rounded px-3 py-2"
-                                placeholder="Enter code from email"
-                                value={passwordData.code}
-                                onChange={(e) => setPasswordData({ ...passwordData, code: e.target.value })}
-                            />
-                            <button
-                                type="button"
-                                className="mt-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
-                                onClick={async () => {
-                                    try {
-                                        const res = await axios.post(`${backendUrl}/api/admin/verify-code`, {
-                                            code: passwordData.code
-                                        }, {
-                                            headers: { Authorization: `Bearer ${token}` }
-                                        });
-                                        toast[res.data.success ? 'success' : 'error'](res.data.message);
-                                    } catch (err) {
-                                        toast.error("Failed to verify code");
-                                    }
-                                }}
-                            >
-                                Verify Code
-                            </button>
-                        </div>
-
-                        <form onSubmit={handlePasswordSubmit}>
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="currentPassword">
-                                        Current Password
-                                    </label>
-                                    <input
-                                        type="password"
-                                        id="currentPassword"
-                                        name="currentPassword"
-                                        value={passwordData.currentPassword}
-                                        onChange={handlePasswordChange}
-                                        className="w-full bg-white border border-yellow-200 rounded-lg py-2.5 px-4 text-gray-800 focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 shadow-sm"
-                                        required
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="newPassword">
-                                        New Password
-                                    </label>
-                                    <input
-                                        type="password"
-                                        id="newPassword"
-                                        name="newPassword"
-                                        value={passwordData.newPassword}
-                                        onChange={handlePasswordChange}
-                                        className="w-full bg-white border border-yellow-200 rounded-lg py-2.5 px-4 text-gray-800 focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 shadow-sm"
-                                        required
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="confirmPassword">
-                                        Confirm New Password
-                                    </label>
-                                    <input
-                                        type="password"
-                                        id="confirmPassword"
-                                        name="confirmPassword"
-                                        value={passwordData.confirmPassword}
-                                        onChange={handlePasswordChange}
-                                        className="w-full bg-white border border-yellow-200 rounded-lg py-2.5 px-4 text-gray-800 focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 shadow-sm"
-                                        required
-                                    />
-                                </div>
-                                <p className="text-xs text-gray-600 mt-2">
-                                    Password must be at least 8 characters and include letters, numbers, and special characters.
-                                </p>
-                            </div>
-                            <div className="mt-6 flex justify-end">
-                                <button
-                                    type="submit"
-                                    disabled={updateLoading}
-                                    className="bg-yellow-500 hover:bg-yellow-600 text-black hover:text-white font-bold py-2.5 px-6 rounded-lg flex items-center shadow-md transition-colors"
-                                >
-                                    {updateLoading && (
-                                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                                        </svg>
-                                    )}
-                                    Update Password
-                                </button>
-                            </div>
-                        </form>
                     </div>
                 </div>
             )}
