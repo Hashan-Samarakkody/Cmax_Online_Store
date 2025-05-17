@@ -521,15 +521,6 @@ const UserActivityReport = () => {
                                 <option value="monthly">Monthly</option>
                             </select>
                         </div>
-
-                        <div>
-                            <button
-                                className={`px-4 py-2 rounded-md ${showDateRange ? 'bg-gray-200 text-gray-700' : 'bg-blue-600 text-white'} shadow-sm`}
-                                onClick={() => setShowDateRange(!showDateRange)}
-                            >
-                                {showDateRange ? 'Hide Date Range' : 'Custom Date Range'}
-                            </button>
-                        </div>
                     </div>
 
                     {/* User Activity Log Toggle Button */}
