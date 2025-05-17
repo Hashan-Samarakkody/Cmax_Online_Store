@@ -2,6 +2,7 @@ import Category from "../models/categoryModel.js";
 import Subcategory from "../models/subcategoryModel.js";
 import Product from "../models/productModel.js";
 import mongoose from "mongoose";
+import { broadcast } from "../server.js";
 
 // Add Category
 const addCategory = async (req, res) => {
@@ -98,44 +99,177 @@ const getSubCategories = async (req, res) => {
     }
 };
 
-// Delete Category
-const deleteCategory = async (req, res) => {
+
+
+// Update Category Name
+const updateCategory = async (req, res) => {
     try {
         const { id } = req.params;
+        const { name } = req.body;
 
-        const productCount = await Product.countDocuments({ category: id });
-        if (productCount > 0) return res.status(400).json({ message: "Category contains products" });
+        // Check if name already exists
+        const existingCategory = await Category.findOne({ name, _id: { $ne: id } });
+        if (existingCategory) return res.status(400).json({ message: "Category name already exists" });
+
+        const updatedCategory = await Category.findByIdAndUpdate(
+            id,
+            { name },
+            { new: true }
+        );
+
+        if (!updatedCategory) return res.status(404).json({ message: "Category not found" });
+
+        res.status(200).json(updatedCategory);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+// Update Subcategory Name
+const updateSubcategory = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { name } = req.body;
+
+        const updatedSubcategory = await Subcategory.findByIdAndUpdate(
+            id,
+            { name },
+            { new: true }
+        );
+
+        if (!updatedSubcategory) return res.status(404).json({ message: "Subcategory not found" });
+
+        res.status(200).json(updatedSubcategory);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+// Update the toggleCategoryVisibility function
+const toggleCategoryVisibility = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { isVisible } = req.body;
 
         const category = await Category.findById(id);
         if (!category) return res.status(404).json({ message: "Category not found" });
 
-        await Subcategory.deleteMany({ category: id });
-        await Category.findByIdAndDelete(id);
+        category.isVisible = isVisible;
+        await category.save();
 
-        res.status(200).json({ message: "Category deleted successfully" });
+        // If hiding the category, also hide all products in this category
+        if (isVisible === false) {
+            await Product.updateMany({ category: id }, { isVisible: false });
+
+            // Broadcast product visibility changes via WebSocket
+            const affectedProducts = await Product.find({ category: id });
+            affectedProducts.forEach(product => {
+                broadcast({
+                    type: 'productVisibilityChanged',
+                    productId: product._id,
+                    isVisible: false
+                });
+            });
+        }
+
+        res.status(200).json({ message: "Category visibility updated successfully", isVisible });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 };
 
-// Delete Subcategory
-const deleteSubcategory = async (req, res) => {
+// Update the toggleSubcategoryVisibility function
+const toggleSubcategoryVisibility = async (req, res) => {
     try {
         const { id } = req.params;
-
-        const productCount = await Product.countDocuments({ subcategory: id });
-        if (productCount > 0) return res.status(400).json({ message: "Subcategory contains products" });
+        const { isVisible } = req.body;
 
         const subcategory = await Subcategory.findById(id);
         if (!subcategory) return res.status(404).json({ message: "Subcategory not found" });
 
-        await Category.updateOne({ _id: subcategory.category }, { $pull: { subcategories: id } });
-        await Subcategory.findByIdAndDelete(id);
+        subcategory.isVisible = isVisible;
+        await subcategory.save();
 
-        res.status(200).json({ message: "Subcategory deleted successfully" });
+        // If hiding the subcategory, also hide all products in this subcategory
+        if (isVisible === false) {
+            await Product.updateMany({ subcategory: id }, { isVisible: false });
+
+            // Broadcast product visibility changes via WebSocket
+            const affectedProducts = await Product.find({ subcategory: id });
+            affectedProducts.forEach(product => {
+                broadcast({
+                    type: 'productVisibilityChanged',
+                    productId: product._id,
+                    isVisible: false
+                });
+            });
+        }
+
+        res.status(200).json({ message: "Subcategory visibility updated successfully", isVisible });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 };
 
-export { addCategory, addSubcategory, getCategories, getSubCategories, deleteCategory, deleteSubcategory }
+// Delete Category with Products
+const deleteCategoryWithProducts = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const category = await Category.findById(id);
+        if (!category) return res.status(404).json({ message: "Category not found" });
+
+        // Delete all products in this category
+        await Product.deleteMany({ category: id });
+
+        // Delete all subcategories
+        await Subcategory.deleteMany({ category: id });
+
+        // Delete the category
+        await Category.findByIdAndDelete(id);
+
+        res.status(200).json({ message: "Category and all related products deleted successfully" });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+// Delete Subcategory with Products
+const deleteSubcategoryWithProducts = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const subcategory = await Subcategory.findById(id);
+        if (!subcategory) return res.status(404).json({ message: "Subcategory not found" });
+
+        // Delete all products in this subcategory
+        await Product.deleteMany({ subcategory: id });
+
+        // Update parent category
+        await Category.updateOne(
+            { _id: subcategory.category },
+            { $pull: { subcategories: id } }
+        );
+
+        // Delete the subcategory
+        await Subcategory.findByIdAndDelete(id);
+
+        res.status(200).json({ message: "Subcategory and all related products deleted successfully" });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+// Update exports
+export {
+    addCategory,
+    addSubcategory,
+    getCategories,
+    getSubCategories,
+    updateCategory,
+    updateSubcategory,
+    toggleCategoryVisibility,
+    toggleSubcategoryVisibility,
+    deleteCategoryWithProducts,
+    deleteSubcategoryWithProducts
+}

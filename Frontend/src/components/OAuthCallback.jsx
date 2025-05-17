@@ -18,14 +18,14 @@ const OAuthCallback = () => {
         if (token) {
             localStorage.setItem('token', token);
             setToken(token);
-            toast.success('Successfully logged in with Google!');
+            toast.success(`Successfully logged in!`);
             navigate('/home');
         } else if (error) {
             toast.error('Authentication failed. Please try again.');
-            navigate('/login');
+            navigate('/');
         } else {
             toast.error('Something went wrong. Please try again.');
-            navigate('/login');
+            navigate('/');
         }
     }, [location, navigate, setToken]);
 

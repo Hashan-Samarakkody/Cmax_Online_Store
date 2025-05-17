@@ -37,7 +37,15 @@ const getFinancialSalesReport = async (req, res) => {
             }
         }
 
-        const salesData = await processFinancialData(orders);
+        // Prefetch all categories and subcategories for latest data
+        const allCategories = await categoryModel.find({});
+        const allSubcategories = await subcategoryModel.find({});
+
+        // Create maps for quick lookup
+        const categoryMap = new Map(allCategories.map(cat => [cat._id.toString(), cat.name]));
+        const subcategoryMap = new Map(allSubcategories.map(subcat => [subcat._id.toString(), subcat.name]));
+
+        const salesData = await processFinancialData(orders, categoryMap, subcategoryMap);
 
         // Properly format the response with success flag
         res.json({ success: true, salesData });
@@ -47,28 +55,27 @@ const getFinancialSalesReport = async (req, res) => {
     }
 };
 
-// Cache for category and subcategory names to reduce DB queries
-const categoryCache = new Map();
-const subcategoryCache = new Map();
-
-// Helper functions to get category and subcategory names
-async function getCategoryName(categoryId) {
+// Updated helper functions to get latest category and subcategory names
+async function getCategoryName(categoryId, categoryMap) {
     try {
-        // Return from cache if available
-        if (categoryCache.has(categoryId)) {
-            return categoryCache.get(categoryId);
+        if (!categoryId) return 'Uncategorized';
+
+        // Convert ObjectId to string if needed
+        const catId = categoryId.toString ? categoryId.toString() : categoryId;
+
+        // Check the map first for the latest name
+        if (categoryMap && categoryMap.has(catId)) {
+            return categoryMap.get(catId);
         }
 
-        // If it's a valid ObjectId, query the database
+        // If not found in the map and it's a valid ObjectId, query directly
         if (mongoose.Types.ObjectId.isValid(categoryId)) {
             const category = await categoryModel.findById(categoryId);
             if (category && category.name) {
-                categoryCache.set(categoryId, category.name);
                 return category.name;
             }
         }
 
-        // If categoryId is already a name or lookup failed, return as is
         return categoryId || 'Uncategorized';
     } catch (error) {
         console.error('Error getting category name:', error);
@@ -76,23 +83,26 @@ async function getCategoryName(categoryId) {
     }
 }
 
-async function getSubcategoryName(subcategoryId) {
+async function getSubcategoryName(subcategoryId, subcategoryMap) {
     try {
-        // Return from cache if available
-        if (subcategoryCache.has(subcategoryId)) {
-            return subcategoryCache.get(subcategoryId);
+        if (!subcategoryId) return 'Uncategorized';
+
+        // Convert ObjectId to string if needed
+        const subId = subcategoryId.toString ? subcategoryId.toString() : subcategoryId;
+
+        // Check the map first for the latest name
+        if (subcategoryMap && subcategoryMap.has(subId)) {
+            return subcategoryMap.get(subId);
         }
 
-        // If it's a valid ObjectId, query the database
+        // If not found in the map and it's a valid ObjectId, query directly
         if (mongoose.Types.ObjectId.isValid(subcategoryId)) {
             const subcategory = await subcategoryModel.findById(subcategoryId);
             if (subcategory && subcategory.name) {
-                subcategoryCache.set(subcategoryId, subcategory.name);
                 return subcategory.name;
             }
         }
 
-        // If subcategoryId is already a name or lookup failed, return as is
         return subcategoryId || 'Uncategorized';
     } catch (error) {
         console.error('Error getting subcategory name:', error);
@@ -100,7 +110,7 @@ async function getSubcategoryName(subcategoryId) {
     }
 }
 
-async function processFinancialData(orders) {
+async function processFinancialData(orders, categoryMap, subcategoryMap) {
     const result = {};
 
     for (const order of orders) {
@@ -109,79 +119,76 @@ async function processFinancialData(orders) {
         }
 
         for (const item of order.items) {
-            // Extract product ID
-            const productId = item.productId || item._id || 'unknown';
+            try {
+                // Extract product ID
+                const productId = item.productId?.toString() || item._id?.toString() || 'unknown';
 
-            // Get category and subcategory names from IDs or objects
-            let categoryName = 'Uncategorized';
-            let subcategoryName = 'Uncategorized';
+                // Get category and subcategory IDs
+                let categoryId = item.category || 'Uncategorized';
+                let subcategoryId = item.subcategory || 'Uncategorized';
 
-            // Handle category - could be ID, object, or string name
-            if (item.category) {
-                if (typeof item.category === 'object' && item.category.name) {
-                    categoryName = item.category.name;
-                } else if (typeof item.category === 'string' || typeof item.category === 'object') {
-                    // Use helper function to resolve category name
-                    categoryName = await getCategoryName(item.category);
-                }
-            }
+                // Convert ObjectId to string if needed
+                if (categoryId?._id) categoryId = categoryId._id;
+                if (subcategoryId?._id) subcategoryId = subcategoryId._id;
 
-            // Handle subcategory - could be ID, object, or string name
-            if (item.subcategory) {
-                if (typeof item.subcategory === 'object' && item.subcategory.name) {
-                    subcategoryName = item.subcategory.name;
-                } else if (typeof item.subcategory === 'string' || typeof item.subcategory === 'object') {
-                    // Use helper function to resolve subcategory name
-                    subcategoryName = await getSubcategoryName(item.subcategory);
-                }
-            }
+                // Get the latest category and subcategory names
+                const categoryName = await getCategoryName(categoryId, categoryMap) || "Uncategorized";
+                const subcategoryName = await getSubcategoryName(subcategoryId, subcategoryMap) || "Uncategorized";
 
-            const productName = item.name || 'Unknown Product';
+                // Ensure names are strings
+                const catNameStr = String(categoryName);
+                const subcatNameStr = String(subcategoryName);
 
-            // Extract color from size field if needed (format: "size_color")
-            let color = item.color || '-';
-            let size = item.size || '-';
+                const productName = item.name || 'Unknown Product';
 
-            // If size contains color information, extract it
-            if (size && size.includes('_')) {
-                const parts = size.split('_');
-                if (parts.length >= 2) {
-                    // First part is size, second part is color
-                    size = parts[0] === 'undefined' ? '-' : parts[0];
-                    // Use the color from size if we don't already have one
-                    if (color === '-' && parts[1] !== 'undefined') {
-                        color = parts[1];
+                // Extract color from size field if needed (format: "size_color")
+                let color = item.color || '-';
+                let size = item.size || '-';
+
+                // If size contains color information, extract it
+                if (size && size.includes('_')) {
+                    const parts = size.split('_');
+                    if (parts.length >= 2) {
+                        // First part is size, second part is color
+                        size = parts[0] === 'undefined' ? '-' : parts[0];
+                        // Use the color from size if we don't already have one
+                        if (color === '-' && parts[1] !== 'undefined') {
+                            color = parts[1];
+                        }
                     }
                 }
-            }
 
-            const quantity = item.quantity || 1;
-            const unitPrice = item.price || 0;
+                const quantity = Number(item.quantity) || 1;
+                const unitPrice = Number(item.price) || 0;
 
-            // Initialize nested structure if needed
-            if (!result[categoryName]) result[categoryName] = {};
-            if (!result[categoryName][subcategoryName]) result[categoryName][subcategoryName] = {};
-            if (!result[categoryName][subcategoryName][productId]) {
-                result[categoryName][subcategoryName][productId] = {
-                    productName,
-                    variations: []
-                };
-            }
+                // Initialize nested structure if needed
+                if (!result[catNameStr]) result[catNameStr] = {};
+                if (!result[catNameStr][subcatNameStr]) result[catNameStr][subcatNameStr] = {};
+                if (!result[catNameStr][subcatNameStr][productId]) {
+                    result[catNameStr][subcatNameStr][productId] = {
+                        productName,
+                        variations: []
+                    };
+                }
 
-            // Find if this color/size combination already exists
-            const existingVariation = result[categoryName][subcategoryName][productId].variations.find(
-                v => v.color === color && v.size === size
-            );
+                // Find if this color/size combination already exists
+                const existingVariation = result[catNameStr][subcatNameStr][productId].variations.find(
+                    v => v.color === color && v.size === size
+                );
 
-            if (existingVariation) {
-                existingVariation.quantity += quantity;
-            } else {
-                result[categoryName][subcategoryName][productId].variations.push({
-                    color,
-                    size,
-                    quantity,
-                    unitPrice
-                });
+                if (existingVariation) {
+                    existingVariation.quantity += quantity;
+                } else {
+                    result[catNameStr][subcatNameStr][productId].variations.push({
+                        color,
+                        size,
+                        quantity,
+                        unitPrice
+                    });
+                }
+            } catch (error) {
+                console.error('Error processing item:', error, item);
+                // Continue with next item instead of failing the entire report
             }
         }
     }

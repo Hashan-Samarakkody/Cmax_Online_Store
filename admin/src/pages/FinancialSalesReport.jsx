@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { FiDownload,FiCalendar, FiLoader, FiDollarSign, FiBarChart2 } from 'react-icons/fi';
+import { FiDownload, FiCalendar, FiLoader, FiDollarSign, FiBarChart2 } from 'react-icons/fi';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid,
     Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell
@@ -24,6 +24,10 @@ const FinancialSalesReport = () => {
         percentage: 0,
         positive: true
     });
+    const [categoryMappings, setCategoryMappings] = useState({
+        categories: {},
+        subcategories: {}
+    });
 
     // Get today's date in YYYY-MM-DD format for the max date attribute
     const today = new Date().toISOString().split('T')[0];
@@ -43,8 +47,12 @@ const FinancialSalesReport = () => {
             let csvContent = 'Category,Subcategory,Product ID,Product Name,Color,Size,Unit Price,Quantity Sold,Subtotal\n';
 
             // Process data into CSV rows
-            Object.entries(salesData).forEach(([category, subcategories]) => {
-                Object.entries(subcategories).forEach(([subcategory, products]) => {
+            Object.entries(salesData).forEach(([categoryId, subcategories]) => {
+                const categoryName = getCategoryName(categoryId);
+
+                Object.entries(subcategories).forEach(([subcategoryId, products]) => {
+                    const subcategoryName = getSubcategoryName(subcategoryId);
+
                     Object.entries(products).forEach(([productId, product]) => {
                         product.variations.forEach(variation => {
                             const subtotal = variation.quantity * variation.unitPrice;
@@ -53,31 +61,29 @@ const FinancialSalesReport = () => {
                                 return field && field.includes(',') ? `"${field}"` : field;
                             };
 
-                            csvContent += `${escapeCsv(category)},`;
-                            csvContent += `${escapeCsv(subcategory)},`;
+                            csvContent += `${escapeCsv(categoryName)},`;
+                            csvContent += `${escapeCsv(subcategoryName)},`;
                             csvContent += `${escapeCsv(productId)},`;
                             csvContent += `${escapeCsv(product.productName)},`;
                             csvContent += `${escapeCsv(variation.color)},`;
                             csvContent += `${escapeCsv(variation.size)},`;
-                            csvContent += `${variation.unitPrice.toFixed(2)},`;
+                            csvContent += `${variation.unitPrice},`;
                             csvContent += `${variation.quantity},`;
-                            csvContent += `${subtotal.toFixed(2)}\n`;
+                            csvContent += `${subtotal}\n`;
                         });
                     });
                 });
             });
 
-            // Create download link
+            // Create and download the CSV file
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
-            link.href = url;
-            link.setAttribute('download', `financial_sales_report_${dateRange.startDate}_to_${dateRange.endDate}.csv`);
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `sales_report_${dateRange.startDate}_to_${dateRange.endDate}.csv`);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-
-            toast.success('Financial report CSV downloaded successfully');
         } catch (error) {
             console.error('Error exporting CSV:', error);
             toast.error('Failed to export CSV');
@@ -95,9 +101,61 @@ const FinancialSalesReport = () => {
     // Fetch data when component mounts or date range changes
     useEffect(() => {
         if (dateRange.startDate && dateRange.endDate) {
+            fetchCategoryMappings();
             fetchSalesData();
         }
     }, [dateRange.startDate, dateRange.endDate]);
+
+    const getCategoryName = (id) => {
+        return categoryMappings.categories[id] || id;
+    };
+
+    const getSubcategoryName = (id) => {
+        return categoryMappings.subcategories[id] || id;
+    };
+
+    const fetchCategoryMappings = async () => {
+        try {
+            const token = localStorage.getItem('adminToken');
+
+            if (!token) {
+                navigate('/');
+                return;
+            }
+
+            // Fetch both categories and subcategories
+            const categoriesResponse = await axios.get(
+                `${backendUrl}/api/categories`,
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+
+            const subcategoriesResponse = await axios.get(
+                `${backendUrl}/api/subcategories`,
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+
+            if (categoriesResponse.data && subcategoriesResponse.data) {
+                const mappings = {
+                    categories: {},
+                    subcategories: {}
+                };
+
+                // Map category IDs to names
+                categoriesResponse.data.forEach(category => {
+                    mappings.categories[category._id] = category.name;
+                });
+
+                // Map subcategory IDs to names
+                subcategoriesResponse.data.forEach(subcategory => {
+                    mappings.subcategories[subcategory._id] = subcategory.name;
+                });
+
+                setCategoryMappings(mappings);
+            }
+        } catch (error) {
+            console.error('Error fetching category mappings:', error);
+        }
+    };
 
     const fetchSalesData = async () => {
         try {
@@ -106,7 +164,7 @@ const FinancialSalesReport = () => {
             const token = localStorage.getItem('adminToken');
 
             if (!token) {
-                navigate('/login');
+                navigate('/');
                 return;
             }
 
@@ -205,8 +263,9 @@ const FinancialSalesReport = () => {
     const processCategoryData = (data) => {
         const categories = [];
 
-        Object.entries(data || {}).forEach(([categoryName, subcategories]) => {
+        Object.entries(data || {}).forEach(([categoryId, subcategories]) => {
             let categoryTotal = 0;
+            const categoryName = getCategoryName(categoryId);
 
             Object.entries(subcategories).forEach(([_, products]) => {
                 Object.entries(products).forEach(([_, product]) => {
@@ -218,7 +277,8 @@ const FinancialSalesReport = () => {
 
             categories.push({
                 name: categoryName,
-                value: categoryTotal
+                value: categoryTotal,
+                id: categoryId // Keep the ID for reference
             });
         });
 
@@ -281,6 +341,8 @@ const FinancialSalesReport = () => {
                     <span className="ml-1">Back to Dashboard</span>
                 </button>
             </div>
+            <i className='text-sm text-red-500 mb-5'>*Only delivered orders are included in this report</i>
+
 
             <div className="bg-white rounded-lg shadow-md p-6 mb-6">
                 {/* Report Controls */}
@@ -511,12 +573,13 @@ const FinancialSalesReport = () => {
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                            {Object.entries(salesData).map(([category, subcategories]) => {
+                            {Object.entries(salesData).map(([categoryId, subcategories]) => {
                                 let categoryTotal = 0;
+                                const categoryName = getCategoryName(categoryId);
 
-                                const subcategoryRows = Object.entries(subcategories).map(([subcategory, products]) => {
+                                const subcategoryRows = Object.entries(subcategories).map(([subcategoryId, products]) => {
                                     let subcategoryTotal = 0;
-
+                                    const subcategoryName = getSubcategoryName(subcategoryId);
                                     const productRows = [];
 
                                     Object.entries(products).forEach(([productId, product]) => {
@@ -561,9 +624,9 @@ const FinancialSalesReport = () => {
 
                                     return [
                                         ...productRows,
-                                        <tr key={`subcategory-${subcategory}`} className="bg-gray-50">
+                                        <tr key={`subcategory-${subcategoryId}`} className="bg-gray-50">
                                             <td colSpan="7" className="px-6 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
-                                                Sub category- {subcategory}
+                                                Sub category: {subcategoryName}
                                             </td>
                                             <td className="px-6 py-3 whitespace-nowrap text-sm font-medium text-gray-900 text-right">
                                                 Rs.{subcategoryTotal.toFixed(2)}
@@ -574,9 +637,9 @@ const FinancialSalesReport = () => {
 
                                 return [
                                     ...subcategoryRows.flat(),
-                                    <tr key={`category-${category}`} className="bg-indigo-50">
+                                    <tr key={`category-${categoryId}`} className="bg-indigo-50">
                                         <td colSpan="7" className="px-6 py-3 whitespace-nowrap text-sm font-medium text-indigo-900">
-                                            category- {category}
+                                            Category: {categoryName}
                                         </td>
                                         <td className="px-6 py-3 whitespace-nowrap text-sm font-medium text-indigo-900 text-right">
                                             Rs.{categoryTotal.toFixed(2)}

@@ -4,8 +4,10 @@ import { backendUrl } from '../App';
 import WebSocketService from '../services/WebSocketService';
 import { format } from 'date-fns';
 import { toast } from 'react-toastify';
-import { FaImage, FaVideo, FaPlayCircle } from 'react-icons/fa';
+import { FaImage, FaVideo, FaPlayCircle, FaSearch, FaCalendarAlt } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 
 const ReturnRequests = ({ token }) => {
 	const [returns, setReturns] = useState([]);
@@ -16,6 +18,146 @@ const ReturnRequests = ({ token }) => {
 	const [mediaPreview, setMediaPreview] = useState(null);
 	const [orderDetails, setOrderDetails] = useState({});
 	const [isLoadingOrder, setIsLoadingOrder] = useState(false);
+	const [admin, setAdmin] = useState(null);
+
+	// Pagination state
+	const [currentPage, setCurrentPage] = useState(1);
+	const [itemsPerPage, setItemsPerPage] = useState(10);
+	const [totalReturns, setTotalReturns] = useState(0);
+
+	// Add new search state variables
+	const [searchType, setSearchType] = useState('id');
+	const [searchQuery, setSearchQuery] = useState('');
+	const [searchAmount, setSearchAmount] = useState('');
+	const [statusFilter, setStatusFilter] = useState('all');
+	const [dateRange, setDateRange] = useState({
+		startDate: null,
+		endDate: null
+	});
+	const [filteredReturns, setFilteredReturns] = useState([]);
+	const [isSearchActive, setIsSearchActive] = useState(false);
+
+	useEffect(() => {
+		const fetchAdminProfile = async () => {
+			try {
+				if (token) {
+					const response = await axios.get(`${backendUrl}/api/admin/profile`, {
+						headers: { Authorization: `Bearer ${token}` }
+					});
+
+					if (response.data.success) {
+						setAdmin(response.data.admin);
+						// Store role in localStorage for quick access
+						localStorage.setItem('adminRole', response.data.admin.role);
+					}
+				}
+			} catch (error) {
+				console.error('Error fetching admin profile:', error);
+				// Try to use cached role if available
+				const cachedRole = localStorage.getItem('adminRole');
+				if (cachedRole) {
+					setAdmin({ role: cachedRole });
+				}
+			}
+		};
+
+		fetchAdminProfile();
+
+		// Try to use cached role initially for faster rendering
+		const cachedRole = localStorage.getItem('adminRole');
+		if (cachedRole) {
+			setAdmin({ role: cachedRole });
+		}
+	}, [token]);
+
+	useEffect(() => {
+		if (isSearchActive) {
+			filterReturns();
+		} else {
+			setFilteredReturns(returns);
+		}
+	}, [isSearchActive, searchQuery, searchType, searchAmount, dateRange, returns]);
+
+	const fetchReturns = async () => {
+		try {
+			const response = await axios.get(`${backendUrl}/api/returns/admin`, {
+				headers: { token },
+				params: {
+					page: currentPage,
+					limit: itemsPerPage
+				}
+			});
+
+			if (response.data.success) {
+				const fetchedReturns = response.data.returns;
+				setReturns(fetchedReturns);
+				setFilteredReturns(fetchedReturns); // Initialize filtered with all returns
+				setTotalReturns(response.data.total || fetchedReturns.length);
+			}
+		} catch (error) {
+			console.error('Error fetching returns:', error);
+			toast.error('Failed to load return requests');
+		}
+	};
+
+	const filterReturns = () => {
+		let results = [...returns];
+
+		if (searchType === 'id' && searchQuery) {
+			results = results.filter(item =>
+				item.returnId.toLowerCase().includes(searchQuery.toLowerCase())
+			);
+		} else if (searchType === 'customer' && searchQuery) {
+			results = results.filter(item =>
+				item.userName.toLowerCase().includes(searchQuery.toLowerCase())
+			);
+		} else if (searchType === 'amount' && searchAmount) {
+			const amount = parseFloat(searchAmount);
+			if (!isNaN(amount)) {
+				results = results.filter(item =>
+					parseFloat(item.refundAmount) === amount
+				);
+			}
+		} else if (searchType === 'date' && (dateRange.startDate || dateRange.endDate)) {
+			results = results.filter(item => {
+				const returnDate = new Date(item.requestedDate);
+
+				if (dateRange.startDate && dateRange.endDate) {
+					return returnDate >= dateRange.startDate && returnDate <= dateRange.endDate;
+				} else if (dateRange.startDate) {
+					return returnDate >= dateRange.startDate;
+				} else if (dateRange.endDate) {
+					return returnDate <= dateRange.endDate;
+				}
+				return true;
+			});
+		} else if (searchType === 'status') {
+			// No need for additional search query, just use the statusFilter value
+			if (statusFilter !== 'all') {
+				results = results.filter(item => item.status === statusFilter);
+			}
+		}
+
+		setFilteredReturns(results);
+	  };
+
+	// Add search handler function
+	const handleSearch = (e) => {
+		e.preventDefault();
+		setIsSearchActive(true);
+		filterReturns();
+	};
+
+	// Reset search filters
+	const resetSearch = () => {
+		setSearchType('id');
+		setSearchQuery('');
+		setSearchAmount('');
+		setStatusFilter('all');
+		setDateRange({ startDate: null, endDate: null });
+		setIsSearchActive(false);
+		setFilteredReturns(returns);
+  };
 
 	useEffect(() => {
 		if (token) {
@@ -43,22 +185,8 @@ const ReturnRequests = ({ token }) => {
 				WebSocketService.off('returnStatusUpdate', handleReturnStatusUpdate);
 			};
 		}
-	}, [token]);
+	}, [token, currentPage, itemsPerPage]); 
 
-	const fetchReturns = async () => {
-		try {
-			const response = await axios.get(`${backendUrl}/api/returns/admin`, {
-				headers: { token }
-			});
-
-			if (response.data.success) {
-				setReturns(response.data.returns);
-			}
-		} catch (error) {
-			console.error('Error fetching returns:', error);
-			toast.error('Failed to load return requests');
-		}
-	};
 
 	// Fetch original order details
 	const fetchOrderDetails = async (orderId) => {
@@ -177,6 +305,307 @@ const ReturnRequests = ({ token }) => {
 		});
 	};
 
+	const totalPages = Math.ceil(totalReturns / itemsPerPage);
+
+	const handlePageChange = (page) => {
+		setCurrentPage(page);
+	};
+
+	const handleItemsPerPageChange = (e) => {
+		const newLimit = parseInt(e.target.value, 10);
+		setItemsPerPage(newLimit);
+		setCurrentPage(1); // Reset to first page when changing items per page
+	};
+
+	// Update the SearchBox component
+	const SearchBox = () => {
+		return (
+			<div className="bg-white p-4 rounded-lg shadow mb-4">
+				<form onSubmit={handleSearch} className="space-y-3">
+					<div className="flex flex-wrap items-center gap-4 mb-3">
+						<h3 className="font-semibold text-lg mr-2">Search by:</h3>
+
+						<div className="flex items-center">
+							<input
+								type="radio"
+								id="searchById"
+								name="searchType"
+								value="id"
+								checked={searchType === 'id'}
+								onChange={() => setSearchType('id')}
+								className="mr-1"
+							/>
+							<label htmlFor="searchById" className="mr-3 text-sm">Return ID</label>
+						</div>
+
+						<div className="flex items-center">
+							<input
+								type="radio"
+								id="searchByCustomer"
+								name="searchType"
+								value="customer"
+								checked={searchType === 'customer'}
+								onChange={() => setSearchType('customer')}
+								className="mr-1"
+							/>
+							<label htmlFor="searchByCustomer" className="mr-3 text-sm">Customer</label>
+						</div>
+
+						<div className="flex items-center">
+							<input
+								type="radio"
+								id="searchByAmount"
+								name="searchType"
+								value="amount"
+								checked={searchType === 'amount'}
+								onChange={() => setSearchType('amount')}
+								className="mr-1"
+							/>
+							<label htmlFor="searchByAmount" className="mr-3 text-sm">Amount</label>
+						</div>
+
+						<div className="flex items-center">
+							<input
+								type="radio"
+								id="searchByDate"
+								name="searchType"
+								value="date"
+								checked={searchType === 'date'}
+								onChange={() => setSearchType('date')}
+								className="mr-1"
+							/>
+							<label htmlFor="searchByDate" className="mr-3 text-sm">Date Range</label>
+						</div>
+
+						{/* New Status filter radio button */}
+						<div className="flex items-center">
+							<input
+								type="radio"
+								id="searchByStatus"
+								name="searchType"
+								value="status"
+								checked={searchType === 'status'}
+								onChange={() => setSearchType('status')}
+								className="mr-1"
+							/>
+							<label htmlFor="searchByStatus" className="text-sm">Status</label>
+						</div>
+					</div>
+
+					<div className="flex flex-wrap gap-4">
+						{(searchType === 'id' || searchType === 'customer') && (
+							<div className="flex-1">
+								<input
+									type="text"
+									placeholder={searchType === 'id' ? "Enter Return ID..." : "Enter Customer Name..."}
+									value={searchQuery}
+									onChange={(e) => setSearchQuery(e.target.value)}
+									className="w-full p-2 border border-gray-300 rounded"
+								/>
+							</div>
+						)}
+
+						{searchType === 'amount' && (
+							<div className="flex-1">
+								<input
+									type="number"
+									step="0.01"
+									placeholder="Enter Amount..."
+									value={searchAmount}
+									onChange={(e) => setSearchAmount(e.target.value)}
+									className="w-full p-2 border border-gray-300 rounded"
+								/>
+							</div>
+						)}
+
+						{searchType === 'date' && (
+							<div className="flex flex-col sm:flex-row gap-2 flex-1">
+								<div className="flex items-center flex-1 relative">
+									<label className="text-sm mr-2">From:</label>
+									<DatePicker
+										selected={dateRange.startDate}
+										onChange={(date) => setDateRange({ ...dateRange, startDate: date })}
+										className="w-full p-2 border border-gray-300 rounded"
+										placeholderText="Start Date"
+										dateFormat="dd/MM/yyyy"
+									/>
+									<FaCalendarAlt className="absolute right-2 text-gray-400" />
+								</div>
+								<div className="flex items-center flex-1 relative">
+									<label className="text-sm mr-2">To:</label>
+									<DatePicker
+										selected={dateRange.endDate}
+										onChange={(date) => setDateRange({ ...dateRange, endDate: date })}
+										className="w-full p-2 border border-gray-300 rounded"
+										placeholderText="End Date"
+										dateFormat="dd/MM/yyyy"
+										minDate={dateRange.startDate}
+									/>
+									<FaCalendarAlt className="absolute right-2 text-gray-400" />
+								</div>
+							</div>
+						)}
+
+						{/* New Status dropdown for status filtering */}
+						{searchType === 'status' && (
+							<div className="flex-1">
+								<select
+									value={statusFilter}
+									onChange={(e) => setStatusFilter(e.target.value)}
+									className="w-full p-2 border border-gray-300 rounded"
+								>
+									<option value="all">All Statuses</option>
+									<option value="Requested">Requested</option>
+									<option value="Approved">Approved</option>
+									<option value="In Transit">In Transit</option>
+									<option value="Received">Received</option>
+									<option value="Inspected">Inspected</option>
+									<option value="Completed">Completed</option>
+									<option value="Rejected">Rejected</option>
+								</select>
+							</div>
+						)}
+
+						<div className="flex gap-2">
+							<button type="submit" className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded flex items-center">
+								<FaSearch className="mr-1" /> Search
+							</button>
+							{isSearchActive && (
+								<button
+									type="button"
+									onClick={resetSearch}
+									className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded"
+								>
+									Reset
+								</button>
+							)}
+						</div>
+					</div>
+				</form>
+
+				{isSearchActive && (
+					<div className="mt-3 text-sm text-gray-600">
+						Found {filteredReturns.length} results
+						{isSearchActive && filteredReturns.length === 0 && (
+							<span className="ml-2 text-red-500">No returns match your search criteria</span>
+						)}
+					</div>
+				)}
+			</div>
+		);
+  };
+
+	// Create pagination UI component
+	const Pagination = () => {
+		const pageNumbers = [];
+
+		// Logic to show only a range of page numbers (max 5) around current page
+		let startPage = Math.max(1, currentPage - 2);
+		let endPage = Math.min(totalPages, startPage + 4);
+
+		// Adjust if we're near the end
+		if (endPage - startPage < 4 && startPage > 1) {
+			startPage = Math.max(1, endPage - 4);
+		}
+
+		for (let i = startPage; i <= endPage; i++) {
+			pageNumbers.push(i);
+		}
+
+		return (
+			<div className="flex items-center justify-between mt-4 bg-white p-4 rounded-lg shadow">
+				<div className="flex items-center">
+					<span className="text-sm text-gray-700 mr-2">Show</span>
+					<select
+						value={itemsPerPage}
+						onChange={handleItemsPerPageChange}
+						className="p-1 border rounded text-sm"
+					>
+						<option value={10}>10</option>
+						<option value={25}>25</option>
+						<option value={50}>50</option>
+						<option value={100}>100</option>
+						<option value={200}>200</option>
+						<option value={300}>300</option>
+					</select>
+					<span className="text-sm text-gray-700 ml-2">per page</span>
+				</div>
+
+				<div className="flex items-center">
+					<span className="text-sm text-gray-700 mr-4">
+						Showing {returns.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0} to {Math.min(currentPage * itemsPerPage, totalReturns)} of {totalReturns} returns
+					</span>
+
+					<nav className="flex items-center">
+						<button
+							onClick={() => handlePageChange(1)}
+							disabled={currentPage === 1}
+							className={`px-2 py-1 text-sm rounded-l-md border ${currentPage === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'hover:bg-gray-50'}`}
+						>
+							&laquo;
+						</button>
+						<button
+							onClick={() => handlePageChange(currentPage - 1)}
+							disabled={currentPage === 1}
+							className={`px-2 py-1 text-sm border-t border-b ${currentPage === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'hover:bg-gray-50'}`}
+						>
+							&lsaquo;
+						</button>
+
+						{startPage > 1 && (
+							<>
+								<button
+									onClick={() => handlePageChange(1)}
+									className="px-2 py-1 text-sm border-t border-b hover:bg-gray-50"
+								>
+									1
+								</button>
+								{startPage > 2 && <span className="px-2 py-1 border-t border-b">&hellip;</span>}
+							</>
+						)}
+
+						{pageNumbers.map(number => (
+							<button
+								key={number}
+								onClick={() => handlePageChange(number)}
+								className={`px-3 py-1 text-sm border-t border-b ${currentPage === number ? 'bg-blue-500 text-white' : 'hover:bg-gray-50'}`}
+							>
+								{number}
+							</button>
+						))}
+
+						{endPage < totalPages && (
+							<>
+								{endPage < totalPages - 1 && <span className="px-2 py-1 border-t border-b">&hellip;</span>}
+								<button
+									onClick={() => handlePageChange(totalPages)}
+									className="px-2 py-1 text-sm border-t border-b hover:bg-gray-50"
+								>
+									{totalPages}
+								</button>
+							</>
+						)}
+
+						<button
+							onClick={() => handlePageChange(currentPage + 1)}
+							disabled={currentPage === totalPages}
+							className={`px-2 py-1 text-sm border-t border-b ${currentPage === totalPages ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'hover:bg-gray-50'}`}
+						>
+							&rsaquo;
+						</button>
+						<button
+							onClick={() => handlePageChange(totalPages)}
+							disabled={currentPage === totalPages}
+							className={`px-2 py-1 text-sm rounded-r-md border ${currentPage === totalPages ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'hover:bg-gray-50'}`}
+						>
+							&raquo;
+						</button>
+					</nav>
+				</div>
+			</div>
+		);
+	};
+
 	// Render the original order details
 	const renderOrderDetails = (orderId) => {
 		const order = orderDetails[orderId];
@@ -281,18 +710,23 @@ const ReturnRequests = ({ token }) => {
 			<div className="flex justify-between items-center mb-6">
 				<h1 className="text-2xl font-bold">Return Requests</h1>
 
-				{/* Button positioned at the same height as the heading on the right side */}
-				<button
-					onClick={() => navigate('/return-analysis')}
-					className="flex items-center px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors"
-				>
-					Return Analysis
-				</button>
+				{/* Only show Return Analysis button for non-staff users */}
+				{admin && admin.role !== 'staff' && (
+					<button
+						onClick={() => navigate('/return-analysis')}
+						className="flex items-center px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors"
+					>
+						Return Analysis
+					</button>
+				)}
 			</div>
+
+			<SearchBox/>
 
 			{/* Table to display return requests */}
 			<div className="bg-white rounded-lg shadow overflow-hidden">
 				<div className="overflow-x-auto">
+					<Pagination/>
 					<table className="min-w-full divide-y divide-gray-500">
 						<thead className="bg-gray-50">
 							<tr>

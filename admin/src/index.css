@@ -8,7 +8,9 @@
     font-family: 'Poppins';
 }
 
-select,input,textarea {
+select,
+input,
+textarea {
     border: 1px solid #c2c2c2;
     outline-color: #8bc586;
     border-radius: 4px;
@@ -176,4 +178,21 @@ select,input,textarea {
 .grand-total {
     background-color: #d1ecf1;
     font-weight: bold;
-    font-size: 1.1em; }
+    font-size: 1.1em;
+}
+
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-fade-in-down {
+    animation: fadeInDown 0.3s ease-out;
+}

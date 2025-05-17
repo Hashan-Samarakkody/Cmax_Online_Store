@@ -11,6 +11,7 @@ const AddressManager = ({ user, setUser }) => {
     const [editingAddress, setEditingAddress] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const [isLocating, setIsLocating] = useState(false);
 
     // Form state
     const [formData, setFormData] = useState({
@@ -62,6 +63,148 @@ const AddressManager = ({ user, setUser }) => {
         });
     };
 
+    const validatePostalCodeWithGeonames = async (postalCode, district) => {
+        try {
+            // This calls the geonames.org postal code search API
+            const response = await axios.get(
+                `http://api.geonames.org/postalCodeSearchJSON?postalcode=${postalCode}&country=LK&maxRows=10&username=demo`
+            );
+
+            // Check if we got any results
+            if (response.data && response.data.postalCodes && response.data.postalCodes.length > 0) {
+                // If district checking is desired
+                if (district) {
+                    // Some postal codes may match multiple places, so check if any match the district
+                    return response.data.postalCodes.some(entry => {
+                        // Check for district match (case-insensitive)
+                        // The adminName1 or adminName2 field might contain the district name
+                        const adminName1 = (entry.adminName1 || '').toLowerCase();
+                        const adminName2 = (entry.adminName2 || '').toLowerCase();
+                        const placeName = (entry.placeName || '').toLowerCase();
+                        const districtLower = district.toLowerCase();
+
+                        return adminName1.includes(districtLower) ||
+                            districtLower.includes(adminName1) ||
+                            adminName2.includes(districtLower) ||
+                            districtLower.includes(adminName2) ||
+                            placeName.includes(districtLower);
+                    });
+                }
+
+                // If we're just checking if the postal code exists, return true
+                return true;
+            }
+
+            // No matching postal codes found
+            return false;
+        } catch (error) {
+            console.error('Error validating postal code with geonames:', error);
+            // If the API call fails, we'll be lenient and allow the submission
+            return true;
+        }
+      };
+
+    const validateInputs = () => {
+        const sanitizedData = { ...formData };
+        for (const key in formData) {
+            if (typeof formData[key] === 'string') {
+                sanitizedData[key] = DOMPurify.sanitize(formData[key].trim());
+            } else {
+                sanitizedData[key] = formData[key];
+            }
+        }
+
+        if (!sanitizedData.addressName || sanitizedData.addressName.length < 2) {
+            toast.error('Address title must be at least 2 characters.');
+            return false;
+        }
+
+        const streetRegex = /^[a-zA-Z0-9\s.,\-/]+$/;
+        if (!sanitizedData.street || sanitizedData.street.length < 2 || !streetRegex.test(sanitizedData.street)) {
+            toast.error('Street must be at least 2 characters long and can only contain letters, numbers, spaces, and special characters (.,-/).');
+            return false;
+        }
+
+        const cityRegex = /^[a-zA-Z0-9\s.,\-/]+$/;
+        if (!sanitizedData.city || sanitizedData.city.length < 2 || !cityRegex.test(sanitizedData.city)) {
+            toast.error('City must be at least 2 characters long and can only contain letters, numbers, spaces, and special characters (.,-/).');
+            return false;
+        }
+
+        if (!sanitizedData.state || sanitizedData.state.length < 2 || !districts.includes(sanitizedData.state)) {
+            toast.error('Please select a valid district.');
+            return false;
+        }
+
+        const postalCodeRegex = /^\d{5}$/;
+        if (!sanitizedData.postalCode || !postalCodeRegex.test(sanitizedData.postalCode)) {
+            toast.error('Please enter a valid 5-digit postal code.');
+            return false;
+        }
+
+        return sanitizedData;
+    };
+
+    const getCurrentLocation = async () => {
+        if (!navigator.geolocation) {
+            toast.error("Geolocation is not supported by your browser");
+            return;
+        }
+
+        setIsLocating(true);
+
+        try {
+            // Get coordinates using browser's Geolocation API
+            const position = await new Promise((resolve, reject) => {
+                navigator.geolocation.getCurrentPosition(resolve, reject);
+            });
+
+            const { latitude, longitude } = position.coords;
+
+            // Use OpenStreetMap's Nominatim API for reverse geocoding (free and no API key required)
+            const response = await axios.get(
+                `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`,
+                { headers: { 'Accept-Language': 'en' } }
+            );
+
+            const address = response.data;
+
+            // Extract address components
+            const street = address.address.road || '';
+            const houseNumber = address.address.house_number || '';
+            const fullStreet = houseNumber ? `${houseNumber} ${street}` : street;
+            const city = address.address.city || address.address.town || address.address.village || '';
+            const state = address.address.state_district || address.address.state || '';
+            const postalCode = address.address.postcode || '';
+
+            // Find the closest district match (Sri Lanka specific)
+            let closestDistrict = '';
+            if (state) {
+                closestDistrict = districts.find(district =>
+                    state.toLowerCase().includes(district.toLowerCase())
+                ) || '';
+            }
+
+            // Update form fields
+            setFormData(prev => ({
+                ...prev,
+                street: fullStreet,
+                city: city,
+                state: closestDistrict || state,
+                postalCode: postalCode
+            }));
+
+            setDistrictInput(closestDistrict || state);
+
+            toast.success("Location detected successfully");
+        } catch (error) {
+            console.error("Error getting location:", error);
+            toast.error("Couldn't detect your location. Please enter manually.");
+        } finally {
+            setIsLocating(false);
+        }
+    };
+
     // Fetch addresses
     const fetchAddresses = async () => {
         try {
@@ -96,6 +239,13 @@ const AddressManager = ({ user, setUser }) => {
     // Submit address form
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        // Validate inputs before proceeding
+        const validatedData = validateInputs();
+        if (!validatedData) {
+            return; // Stop if validation failed
+        }
+
         setIsSubmitting(true);
 
         try {
@@ -110,7 +260,7 @@ const AddressManager = ({ user, setUser }) => {
             const response = await axios({
                 method,
                 url,
-                data: formData,
+                data: validatedData,
                 headers: { Authorization: `Bearer ${token}` }
             });
 
@@ -256,6 +406,32 @@ const AddressManager = ({ user, setUser }) => {
                     <h3 className="text-lg font-medium mb-4">
                         {editingAddress ? 'Edit Address' : 'Add New Address'}
                     </h3>
+
+                    {/* Add location detection button */}
+                    <div className="mb-4">
+                        <button
+                            type="button"
+                            onClick={getCurrentLocation}
+                            disabled={isLocating}
+                            className="flex items-center justify-center w-full bg-blue-50 text-blue-600 border border-blue-200 py-2.5 px-4 rounded-md hover:bg-blue-100 disabled:opacity-70"
+                        >
+                            {isLocating ? (
+                                <>
+                                    <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></span>
+                                    Detecting location...
+                                </>
+                            ) : (
+                                <>
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    </svg>
+                                    Use My Current Location
+                                </>
+                            )}
+                        </button>
+                        <p className="text-xs text-red-500 mt-1 text-center">* <i>This feature won't work accurately in all locations. Please verify your address before saving.</i></p>
+                    </div>
 
                     <div className="grid grid-cols-1 gap-4 mb-4">
                         <div>

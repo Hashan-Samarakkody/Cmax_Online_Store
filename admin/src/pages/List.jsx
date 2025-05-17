@@ -20,12 +20,45 @@ const ProductList = ({ token }) => {
     price: false
   });
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [paginatedList, setPaginatedList] = useState([]);
+
+  useEffect(() => {
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    setPaginatedList(filteredList.slice(indexOfFirstItem, indexOfLastItem));
+  }, [filteredList, currentPage, itemsPerPage]);
+
+  // Reset to first page when search results change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filteredList]);
+
+  const paginate = (pageNumber) => setCurrentPage(pageNumber);
+
+  const handleItemsPerPageChange = (e) => {
+    setItemsPerPage(Number(e.target.value));
+    setCurrentPage(1); // Reset to first page when changing items per page
+  };
+
+
   const fetchList = async () => {
     try {
       const response = await axios.get(backendUrl + '/api/product/list');
       if (response.data.success) {
-        setList(response.data.products);
-        setFilteredList(response.data.products);
+        // Process products to determine effective visibility
+        const products = response.data.products.map(product => ({
+          ...product,
+          effectivelyVisible:
+            product.isVisible &&
+            product.category?.isVisible !== false &&
+            product.subcategory?.isVisible !== false
+        }));
+
+        setList(products);
+        setFilteredList(products);
       } else {
         toast.error(response.data.message);
       }
@@ -47,6 +80,47 @@ const ProductList = ({ token }) => {
     } catch (error) {
       console.log(error);
       toast.error(error.message);
+    }
+  };
+
+  const toggleVisibility = async (id, isCurrentlyVisible) => {
+    try {
+      const response = await axios.post(
+        `${backendUrl}/api/product/toggle-visibility`,
+        {
+          productId: id,
+          isVisible: !isCurrentlyVisible
+        },
+        {
+          headers: { token }
+        }
+      );
+
+      if (response.data.success) {
+        toast.success(`Product ${!isCurrentlyVisible ? 'visible' : 'hidden'} successfully`, { autoClose: 1000 });
+
+        // Update the local state to reflect the change
+        setList(prevList =>
+          prevList.map(product =>
+            product._id === id
+              ? { ...product, isVisible: !isCurrentlyVisible }
+              : product
+          )
+        );
+
+        setFilteredList(prevList =>
+          prevList.map(product =>
+            product._id === id
+              ? { ...product, isVisible: !isCurrentlyVisible }
+              : product
+          )
+        );
+      } else {
+        toast.error(response.data.message);
+      }
+    } catch (error) {
+      console.log(error);
+      toast.error(error.response?.data?.message || error.message);
     }
   };
 
@@ -138,11 +212,33 @@ const ProductList = ({ token }) => {
       ));
     };
 
+    // Define handler for product visibility changes
+    const handleProductVisibilityChanged = (data) => {
+      if (data && data.productId) {
+        setList(prevList =>
+          prevList.map(product =>
+            product._id === data.productId
+              ? { ...product, isVisible: data.isVisible }
+              : product
+          )
+        );
+
+        setFilteredList(prevList =>
+          prevList.map(product =>
+            product._id === data.productId
+              ? { ...product, isVisible: data.isVisible }
+              : product
+          )
+        );
+      }
+    };
+
     // Connect to WebSocket and listen for product events
     WebSocketService.connect(() => {
       WebSocketService.on('newProduct', handleNewProduct);
       WebSocketService.on('deleteProduct', handleDeleteProduct);
       WebSocketService.on('updateProduct', handleUpdateProduct);
+      WebSocketService.on('productVisibilityChanged', handleProductVisibilityChanged);
     });
 
     // Cleanup function to disconnect WebSocket and remove the listeners
@@ -151,12 +247,13 @@ const ProductList = ({ token }) => {
       WebSocketService.off('newProduct', handleNewProduct);
       WebSocketService.off('deleteProduct', handleDeleteProduct);
       WebSocketService.off('updateProduct', handleUpdateProduct);
+      WebSocketService.off('productVisibilityChanged', handleProductVisibilityChanged);
     };
   }, []);
 
   return (
     <div className="container mx-auto px-4 sm:px-8">
-      
+
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-bold">Item List</h1>
       </div>
@@ -232,6 +329,106 @@ const ProductList = ({ token }) => {
           </div>
         </div>
 
+        {/* Pagination controls - top */}
+        <div className="flex justify-between items-center mb-4">
+          <div className="flex items-center">
+            <label htmlFor="itemsPerPage" className="mr-2 text-sm font-medium text-gray-700">
+              Show:
+            </label>
+            <select
+              id="itemsPerPage"
+              value={itemsPerPage}
+              onChange={handleItemsPerPageChange}
+              className="border border-gray-300 rounded-md px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value={10}>10</option>
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+              <option value={200}>200</option>
+              <option value={300}>300</option>
+            </select>
+          </div>
+          <div className="text-sm text-gray-600">
+            Showing {filteredList.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0} to {Math.min(currentPage * itemsPerPage, filteredList.length)} of {filteredList.length} products
+          </div>
+        </div>
+
+        {filteredList.length > 0 && (
+          <div className="flex justify-between items-center mt-6">
+            <button
+              onClick={() => paginate(currentPage - 1)}
+              disabled={currentPage === 1}
+              className={`px-4 py-2 border rounded ${currentPage === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-blue-500 hover:bg-blue-50'}`}
+            >
+              Previous
+            </button>
+
+            <div className="flex items-center">
+              {/* Display page numbers */}
+              {Array.from({ length: Math.min(5, Math.ceil(filteredList.length / itemsPerPage)) }, (_, i) => {
+                // Ensure we show the correct page numbers around the current page
+                let pageNum;
+                const totalPages = Math.ceil(filteredList.length / itemsPerPage);
+
+                if (totalPages <= 5) {
+                  // If total pages are 5 or less, show all pages
+                  pageNum = i + 1;
+                } else {
+                  
+                  if (currentPage <= 3) {
+                    pageNum = i + 1;
+                  } else if (currentPage >= totalPages - 2) {
+                    pageNum = totalPages - 4 + i;
+                  } else {
+                    pageNum = currentPage - 2 + i;
+                  }
+                }
+
+                return (
+                  <button
+                    key={pageNum}
+                    onClick={() => paginate(pageNum)}
+                    className={`mx-1 px-4 py-2 border rounded ${currentPage === pageNum
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-white text-blue-500 hover:bg-blue-50'
+                      }`}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              })}
+
+              {/* Show ellipsis and last page if there are many pages */}
+              {Math.ceil(filteredList.length / itemsPerPage) > 5 && (
+                <>
+                  <span className="mx-1">...</span>
+                  <button
+                    onClick={() => paginate(Math.ceil(filteredList.length / itemsPerPage))}
+                    className={`mx-1 px-4 py-2 border rounded ${currentPage === Math.ceil(filteredList.length / itemsPerPage)
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-white text-blue-500 hover:bg-blue-50'
+                      }`}
+                  >
+                    {Math.ceil(filteredList.length / itemsPerPage)}
+                  </button>
+                </>
+              )}
+            </div>
+
+            <button
+              onClick={() => paginate(currentPage + 1)}
+              disabled={currentPage === Math.ceil(filteredList.length / itemsPerPage)}
+              className={`px-4 py-2 border rounded ${currentPage === Math.ceil(filteredList.length / itemsPerPage)
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  : 'bg-white text-blue-500 hover:bg-blue-50'
+                }`}
+            >
+              Next
+            </button>
+          </div>
+        )}
+
         <div className="-mx-4 sm:-mx-8 px-4 sm:px-8 py-4 overflow-x-auto">
           <div className="inline-block min-w-full shadow rounded-lg overflow-hidden">
             {filteredList.length === 0 ? (
@@ -255,6 +452,7 @@ const ProductList = ({ token }) => {
                     <th className="px-5 py-3 text-left">Category</th>
                     <th className="px-5 py-3 text-left">Subcategory</th>
                     <th className="px-5 py-3 text-left">Price</th>
+                    <th className="px-5 py-3 text-center">Status</th>
                     <th className="px-5 py-3 text-center">Actions</th>
                   </tr>
                 </thead>
@@ -292,12 +490,30 @@ const ProductList = ({ token }) => {
                         <p className="text-gray-900 whitespace-no-wrap">{currency}{item.price}</p>
                       </td>
                       <td className="px-5 py-5 bg-white text-sm text-center">
+                        <span className={`inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none rounded-full 
+                          ${item.isVisible !== false
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-yellow-100 text-yellow-800'}`}
+                        >
+                          {item.isVisible !== false ? 'Visible' : 'Hidden'}
+                        </span>
+                      </td>
+                      <td className="px-5 py-5 bg-white text-sm text-center">
                         <div className="flex justify-center space-x-2">
                           <button
                             onClick={() => editProduct(item.productId)}
                             className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition duration-300 ease-in-out transform hover:scale-105"
                           >
                             Edit
+                          </button>
+                          <button
+                            onClick={() => toggleVisibility(item._id, item.isVisible !== false)}
+                            className={`px-4 py-2 rounded-md transition duration-300 ease-in-out transform hover:scale-105 
+                              ${item.isVisible !== false
+                                ? 'bg-yellow-500 text-white hover:bg-yellow-600'
+                                : 'bg-green-500 text-white hover:bg-green-600'}`}
+                          >
+                            {item.isVisible !== false ? 'Hide' : 'Show'}
                           </button>
                           <button
                             onClick={() => removeProduct(item._id)}
