@@ -3,26 +3,28 @@ import userModel from '../models/userModel.js'
 //  Add products to cart
 const addToCart = async (req, res) => {
     try {
-        const { userId, itemId, size } = req.body
+        const { userId, itemId, size, color } = req.body 
 
         const userData = await userModel.findById(userId)
-        let cartData = await userData.cartData
+        let cartData = userData.cartData || {}
+
+        // Create composite key with both size and color
+        const cartKey = `${size || 'undefined'}_${color || 'undefined'}`;
 
         if (cartData[itemId]) {
-            if (cartData[itemId][size]) {
-                cartData[itemId][size] += 1
+            if (cartData[itemId][cartKey]) {
+                cartData[itemId][cartKey] += 1
             } else {
-                cartData[itemId][size] = 1
+                cartData[itemId][cartKey] = 1
             }
         } else {
             cartData[itemId] = {}
-            cartData[itemId][size] = 1
+            cartData[itemId][cartKey] = 1
         }
 
         await userModel.findByIdAndUpdate(userId, { cartData })
 
         res.json({ success: true, message: 'Product added to cart!' })
-
     } catch (error) {
         console.log(error)
         res.json({ success: false, message: error.message })
@@ -32,15 +34,19 @@ const addToCart = async (req, res) => {
 // Update cart
 const updateCart = async (req, res) => {
     try {
-        const { userId, itemId, size, quantity } = req.body;
+        const { userId, itemId, size, color, quantity } = req.body;
+        // Now also extract color from request
 
         const userData = await userModel.findById(userId);
         let cartData = userData.cartData || {};
 
+        // Use both size and color to create the cart key
+        const cartKey = `${size || 'undefined'}_${color || 'undefined'}`;
+
         if (quantity === 0) {
             // Remove the item completely if quantity is zero
-            if (cartData[itemId] && cartData[itemId][size]) {
-                delete cartData[itemId][size];
+            if (cartData[itemId] && cartData[itemId][cartKey]) {
+                delete cartData[itemId][cartKey];
 
                 // If no more items with this ID, remove the entire product
                 if (Object.keys(cartData[itemId]).length === 0) {
@@ -50,7 +56,7 @@ const updateCart = async (req, res) => {
         } else {
             // Otherwise update the quantity
             if (!cartData[itemId]) cartData[itemId] = {};
-            cartData[itemId][size] = quantity;
+            cartData[itemId][cartKey] = quantity;
         }
 
         await userModel.findByIdAndUpdate(userId, { cartData });
