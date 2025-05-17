@@ -24,7 +24,43 @@ const Dashboard = () => {
   const [subcategoryDistribution, setSubcategoryDistribution] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedPeriod, setSelectedPeriod] = useState('monthly');
-  const [categoryMap, setCategoryMap] = useState({}); // Map of category names to IDs
+  const [categoryMap, setCategoryMap] = useState({});
+  const [admin, setAdmin] = useState(null);
+
+  // Fetch admin profile to check role
+  useEffect(() => {
+    const fetchAdminProfile = async () => {
+      try {
+        const token = localStorage.getItem('adminToken');
+        if (token) {
+          const response = await axios.get(`${backendUrl}/api/admin/profile`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+
+          if (response.data.success) {
+            setAdmin(response.data.admin);
+            // Store role in localStorage for quick access
+            localStorage.setItem('adminRole', response.data.admin.role);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching admin profile:', error);
+        // Try to use cached role if available
+        const cachedRole = localStorage.getItem('adminRole');
+        if (cachedRole) {
+          setAdmin({ role: cachedRole });
+        }
+      }
+    };
+
+    fetchAdminProfile();
+
+    // Try to use cached role initially for faster rendering
+    const cachedRole = localStorage.getItem('adminRole');
+    if (cachedRole) {
+      setAdmin({ role: cachedRole });
+    }
+  }, []);
 
   // Function to fetch all dashboard data
   const fetchAllData = async () => {
@@ -518,32 +554,38 @@ const Dashboard = () => {
     );
   }
 
+
   return (
     <div className="space-y-6 px-2 sm:px-0">
       <div className="flex flex-col sm:flex-row justify-between items-center gap-3 sm:gap-0">
         <h1 className="text-2xl font-bold">Dashboard Overview</h1>
 
         <div className="flex flex-wrap justify-center sm:justify-end items-center gap-2 sm:gap-4">
-          <button
-            onClick={() => navigate('/financial-sales-report')}
-            className="flex items-center px-3 sm:px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors text-sm sm:text-base"
-          >
-            Financial Sales Report
-          </button>
+          {/* Only show report buttons if user is not staff */}
+          {admin && admin.role !== 'staff' && (
+            <>
+              <button
+                onClick={() => navigate('/financial-sales-report')}
+                className="flex items-center px-3 sm:px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors text-sm sm:text-base"
+              >
+                Financial Sales Report
+              </button>
 
-          <button
-            onClick={() => navigate('/sales')}
-            className="flex items-center px-3 sm:px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors text-sm sm:text-base"
-          >
-            Sold Items Count Report
-          </button>
+              <button
+                onClick={() => navigate('/sales')}
+                className="flex items-center px-3 sm:px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors text-sm sm:text-base"
+              >
+                Sold Items Count Report
+              </button>
 
-          <button
-            onClick={() => navigate('/user-activity-report')}
-            className="flex items-center px-3 sm:px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors text-sm sm:text-base"
-          >
-            User Activity Report
-          </button>
+              <button
+                onClick={() => navigate('/user-activity-report')}
+                className="flex items-center px-3 sm:px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors text-sm sm:text-base"
+              >
+                User Activity Report
+              </button>
+            </>
+          )}
         </div>
       </div>
 
