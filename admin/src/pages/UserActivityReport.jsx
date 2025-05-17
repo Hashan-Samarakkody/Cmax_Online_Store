@@ -616,11 +616,11 @@ const UserActivityReport = () => {
                                     <table className="min-w-full divide-y divide-gray-200">
                                         <thead className="bg-gray-50">
                                             <tr>
-                                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User Info</th>
-                                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Login</th>
-                                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Activity</th>
-                                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reference ID</th>
-                                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Loyalty Score</th>
+                                                <th className="px-4 py-3 text-left text-md font-semibold text-gray-500 uppercase tracking-wider">User Info</th>
+                                                <th className="px-4 py-3 text-left text-md font-semibold text-gray-500 uppercase tracking-wider">Last Login</th>
+                                                <th className="px-4 py-3 text-left text-md font-semibold text-gray-500 uppercase tracking-wider">Activity</th>
+                                                <th className="px-4 py-3 text-left text-md font-semibold text-gray-500 uppercase tracking-wider">Reference ID</th>
+                                                <th className="px-4 py-3 text-left text-md font-semibold text-gray-500 uppercase tracking-wider">Loyalty Score</th>
                                             </tr>
                                         </thead>
                                         <tbody className="bg-white divide-y divide-gray-200">
@@ -657,7 +657,7 @@ const UserActivityReport = () => {
                                                                     </div>
                                                                     <div className="ml-4">
                                                                         <div className="text-sm font-medium text-gray-900">{activity.firstName} {activity.lastName}</div>
-                                                                        <div className="text-sm text-gray-500">{activity.email}</div>
+                                                                        <div className="text-xs text-gray-500">{activity.email}</div>
                                                                         <div className="text-xs text-gray-400">@{activity.username}</div>
                                                                     </div>
                                                                 </div>
