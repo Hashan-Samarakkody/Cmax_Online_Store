@@ -32,7 +32,6 @@ const App = () => {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    // Make sure we save to adminToken consistently
     localStorage.setItem('adminToken', token)
 
     // Validate token when it changes
@@ -44,13 +43,11 @@ const App = () => {
       }
 
       try {
-        // Use the profile endpoint directly for validation since we know it exists
         const profileResponse = await axios.get(`${backendUrl}/api/admin/profile`, {
           headers: { Authorization: `Bearer ${token}` },
           timeout: 5000
         })
 
-        // If we can access the profile, then token is valid
         if (profileResponse.status === 200) {
           setIsValidToken(true)
         } else {
@@ -69,7 +66,7 @@ const App = () => {
     validateToken()
   }, [token])
 
-  // Show loading state while validating token
+  // Display loading state while validating token
   if (isLoading) {
     return (
       <div className="bg-gray-50 min-h-screen flex items-center justify-center">

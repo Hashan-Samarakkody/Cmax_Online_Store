@@ -738,7 +738,7 @@ const CategoryManager = () => {
                         {[...Array(totalPages)].map((_, index) => {
                             const pageNum = index + 1;
 
-                            // Show limited page numbers with ellipsis for large number of pages
+                            // Display limited page numbers with ellipsis for large number of pages
                             if (totalPages <= 5 ||
                                 pageNum === 1 ||
                                 pageNum === totalPages ||

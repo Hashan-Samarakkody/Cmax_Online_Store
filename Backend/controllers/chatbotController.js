@@ -48,7 +48,7 @@ const processMessage = async (req, res) => {
 
 // Function to get responses from Gemini API
 const getGeminiResponse = async (message, pageContext, userId) => {
-    // Create contextual system prompt based on page and user
+    // Add contextual system prompt based on page and user
     let systemPrompt = `You are a helpful shopping assistant for Cmax Online Store.
 Be friendly, concise, and helpful. Keep responses under 80 words.
 The user is currently on the "${pageContext}" page of our website.`;
@@ -297,7 +297,7 @@ const processAdminChatbotMessage = async (req, res) => {
 
 // Function to get admin-specific responses from Gemini API
 const getAdminGeminiResponse = async (message, pageContext, adminId) => {
-    // Create system prompt for admin context
+    // Add system prompt for admin context
     let adminSystemPrompt = `You are an AI assistant for Cmax Online Store's admin panel.
 Be professional, concise, and helpful. Keep responses under 100 words.
 The admin is currently on the "${pageContext}" page of the admin panel.`;

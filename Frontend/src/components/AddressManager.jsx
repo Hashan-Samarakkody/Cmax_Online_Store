@@ -65,12 +65,11 @@ const AddressManager = ({ user, setUser }) => {
 
     const validatePostalCodeWithGeonames = async (postalCode, district) => {
         try {
-            // This calls the geonames.org postal code search API
             const response = await axios.get(
                 `http://api.geonames.org/postalCodeSearchJSON?postalcode=${postalCode}&country=LK&maxRows=10&username=demo`
             );
 
-            // Check if we got any results
+            // Check if  got any results
             if (response.data && response.data.postalCodes && response.data.postalCodes.length > 0) {
                 // If district checking is desired
                 if (district) {
@@ -91,7 +90,7 @@ const AddressManager = ({ user, setUser }) => {
                     });
                 }
 
-                // If we're just checking if the postal code exists, return true
+                // If 're just checking if the postal code exists, return true
                 return true;
             }
 
@@ -99,10 +98,10 @@ const AddressManager = ({ user, setUser }) => {
             return false;
         } catch (error) {
             console.error('Error validating postal code with geonames:', error);
-            // If the API call fails, we'll be lenient and allow the submission
+            // If the API call fails, 'll be lenient and allow the submission
             return true;
         }
-      };
+    };
 
     const validateInputs = () => {
         const sanitizedData = { ...formData };

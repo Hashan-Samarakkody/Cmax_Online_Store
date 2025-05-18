@@ -81,7 +81,7 @@ const RevenuePrediction = ({ token }) => {
         const historicalValues = predictionData.historicalData.map(item => item.revenue);
         const predictionValues = predictionData.predictions.map(item => item.revenue);
 
-        // Create empty values for historical data in prediction dataset and vice versa
+        // Add empty values for historical data in prediction dataset and vice versa
         const historicalDataset = [
             ...historicalValues,
             ...Array(predictionValues.length).fill(null)
@@ -92,7 +92,7 @@ const RevenuePrediction = ({ token }) => {
             ...predictionValues
         ];
 
-        // Create uncertainty bounds based on confidence levels
+        // Add uncertainty bounds based on confidence levels
         const upperBoundDataset = [
             ...Array(historicalValues.length).fill(null),
             ...predictionData.predictions.map(item =>

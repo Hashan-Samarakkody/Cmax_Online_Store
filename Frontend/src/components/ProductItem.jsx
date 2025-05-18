@@ -19,7 +19,7 @@ const ProductItem = ({ id, image, name, price }) => {
         }
     }, [image]);
 
-    // Also check product from context to ensure we have latest images
+    // Also check product from context to ensure  have latest images
     useEffect(() => {
         const currentProduct = products.find(p => p._id === id);
         if (currentProduct && currentProduct.images && currentProduct.images.length > 0) {
@@ -50,7 +50,7 @@ const ProductItem = ({ id, image, name, price }) => {
         const roundedRating = Math.round(rating * 2) / 2;
         const stars = [];
 
-        // Create 5 stars
+        // Add 5 stars
         for (let i = 1; i <= 5; i++) {
             stars.push(
                 <img

@@ -7,7 +7,7 @@ export const processImage = async (file) => {
         throw new Error(`Invalid file type. Only PNG, JPEG, and JPG files are allowed.`);
     }
 
-    // Create an image element to get dimensions
+    // Add an image element to get dimensions
     const img = new Image();
     const imgUrl = URL.createObjectURL(file);
 
@@ -19,7 +19,7 @@ export const processImage = async (file) => {
             img.src = imgUrl;
         });
 
-        // Create canvas with 700x700 dimensions
+        // Add canvas with 700x700 dimensions
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
         canvas.width = 700;
@@ -42,7 +42,7 @@ export const processImage = async (file) => {
             canvas.toBlob(resolve, 'image/png', 1.0);
         });
 
-        // Create new file with original name but PNG extension
+        // Add new file with original name but PNG extension
         const fileName = file.name.split('.').slice(0, -1).join('.') + '.png';
         const processedFile = new File([blob], fileName, { type: 'image/png' });
 

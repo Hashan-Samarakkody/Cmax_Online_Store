@@ -105,8 +105,8 @@ const LoginPage = ({ setToken }) => {
         if (response.data.admin && response.data.admin.role) {
           localStorage.setItem('adminRole', response.data.admin.role);
         }
-        
-        // Show success message
+
+        // Display success message
         toast.success('Login successful!');
 
         // Set token in context or state
@@ -135,7 +135,7 @@ const LoginPage = ({ setToken }) => {
     setIsResetting(true);
 
     try {
-      // Create a dedicated reset password endpoint or use the existing sendVerificationCode
+      // Add a dedicated reset password endpoint or use the existing sendVerificationCode
       const response = await axios.post(`${backendUrl}/api/admin/reset-password/send-code`, {
         email: resetEmail
       });
@@ -240,7 +240,7 @@ const LoginPage = ({ setToken }) => {
         return (
           <>
             <h3 className="text-xl font-bold text-gray-800 mb-4">Reset Your Password</h3>
-            <p className="text-gray-600 mb-4">Enter your email address and we'll send you a verification code to reset your password.</p>
+            <p className="text-gray-600 mb-4">Enter your email address and 'll send you a verification code to reset your password.</p>
             <div className="mb-4">
               <label className="block text-sm text-gray-600 mb-2">Email Address</label>
               <input

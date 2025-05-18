@@ -168,7 +168,7 @@ const Dashboard = () => {
       });
 
       if (response.data) {
-        // Create a map of category names to IDs
+        // Add a map of category names to IDs
         const map = {};
         response.data.forEach(cat => {
           map[cat.name.toLowerCase()] = cat._id;
@@ -185,7 +185,7 @@ const Dashboard = () => {
     const token = localStorage.getItem('adminToken');
     try {
 
-      // Create request options with token
+      // Add request options with token
       const options = {
         headers: { token }
       };
@@ -200,7 +200,7 @@ const Dashboard = () => {
         options
       );
 
-      // Transform the response data to have the format we need for the chart
+      // Transform the response data to have the format  need for the chart
       const subcategoryData = response.data.map(subcategory => ({
         name: subcategory.name,
         count: subcategory.productCount || 0

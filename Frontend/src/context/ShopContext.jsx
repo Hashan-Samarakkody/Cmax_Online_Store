@@ -16,7 +16,7 @@ const ShopContextProvider = (props) => {
     const [cartItems, setCartItems] = useState({});
     const [products, setProducts] = useState([]);
     const [token, setToken] = useState('');
-    const [wishlistItems, setWishlistItems] = useState([]); 
+    const [wishlistItems, setWishlistItems] = useState([]);
     const navigate = useNavigate();
 
     const addToWishlist = async (itemId) => {
@@ -85,7 +85,7 @@ const ShopContextProvider = (props) => {
         } catch (error) {
             console.error('Error recording purchase interactions:', error);
         }
-      };
+    };
 
     // Add to useEffect that runs on login/token change
     useEffect(() => {
@@ -152,7 +152,7 @@ const ShopContextProvider = (props) => {
         const handleUpdateProduct = (data) => {
             if (data && data.product) {
                 setProducts(prevProducts => {
-                    // Create a new array with the updated product
+                    // Add a new array with the updated product
                     const updatedProducts = prevProducts.map(product =>
                         product._id === data.product._id ?
                             {
@@ -252,7 +252,7 @@ const ShopContextProvider = (props) => {
     }
 
     const updateQuantity = async (itemId, cartKey, quantity) => {
-        // Create a deep copy of current cart items
+        // Add a deep copy of current cart items
         let cartData = structuredClone(cartItems);
 
         // Parse cartKey to extract size and color

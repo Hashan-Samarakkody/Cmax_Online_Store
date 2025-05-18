@@ -15,7 +15,7 @@ const Footer = () => {
                         We offer a wide range of products at competitive prices, ensuring
                         that you get the best value for your money. Our mission is to provide
                         our customers with the best shopping experience possible,
-                        and we are committed to delivering high-quality products
+                        and  are committed to delivering high-quality products
                         and exceptional customer service.
                     </p>
                 </div>
