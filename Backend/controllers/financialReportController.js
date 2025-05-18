@@ -41,7 +41,7 @@ const getFinancialSalesReport = async (req, res) => {
         const allCategories = await categoryModel.find({});
         const allSubcategories = await subcategoryModel.find({});
 
-        // Create maps for quick lookup
+        // Add maps for quick lookup
         const categoryMap = new Map(allCategories.map(cat => [cat._id.toString(), cat.name]));
         const subcategoryMap = new Map(allSubcategories.map(subcat => [subcat._id.toString(), subcat.name]));
 
@@ -151,7 +151,7 @@ async function processFinancialData(orders, categoryMap, subcategoryMap) {
                     if (parts.length >= 2) {
                         // First part is size, second part is color
                         size = parts[0] === 'undefined' ? '-' : parts[0];
-                        // Use the color from size if we don't already have one
+                        // Use the color from size if  don't already have one
                         if (color === '-' && parts[1] !== 'undefined') {
                             color = parts[1];
                         }

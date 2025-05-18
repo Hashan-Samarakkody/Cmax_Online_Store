@@ -69,7 +69,7 @@ const wishlistAuth = async (req, res, next) => {
         // Verify token
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-        // For wishlist, we use decoded.userId (if your token stores it as userId)
+        // For wishlist,  use decoded.userId (if your token stores it as userId)
         // or decoded.id (if your token stores it as id)
         const userId = decoded.userId || decoded.id;
 

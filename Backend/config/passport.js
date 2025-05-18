@@ -19,7 +19,7 @@ passport.use(new GoogleStrategy({
 },
     async (accessToken, refreshToken, profile, done) => {
         try {
-            // Make sure we have email
+            // Make sure  have email
             if (!profile.emails || profile.emails.length === 0) {
                 return done(new Error('No email found in Google profile'), null);
             }
@@ -28,7 +28,7 @@ passport.use(new GoogleStrategy({
             let user = await userModel.findOne({ email: profile.emails[0].value });
 
             if (!user) {
-                // Create new user if doesn't exist
+                // Add new user if doesn't exist
                 const names = profile.displayName.split(' ');
                 const firstName = names[0] || '';
                 const lastName = names.length > 1 ? names[names.length - 1] : '';
@@ -38,7 +38,7 @@ passport.use(new GoogleStrategy({
                     username: `google_${profile.id}`,
                     firstName,
                     lastName,
-                    password: 'google-oauth', // This password won't be used for login
+                    password: 'google-oauth',
                     profileImage: profile.photos[0]?.value || '',
                     authProvider: 'google'
                 });
@@ -71,7 +71,7 @@ passport.use(new FacebookStrategy({
             let user = await userModel.findOne({ email: profile.emails[0].value });
 
             if (!user) {
-                // Create new user if doesn't exist
+                // Add new user if doesn't exist
                 const names = profile.displayName.split(' ');
                 const firstName = names[0] || '';
                 const lastName = names.length > 1 ? names[names.length - 1] : '';
@@ -81,7 +81,7 @@ passport.use(new FacebookStrategy({
                     username: `facebook_${profile.id}`,
                     firstName,
                     lastName,
-                    password: 'facebook-oauth', // This password won't be used for login
+                    password: 'facebook-oauth',
                     profileImage: profile.photos[0]?.value || '',
                     authProvider: 'facebook'
                 });

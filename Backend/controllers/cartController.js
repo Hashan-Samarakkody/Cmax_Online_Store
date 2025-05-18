@@ -3,12 +3,12 @@ import userModel from '../models/userModel.js'
 //  Add products to cart
 const addToCart = async (req, res) => {
     try {
-        const { userId, itemId, size, color } = req.body 
+        const { userId, itemId, size, color } = req.body
 
         const userData = await userModel.findById(userId)
         let cartData = userData.cartData || {}
 
-        // Create composite key with both size and color
+        // Add composite key with both size and color
         const cartKey = `${size || 'undefined'}_${color || 'undefined'}`;
 
         if (cartData[itemId]) {

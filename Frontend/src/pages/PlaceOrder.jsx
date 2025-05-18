@@ -181,7 +181,7 @@ const PlaceOrder = () => {
 
       case 'default':
         // First fetch user profile data
-        await fetchUserProfile(); // This already updates the form with user data
+        await fetchUserProfile(); 
 
         const defaultAddress = addressList.find(addr => addr.isDefault);
         if (defaultAddress) {

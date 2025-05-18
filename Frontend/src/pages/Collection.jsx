@@ -76,7 +76,6 @@ const Collection = () => {
 
       setFilterProducts(prev => prev.map(product =>
         product._id === updatedProduct._id ?
-          // This ensures images are updated
           {
             ...updatedProduct,
             // Ensure category and subcategory objects are preserved if they exist
@@ -113,7 +112,7 @@ const Collection = () => {
           catId !== data.categoryId
         ));
       } else {
-        // If a category became visible, we should refresh the data
+        // If a category became visible,  should refresh the data
         fetchAllData();
       }
     };
@@ -143,7 +142,7 @@ const Collection = () => {
           subId !== data.subcategoryId
         ));
       } else {
-        // If a subcategory became visible, we should refresh the data
+        // If a subcategory became visible,  should refresh the data
         fetchAllData();
       }
     };

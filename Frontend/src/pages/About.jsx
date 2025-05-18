@@ -41,14 +41,14 @@ const About = () => {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.8, duration: 0.5 }}
           >
-            C-max is a leading online store for all your electronic needs. We offer a wide range of products at competitive prices, ensuring that you get the best value for your money. Our mission is to provide our customers with the best shopping experience possible, and we are committed to delivering high-quality products and exceptional customer service.
+            C-max is a leading online store for all your electronic needs. We offer a wide range of products at competitive prices, ensuring that you get the best value for your money. Our mission is to provide our customers with the best shopping experience possible, and  are committed to delivering high-quality products and exceptional customer service.
           </motion.p>
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 1, duration: 0.5 }}
           >
-            Our team of experts is dedicated to helping you find the right products for your needs, and we are always here to answer any questions you may have. Whether you're looking for the latest gadgets or everyday essentials, C-max has you covered.
+            Our team of experts is dedicated to helping you find the right products for your needs, and  are always here to answer any questions you may have. Whether you're looking for the latest gadgets or everyday essentials, C-max has you covered.
           </motion.p>
 
           <motion.b
@@ -64,7 +64,7 @@ const About = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 1.4, duration: 0.5 }}
           >
-            Our mission is to provide our customers with the best shopping experience possible. We are committed to delivering high-quality products and exceptional customer service. Our team of experts is dedicated to helping you find the right products for your needs, and we are always here to answer any questions you may have.
+            Our mission is to provide our customers with the best shopping experience possible. We are committed to delivering high-quality products and exceptional customer service. Our team of experts is dedicated to helping you find the right products for your needs, and  are always here to answer any questions you may have.
           </motion.p>
         </motion.div>
       </div>

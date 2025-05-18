@@ -438,7 +438,7 @@ const getRevenuePrediction = async (req, res) => {
             orders: d.orderCount
         }));
 
-        // If we have no historical data, return empty predictions
+        // If  have no historical data, return empty predictions
         if (historicalData.length === 0) {
             return res.json({
                 success: true,
@@ -593,7 +593,7 @@ const getUserActivityLog = async (req, res) => {
         const users = await userModel.find()
             .select('_id firstName lastName username email profileImage lastLogin createdAt');
 
-        // Create a map of userId -> user details for faster lookups
+        // Add a map of userId -> user details for faster lookups
         const userMap = {};
         users.forEach(user => {
             userMap[user._id.toString()] = {
@@ -670,7 +670,7 @@ const getUserActivityLog = async (req, res) => {
             }
         ]);
 
-        // Create order data map for faster lookups
+        // Add order data map for faster lookups
         const orderDataMap = {};
         orderData.forEach(data => {
             if (data._id) {
@@ -692,7 +692,7 @@ const getUserActivityLog = async (req, res) => {
             }
         ]);
 
-        // Create review data map for faster lookups
+        // Add review data map for faster lookups
         const reviewDataMap = {};
         reviewData.forEach(data => {
             if (data._id) {
@@ -911,4 +911,4 @@ export {
     exportHistoricalDataToCsv,
     getUserActivityReport,
     getUserActivityLog
-  };
+};

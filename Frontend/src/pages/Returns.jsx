@@ -44,7 +44,7 @@ const Returns = () => {
 
   // Use useMemo to create and manage object URLs
   useMemo(() => {
-    // Create object URLs for new files
+    // Add object URLs for new files
     const newUrls = {};
     mediaFiles.forEach((file, index) => {
       if (!mediaObjectUrls[index]) {
@@ -301,7 +301,7 @@ const Returns = () => {
 
       setIsUploading(true);
 
-      // Create form data
+      // Add form data
       const formData = new FormData();
 
       // Add items as JSON
@@ -337,7 +337,7 @@ const Returns = () => {
         await fetchReturns();
         await fetchOrders();
 
-        // Show return history after successful submission
+        // Display return history after successful submission
         setShowReturnHistory(true);
       }
     } catch (error) {
@@ -801,35 +801,35 @@ const Returns = () => {
                   <p className="p-4 text-center text-gray-500 text-sm">No items found in this order</p>
                 ) : (
                   <div className="divide-y divide-gray-200">
-                        {selectedOrder.items.map((item, index) => (
-                          <div key={index} className={`p-3 ${isItemSelected(item) ? 'bg-blue-50' : ''}`}>
-                            <div className="flex items-start">
-                              {/* Item image */}
-                              {item.images && item.images[0] && (
-                                <img src={item.images[0]} alt={item.name} className="w-16 h-16 object-cover rounded flex-shrink-0 mr-3" />
+                    {selectedOrder.items.map((item, index) => (
+                      <div key={index} className={`p-3 ${isItemSelected(item) ? 'bg-blue-50' : ''}`}>
+                        <div className="flex items-start">
+                          {/* Item image */}
+                          {item.images && item.images[0] && (
+                            <img src={item.images[0]} alt={item.name} className="w-16 h-16 object-cover rounded flex-shrink-0 mr-3" />
+                          )}
+
+                          {/* Item details */}
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-medium mb-1 text-sm truncate">{item.name}</h3>
+                            <div className="text-xs text-gray-500">
+                              {item.size && item.size !== 'undefined' && item.size.includes('_') && <p>Size: {item.size.split('_')[0]}</p>}
+                              {item.size && item.size !== 'undefined' && item.size.includes('_') && item.size.split('_')[1] && (
+                                <p>Color: {item.size.split('_')[1].charAt(0).toUpperCase() + item.size.split('_')[1].slice(1)}</p>
                               )}
+                              <p>Price: Rs. {item.price}</p>
+                              <p>Quantity: {item.quantity}</p>
+                            </div>
+                          </div>
 
-                              {/* Item details */}
-                              <div className="flex-1 min-w-0">
-                                <h3 className="font-medium mb-1 text-sm truncate">{item.name}</h3>
-                                <div className="text-xs text-gray-500">
-                                  {item.size && item.size !== 'undefined' && item.size.includes('_') && <p>Size: {item.size.split('_')[0]}</p>}
-                                  {item.size && item.size !== 'undefined' && item.size.includes('_') && item.size.split('_')[1] && (
-                                    <p>Color: {item.size.split('_')[1].charAt(0).toUpperCase() + item.size.split('_')[1].slice(1)}</p>
-                                  )}
-                                  <p>Price: Rs. {item.price}</p>
-                                  <p>Quantity: {item.quantity}</p>
-                                </div>
-                              </div>
-
-                              {/* Action button */}
-                              <div className="ml-2 flex-shrink-0">
-                                <button
-                                  onClick={() => handleItemSelect(item)}
-                                  className={`px-2 py-1 rounded text-xs font-medium ${isItemSelected(item)
-                                    ? 'bg-red-100 text-red-800'
-                                    : 'bg-blue-100 text-blue-800'
-                                    }`}
+                          {/* Action button */}
+                          <div className="ml-2 flex-shrink-0">
+                            <button
+                              onClick={() => handleItemSelect(item)}
+                              className={`px-2 py-1 rounded text-xs font-medium ${isItemSelected(item)
+                                ? 'bg-red-100 text-red-800'
+                                : 'bg-blue-100 text-blue-800'
+                                }`}
                             >
                               {isItemSelected(item) ? 'Deselect' : 'Select'}
                             </button>

@@ -61,7 +61,7 @@ const UserActivityReport = () => {
                 // Background refresh (true parameter prevents loading state)
                 fetchLoyalCustomers(true);
 
-                // Show refresh indicator with the type of update that occurred
+                // Display refresh indicator with the type of update that occurred
                 let updateMessage = 'Data refreshed';
                 if (data.action) {
                     switch (data.action) {
@@ -80,7 +80,7 @@ const UserActivityReport = () => {
                     }
                 }
 
-                // Show toast notification for the update
+                // Display toast notification for the update
                 toast.info(updateMessage);
 
                 // Visual indicator
@@ -142,7 +142,7 @@ const UserActivityReport = () => {
             let queryParams = new URLSearchParams();
             queryParams.append('period', period);
 
-            // Only add date range parameters if we're showing the date range AND both dates are selected
+            // Only add date range parameters if 're showing the date range AND both dates are selected
             if (showDateRange && dateRange.startDate && dateRange.endDate) {
                 queryParams.append('startDate', dateRange.startDate);
                 queryParams.append('endDate', dateRange.endDate);
@@ -284,7 +284,7 @@ const UserActivityReport = () => {
                 setLoyalCustomersLoading(false);
             } else {
                 // For background refreshes, still need to turn off loading state
-                // but we do it silently
+                // but  do it silently
                 setLoyalCustomersLoading(false);
             }
         }
@@ -306,7 +306,7 @@ const UserActivityReport = () => {
             'Date': formatDate(activity.date) || ''
         }));
 
-        // Create workbook and worksheet
+        // Add workbook and worksheet
         const wb = XLSX.utils.book_new();
         const ws = XLSX.utils.json_to_sheet(exportData);
 
@@ -414,7 +414,7 @@ const UserActivityReport = () => {
             ...rows.map(row => row.join(','))
         ].join('\n');
 
-        // Create download link
+        // Add download link
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
@@ -454,7 +454,7 @@ const UserActivityReport = () => {
             ...rows.map(row => row.join(','))
         ].join('\n');
 
-        // Create download link
+        // Add download link
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
@@ -478,7 +478,7 @@ const UserActivityReport = () => {
             day: 'numeric',
             hour: '2-digit',
             minute: '2-digit',
-            hour12: true        
+            hour12: true
         });
     };
 

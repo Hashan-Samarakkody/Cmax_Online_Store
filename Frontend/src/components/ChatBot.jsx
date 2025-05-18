@@ -4,225 +4,225 @@ import { ShopContext } from '../context/ShopContext';
 import axios from 'axios';
 
 const ChatBot = () => {
-    const [isOpen, setIsOpen] = useState(false);
-    const [messages, setMessages] = useState([]);
-    const [inputMessage, setInputMessage] = useState('');
-    const [isTyping, setIsTyping] = useState(false);
-    const location = useLocation();
-    const { backendUrl, token, user } = useContext(ShopContext);
-    const messagesEndRef = useRef(null);
+  const [isOpen, setIsOpen] = useState(false);
+  const [messages, setMessages] = useState([]);
+  const [inputMessage, setInputMessage] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const location = useLocation();
+  const { backendUrl, token, user } = useContext(ShopContext);
+  const messagesEndRef = useRef(null);
 
-    // Pages where the chatbot should be available - updated to include all requested pages
-    const allowedPages = [
-        '/collection',
-        '/orders',
-        '/place-order', 
-        '/about',
-        '/contact',
-        '/cart',
-        '/returns',
-        '/profile',
-        '/home' 
-    ];
+  // Pages where the chatbot should be available - updated to include all requested pages
+  const allowedPages = [
+    '/collection',
+    '/orders',
+    '/place-order',
+    '/about',
+    '/contact',
+    '/cart',
+    '/returns',
+    '/profile',
+    '/home'
+  ];
 
-    // Function to format message text with line breaks and clickable links
-    const formatMessageText = (text) => {
-        if (!text) return '';
+  // Function to format message text with line breaks and clickable links
+  const formatMessageText = (text) => {
+    if (!text) return '';
 
-        // First, handle line breaks
-        const withLineBreaks = text.split('\n').map((line, i) => (
-            <React.Fragment key={i}>
-                {line}
-                {i !== text.split('\n').length - 1 && <br />}
-            </React.Fragment>
-        ));
+    // First, handle line breaks
+    const withLineBreaks = text.split('\n').map((line, i) => (
+      <React.Fragment key={i}>
+        {line}
+        {i !== text.split('\n').length - 1 && <br />}
+      </React.Fragment>
+    ));
 
-        return withLineBreaks;
+    return withLineBreaks;
+  };
+
+  // Auto-scroll to latest message
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    // Scroll to bottom when messages change
+    scrollToBottom();
+  }, [messages]);
+
+  useEffect(() => {
+    // Scroll to bottom when chat is opened
+    if (isOpen) {
+      scrollToBottom();
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    // Reset chat when navigating to another page
+    setMessages([
+      {
+        sender: 'bot',
+        text: 'Hello! Welcome to Cmax Online Store. How can I help you today?',
+        time: new Date()
+      }
+    ]);
+  }, [location.pathname]);
+
+  // Check if current page should display chatbot
+  const shouldDisplayChatbot = () => {
+    return allowedPages.some(page => {
+      // For the home page,  need an exact match
+      if (page === '/' && location.pathname === '/') return true;
+      // For other pages,  check if the pathname includes the page string
+      if (page !== '/') return location.pathname.includes(page);
+      return false;
+    });
+  };
+
+  const toggleChat = () => {
+    setIsOpen(!isOpen);
+  };
+
+  const handleInputChange = (e) => {
+    setInputMessage(e.target.value);
+  };
+
+  const sendMessage = async () => {
+    if (!inputMessage.trim()) return;
+
+    const newUserMessage = {
+      sender: 'user',
+      text: inputMessage,
+      time: new Date()
     };
 
-    // Auto-scroll to latest message
-    const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    };
+    setMessages(prev => [...prev, newUserMessage]);
+    setInputMessage('');
+    setIsTyping(true);
 
-    useEffect(() => {
-        // Scroll to bottom when messages change
-        scrollToBottom();
-    }, [messages]);
+    try {
+      // Get contextual response based on current page
+      let pageContext;
 
-    useEffect(() => {
-        // Scroll to bottom when chat is opened
-        if (isOpen) {
-            scrollToBottom();
-        }
-    }, [isOpen]);
+      if (location.pathname === '/') pageContext = 'home';
+      else if (location.pathname.includes('/collection')) pageContext = 'collection';
+      else if (location.pathname.includes('/orders')) pageContext = 'orders';
+      else if (location.pathname.includes('/place-order')) pageContext = 'placeorder';
+      else if (location.pathname.includes('/about')) pageContext = 'about';
+      else if (location.pathname.includes('/contact')) pageContext = 'contact';
+      else if (location.pathname.includes('/cart')) pageContext = 'cart';
+      else if (location.pathname.includes('/returns')) pageContext = 'returns';
+      else if (location.pathname.includes('/profile')) pageContext = 'profile';
+      else pageContext = 'general';
 
-    useEffect(() => {
-        // Reset chat when navigating to another page
-        setMessages([
-            {
-                sender: 'bot',
-                text: 'Hello! Welcome to Cmax Online Store. How can I help you today?',
-                time: new Date()
-            }
-        ]);
-    }, [location.pathname]);
+      // Send message to backend for processing
+      const response = await axios.post(`${backendUrl}/api/chatbot/message`, {
+        message: inputMessage,
+        pageContext,
+        userId: token ? user?.id : null
+      });
 
-    // Check if current page should display chatbot
-    const shouldDisplayChatbot = () => {
-        return allowedPages.some(page => {
-            // For the home page, we need an exact match
-            if (page === '/' && location.pathname === '/') return true;
-            // For other pages, we check if the pathname includes the page string
-            if (page !== '/') return location.pathname.includes(page);
-            return false;
-        });
-    };
+      const botResponse = {
+        sender: 'bot',
+        text: response.data.reply || "I'm sorry, I couldn't process your request. Please try again.",
+        time: new Date()
+      };
 
-    const toggleChat = () => {
-        setIsOpen(!isOpen);
-    };
+      // Simulate typing delay for more natural interaction
+      setTimeout(() => {
+        setMessages(prev => [...prev, botResponse]);
+        setIsTyping(false);
+      }, 600);
 
-    const handleInputChange = (e) => {
-        setInputMessage(e.target.value);
-    };
+    } catch (error) {
+      console.error('Error getting chatbot response:', error);
 
-    const sendMessage = async () => {
-        if (!inputMessage.trim()) return;
+      // Provide fallback response on error
+      const errorMessage = {
+        sender: 'bot',
+        text: "Sorry, I'm having trouble connecting. Please try again later.",
+        time: new Date()
+      };
 
-        const newUserMessage = {
-            sender: 'user',
-            text: inputMessage,
-            time: new Date()
-        };
+      setMessages(prev => [...prev, errorMessage]);
+      setIsTyping(false);
+    }
+  };
 
-        setMessages(prev => [...prev, newUserMessage]);
-        setInputMessage('');
-        setIsTyping(true);
+  // Handle pressing Enter to send message
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      sendMessage();
+    }
+  };
 
-        try {
-            // Get contextual response based on current page
-            let pageContext;
+  if (!shouldDisplayChatbot()) return null;
 
-            if (location.pathname === '/') pageContext = 'home';
-            else if (location.pathname.includes('/collection')) pageContext = 'collection';
-            else if (location.pathname.includes('/orders')) pageContext = 'orders';
-            else if (location.pathname.includes('/place-order')) pageContext = 'placeorder';
-            else if (location.pathname.includes('/about')) pageContext = 'about';
-            else if (location.pathname.includes('/contact')) pageContext = 'contact';
-            else if (location.pathname.includes('/cart')) pageContext = 'cart';
-            else if (location.pathname.includes('/returns')) pageContext = 'returns';
-            else if (location.pathname.includes('/profile')) pageContext = 'profile';
-            else pageContext = 'general';
+  return (
+    <div className="chatbot-container">
+      {/* Chat Toggle Button */}
+      <button
+        className="chat-toggle-btn"
+        onClick={toggleChat}
+      >
+        {isOpen ? (
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        ) : (
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+          </svg>
+        )}
+      </button>
 
-            // Send message to backend for processing
-            const response = await axios.post(`${backendUrl}/api/chatbot/message`, {
-                message: inputMessage,
-                pageContext,
-                userId: token ? user?.id : null
-            });
-
-            const botResponse = {
-                sender: 'bot',
-                text: response.data.reply || "I'm sorry, I couldn't process your request. Please try again.",
-                time: new Date()
-            };
-
-            // Simulate typing delay for more natural interaction
-            setTimeout(() => {
-                setMessages(prev => [...prev, botResponse]);
-                setIsTyping(false);
-            }, 600);
-
-        } catch (error) {
-            console.error('Error getting chatbot response:', error);
-
-            // Provide fallback response on error
-            const errorMessage = {
-                sender: 'bot',
-                text: "Sorry, I'm having trouble connecting. Please try again later.",
-                time: new Date()
-            };
-
-            setMessages(prev => [...prev, errorMessage]);
-            setIsTyping(false);
-        }
-    };
-
-    // Handle pressing Enter to send message
-    const handleKeyDown = (e) => {
-        if (e.key === 'Enter') {
-            sendMessage();
-        }
-    };
-
-    if (!shouldDisplayChatbot()) return null;
-
-    return (
-        <div className="chatbot-container">
-            {/* Chat Toggle Button */}
-            <button
-                className="chat-toggle-btn"
-                onClick={toggleChat}
-            >
-                {isOpen ? (
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                ) : (
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-                    </svg>
-                )}
-            </button>
-
-            {/* Chat Window */}
-            {isOpen && (
-                <div className="chat-window">
-                    <div className="chat-header">
-                        <h3>Cmax Support</h3>
-                    </div>
-                    <div className="chat-messages">
-                        {messages.map((msg, index) => (
-                            <div key={index} className={`message ${msg.sender}`}>
-                                <div className="message-content">
-                                    {formatMessageText(msg.text)}
-                                </div>
-                                <div className="message-time">
-                                    {new Date(msg.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                </div>
-                            </div>
-                        ))}
-                        {isTyping && (
-                            <div className="message bot">
-                                <div className="typing-indicator">
-                                    <span></span>
-                                    <span></span>
-                                    <span></span>
-                                </div>
-                            </div>
-                        )}
-                        <div ref={messagesEndRef} />
-                    </div>
-                    <div className="chat-input">
-                        <input
-                            type="text"
-                            placeholder="Type a message..."
-                            value={inputMessage}
-                            onChange={handleInputChange}
-                            onKeyDown={handleKeyDown}
-                        />
-                        <button onClick={sendMessage}>
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
-                            </svg>
-                        </button>
-                    </div>
+      {/* Chat Window */}
+      {isOpen && (
+        <div className="chat-window">
+          <div className="chat-header">
+            <h3>Cmax Support</h3>
+          </div>
+          <div className="chat-messages">
+            {messages.map((msg, index) => (
+              <div key={index} className={`message ${msg.sender}`}>
+                <div className="message-content">
+                  {formatMessageText(msg.text)}
                 </div>
+                <div className="message-time">
+                  {new Date(msg.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </div>
+              </div>
+            ))}
+            {isTyping && (
+              <div className="message bot">
+                <div className="typing-indicator">
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                </div>
+              </div>
             )}
+            <div ref={messagesEndRef} />
+          </div>
+          <div className="chat-input">
+            <input
+              type="text"
+              placeholder="Type a message..."
+              value={inputMessage}
+              onChange={handleInputChange}
+              onKeyDown={handleKeyDown}
+            />
+            <button onClick={sendMessage}>
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
 
-            <style>
-                {`
+      <style>
+        {`
                     .chatbot-container {
   position: fixed;
   bottom: 20px;
@@ -420,10 +420,10 @@ const ChatBot = () => {
   }
 }
                 `}
-            </style>
-        </div>
+      </style>
+    </div>
 
-    );
+  );
 };
 
 export default ChatBot;

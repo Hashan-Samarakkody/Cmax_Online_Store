@@ -16,7 +16,7 @@ const recordInteraction = async (req, res) => {
             purchase: 10
         };
 
-        // Create or update the interaction
+        // Add or update the interaction
         const interaction = await userProductInteractionModel.findOneAndUpdate(
             { userId, productId, interactionType },
             {
@@ -105,7 +105,7 @@ const getRecommendations = async (req, res) => {
             .populate('subcategory', 'name')
             .limit(parseInt(limit));
 
-        // 5. If we don't have enough recommendations, add some bestsellers
+        // 5. If  don't have enough recommendations, add some bestsellers
         let recommendations = similarProducts;
 
         if (recommendations.length < limit) {

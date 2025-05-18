@@ -19,7 +19,7 @@ const sendOrderConfirmationEmail = async (userId, order) => {
         const user = await userModel.findById(userId);
         if (!user || !user.email) return;
 
-        // Create email transporter
+        // Add email transporter
         const transporter = nodemailer.createTransport({
             service: 'gmail',
             auth: {
@@ -174,7 +174,7 @@ const placeOrder = async (req, res) => {
     try {
         const { userId, items, amount, address } = req.body
 
-        // Ensure we have complete address information
+        // Ensure  have complete address information
         if (!address || !address.firstName || !address.street || !address.city || !address.state) {
             return res.json({ success: false, message: 'Complete address information is required' });
         }
@@ -328,7 +328,7 @@ const sendOrderStatusUpdateEmail = async (userId, order, trackingId = null) => {
         const user = await userModel.findById(userId);
         if (!user || !user.email) return;
 
-        // Create email transporter
+        // Add email transporter
         const transporter = nodemailer.createTransport({
             service: 'gmail',
             auth: {

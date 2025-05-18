@@ -139,7 +139,7 @@ const ReturnRequests = ({ token }) => {
 		}
 
 		setFilteredReturns(results);
-	  };
+	};
 
 	// Add search handler function
 	const handleSearch = (e) => {
@@ -157,7 +157,7 @@ const ReturnRequests = ({ token }) => {
 		setDateRange({ startDate: null, endDate: null });
 		setIsSearchActive(false);
 		setFilteredReturns(returns);
-  };
+	};
 
 	useEffect(() => {
 		if (token) {
@@ -185,12 +185,12 @@ const ReturnRequests = ({ token }) => {
 				WebSocketService.off('returnStatusUpdate', handleReturnStatusUpdate);
 			};
 		}
-	}, [token, currentPage, itemsPerPage]); 
+	}, [token, currentPage, itemsPerPage]);
 
 
 	// Fetch original order details
 	const fetchOrderDetails = async (orderId) => {
-		// If we already have fetched this order, don't fetch again
+		// If  already have fetched this order, don't fetch again
 		if (orderDetails[orderId]) return;
 
 		setIsLoadingOrder(true);
@@ -493,9 +493,9 @@ const ReturnRequests = ({ token }) => {
 				)}
 			</div>
 		);
-  };
+	};
 
-	// Create pagination UI component
+	// Add pagination UI component
 	const Pagination = () => {
 		const pageNumbers = [];
 
@@ -503,7 +503,7 @@ const ReturnRequests = ({ token }) => {
 		let startPage = Math.max(1, currentPage - 2);
 		let endPage = Math.min(totalPages, startPage + 4);
 
-		// Adjust if we're near the end
+		// Adjust if 're near the end
 		if (endPage - startPage < 4 && startPage > 1) {
 			startPage = Math.max(1, endPage - 4);
 		}
@@ -721,12 +721,12 @@ const ReturnRequests = ({ token }) => {
 				)}
 			</div>
 
-			<SearchBox/>
+			<SearchBox />
 
 			{/* Table to display return requests */}
 			<div className="bg-white rounded-lg shadow overflow-hidden">
 				<div className="overflow-x-auto">
-					<Pagination/>
+					<Pagination />
 					<table className="min-w-full divide-y divide-gray-500">
 						<thead className="bg-gray-50">
 							<tr>

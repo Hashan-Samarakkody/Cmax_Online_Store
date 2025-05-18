@@ -581,7 +581,7 @@ const Orders = () => {
 
                   <div className='flex gap-1 mx-1'>
                     {[...Array(totalPages)].map((_, index) => {
-                      // Show limited page numbers with ellipsis for better UX
+                      // Display limited page numbers with ellipsis for better UX
                       const pageNumber = index + 1;
 
                       // Always show first, last, and pages around current
@@ -604,7 +604,7 @@ const Orders = () => {
                         (pageNumber === 2 && currentPage > 3) ||
                         (pageNumber === totalPages - 1 && currentPage < totalPages - 2)
                       ) {
-                        // Show ellipsis when needed
+                        // Display ellipsis when needed
                         return <span key={pageNumber} className="px-1">...</span>;
                       }
 
