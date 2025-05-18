@@ -111,7 +111,7 @@ const Profile = ({ token, setToken }) => {
 
             setFormData({ ...formData, profileImage: file });
 
-            // Create and set preview URL
+            // Add and set preview URL
             const previewUrl = URL.createObjectURL(file);
             setPreviewImage(previewUrl);
         }

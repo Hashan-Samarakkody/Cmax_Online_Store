@@ -74,9 +74,7 @@ const AdminChatBot = ({ token }) => {
     // Check if current page should display chatbot
     const shouldDisplayChatbot = () => {
         return allowedPages.some(page => {
-            // For the home page, we need an exact match
             if (page === '/' && location.pathname === '/') return true;
-            // For other pages, we check if the pathname includes the page string
             if (page !== '/') return location.pathname.includes(page);
             return false;
         });

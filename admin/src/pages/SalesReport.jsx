@@ -42,7 +42,7 @@ const SalesReport = () => {
             // Check if the response is actually a PDF (has appropriate content type)
             const contentType = response.headers['content-type'];
             if (contentType && contentType.includes('application/pdf')) {
-                // Create download link for PDF
+                // Add download link for PDF
                 const url = window.URL.createObjectURL(new Blob([response.data]));
                 const link = document.createElement('a');
                 link.href = url;
@@ -84,7 +84,7 @@ const SalesReport = () => {
                         }
                     };
                     reader.readAsText(error.response.data);
-                    return; // Return early as we're setting the error asynchronously
+                    return; // Return early as 're setting the error asynchronously
                 } else if (error.response.data?.message) {
                     errorMessage = error.response.data.message;
                 }

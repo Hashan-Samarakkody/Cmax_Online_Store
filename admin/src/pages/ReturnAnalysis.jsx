@@ -85,7 +85,7 @@ const ReturnAnalysis = ({ token }) => {
 
     // Process return rates by category
     const processReturnsByCategory = (returnsData, productsData, categoriesData, ordersData) => {
-        // Create a map of product IDs to their categories
+        // Add a map of product IDs to their categories
         const productCategoryMap = {};
         productsData.forEach(product => {
             productCategoryMap[product._id] = {
@@ -94,7 +94,7 @@ const ReturnAnalysis = ({ token }) => {
             };
         });
 
-        // Create category name map
+        // Add category name map
         const categoryNameMap = {};
         categoriesData.forEach(category => {
             categoryNameMap[category._id] = category.name;
@@ -250,22 +250,22 @@ const ReturnAnalysis = ({ token }) => {
     if (loading) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[60vh]">
-                   <div className="relative w-24 h-24">
-                     {/* Pulsing circle animation */}
-                     <div className="absolute top-0 left-0 w-full h-full border-4 border-gray-200 rounded-full"></div>
-                     <div className="absolute top-0 left-0 w-full h-full border-t-4 border-green-400 rounded-full animate-spin"></div>
-           
-                     {/* Shop icon or logo in center */}
-                     <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                       <img
-                         src={assets.logo}
-                         alt="Loading"
-                         className="w-12 h-12 object-contain animate-pulse"
-                       />
-                     </div>
-                   </div>
+                <div className="relative w-24 h-24">
+                    {/* Pulsing circle animation */}
+                    <div className="absolute top-0 left-0 w-full h-full border-4 border-gray-200 rounded-full"></div>
+                    <div className="absolute top-0 left-0 w-full h-full border-t-4 border-green-400 rounded-full animate-spin"></div>
+
+                    {/* Shop icon or logo in center */}
+                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                        <img
+                            src={assets.logo}
+                            alt="Loading"
+                            className="w-12 h-12 object-contain animate-pulse"
+                        />
+                    </div>
+                </div>
                 <p className="mt-4 text-gray-600 font-medium">Loading Return Analysis Report...</p>
-                 </div>
+            </div>
         );
     }
 

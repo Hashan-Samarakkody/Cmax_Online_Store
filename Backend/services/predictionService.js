@@ -76,7 +76,7 @@ const predictionService = {
     // Get revenue predictions for the next 3 months
     async getRevenuePredictions(historicalData) {
         try {
-            // If we have precomputed forecasts, use them as the base prediction
+            // If  have precomputed forecasts, use them as the base prediction
             if (this.precomputedForecast) {
                 // Start with the precomputed forecast
                 const predictions = [];

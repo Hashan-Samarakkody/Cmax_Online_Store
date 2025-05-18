@@ -31,7 +31,7 @@ const adminLogin = async (req, res) => {
         admin.lastLogin = Date.now();
         await admin.save();
 
-        // Create token
+        // Add token
         const token = jwt.sign(
             {
                 id: admin._id,
@@ -94,7 +94,7 @@ const registerAdmin = async (req, res) => {
         let profileImageUrl = 'default-admin.png';
         if (req.file) {
             try {
-                // Create a data URI from the buffer
+                // Add a data URI from the buffer
                 const dataUri = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
 
                 // Upload directly to Cloudinary
@@ -110,7 +110,7 @@ const registerAdmin = async (req, res) => {
             }
         }
 
-        // Create new admin with appropriate permissions based on role
+        // Add new admin with appropriate permissions based on role
         const permissions = {
             manageProducts: role === 'superadmin' || role === 'manager',
             manageOrders: true,
@@ -133,7 +133,7 @@ const registerAdmin = async (req, res) => {
         // Save admin to database
         const admin = await newAdmin.save();
 
-        // Create token
+        // Add token
         const token = jwt.sign(
             {
                 id: admin._id,
@@ -222,7 +222,7 @@ const updateAdminProfile = async (req, res) => {
         const updateData = { name, username, email };
         if (req.file) {
             try {
-                // Create a data URI from the buffer for direct Cloudinary upload
+                // Add a data URI from the buffer for direct Cloudinary upload
                 const dataUri = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
 
                 // Upload directly to Cloudinary
@@ -560,7 +560,7 @@ const resetPassword = async (req, res) => {
 const toggleAdminStatus = async (req, res) => {
     try {
         const { adminId } = req.params;
-        const requestingAdmin = req.admin; // This is from the auth middleware
+        const requestingAdmin = req.admin; 
 
         // Find the admin to be activated/deactivated
         const targetAdmin = await adminModel.findById(adminId);

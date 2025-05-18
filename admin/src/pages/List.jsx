@@ -135,7 +135,7 @@ const ProductList = ({ token }) => {
       return;
     }
 
-    // Create a new criteria object with all values set to false
+    // Add a new criteria object with all values set to false
     const newCriteria = {
       productId: false,
       name: false,
@@ -367,7 +367,7 @@ const ProductList = ({ token }) => {
             <div className="flex items-center">
               {/* Display page numbers */}
               {Array.from({ length: Math.min(5, Math.ceil(filteredList.length / itemsPerPage)) }, (_, i) => {
-                // Ensure we show the correct page numbers around the current page
+                // Ensure  show the correct page numbers around the current page
                 let pageNum;
                 const totalPages = Math.ceil(filteredList.length / itemsPerPage);
 
@@ -375,7 +375,7 @@ const ProductList = ({ token }) => {
                   // If total pages are 5 or less, show all pages
                   pageNum = i + 1;
                 } else {
-                  
+
                   if (currentPage <= 3) {
                     pageNum = i + 1;
                   } else if (currentPage >= totalPages - 2) {
@@ -390,8 +390,8 @@ const ProductList = ({ token }) => {
                     key={pageNum}
                     onClick={() => paginate(pageNum)}
                     className={`mx-1 px-4 py-2 border rounded ${currentPage === pageNum
-                        ? 'bg-blue-500 text-white'
-                        : 'bg-white text-blue-500 hover:bg-blue-50'
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-white text-blue-500 hover:bg-blue-50'
                       }`}
                   >
                     {pageNum}
@@ -406,8 +406,8 @@ const ProductList = ({ token }) => {
                   <button
                     onClick={() => paginate(Math.ceil(filteredList.length / itemsPerPage))}
                     className={`mx-1 px-4 py-2 border rounded ${currentPage === Math.ceil(filteredList.length / itemsPerPage)
-                        ? 'bg-blue-500 text-white'
-                        : 'bg-white text-blue-500 hover:bg-blue-50'
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-white text-blue-500 hover:bg-blue-50'
                       }`}
                   >
                     {Math.ceil(filteredList.length / itemsPerPage)}
@@ -420,8 +420,8 @@ const ProductList = ({ token }) => {
               onClick={() => paginate(currentPage + 1)}
               disabled={currentPage === Math.ceil(filteredList.length / itemsPerPage)}
               className={`px-4 py-2 border rounded ${currentPage === Math.ceil(filteredList.length / itemsPerPage)
-                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                  : 'bg-white text-blue-500 hover:bg-blue-50'
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                : 'bg-white text-blue-500 hover:bg-blue-50'
                 }`}
             >
               Next

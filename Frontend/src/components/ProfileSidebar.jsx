@@ -76,7 +76,6 @@ const ProfileSidebar = ({ user, setActiveSection, activeSection, onShowPasswordM
             if (response.data.success) {
                 toast.success('Profile image updated successfully');
                 if (response.data.user) {
-                    // This will refresh the image without requiring a full page reload
                     window.location.reload();
                 }
             } else {

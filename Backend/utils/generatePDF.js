@@ -70,7 +70,7 @@ export const generateOrderPDF = async (req, res) => {
                     color = item.color;
                 }
 
-                // Create a unique key for grouping
+                // Add a unique key for grouping
                 const itemKey = `${item.name}|${size}|${color}`;
 
                 if (!groupedItems[itemKey]) {
@@ -101,7 +101,7 @@ export const generateOrderPDF = async (req, res) => {
             });
         }
 
-        // Create PDF document
+        // Add PDF document
         const doc = new PDFDocument({ margin: 30, size: 'A4' });
         const outputPath = path.join(process.cwd(), 'placed_orders_report.pdf');
         const writeStream = fs.createWriteStream(outputPath);
@@ -244,7 +244,7 @@ export const generateOrderLabel = async (req, res) => {
         // Get customer information if needed
         const user = await userModel.findById(order.userId);
 
-        // Create PDF document in landscape mode (A5 size)
+        // Add PDF document in landscape mode (A5 size)
         const doc = new PDFDocument({
             size: [595, 420], // A5 size in landscape mode
             margins: {
@@ -546,7 +546,7 @@ function createTableLabel(doc, order, centerX, titleY, taglineY, storeName, tagl
 
         currentY += lineHeight;
 
-        // Check if we need yet another page
+        // Check if  need yet another page
         if (currentY > footerY - 30) {
             addFooter(doc, footerY);
             doc.addPage();
@@ -686,7 +686,7 @@ function formatDateForFilename(date) {
 
 // Helper function to process sales data and organize hierarchically
 async function processSalesData(orders) {
-    // Create a hierarchical structure: Category -> Subcategory -> Item -> Variations
+    // Add a hierarchical structure: Category -> Subcategory -> Item -> Variations
     const salesHierarchy = {};
 
     // Process each order's items
@@ -709,7 +709,7 @@ async function processSalesData(orders) {
                         product = await productModel.findOne({ productId: orderItem.productId });
                     }
                 } catch (err) {
-                    // This catches the ObjectId casting error
+
                     if (err.name === 'CastError' && typeof orderItem.productId === 'string') {
                         // Try to find by productId field instead
                         product = await productModel.findOne({ productId: orderItem.productId });
@@ -888,7 +888,7 @@ async function processSalesData(orders) {
 
 // Helper function to generate PDF report
 async function generatePDFReport(reportData, startDate, endDate) {
-    // Create PDF document
+    // Add PDF document
     const doc = new PDFDocument({ margin: 30, size: 'A4', autoFirstPage: true });
     const outputPath = path.join(process.cwd(), 'sales_report.pdf');
     const writeStream = fs.createWriteStream(outputPath);
@@ -950,7 +950,7 @@ async function generatePDFReport(reportData, startDate, endDate) {
     let rowColor = 1; // 0 = white, 1 = light gray
 
     reportData.forEach(row => {
-        // Check if we need a new page
+        // Check if  need a new page
         if (yPos > doc.page.height - 70) {
 
             // Add new page

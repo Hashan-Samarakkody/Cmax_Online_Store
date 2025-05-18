@@ -45,7 +45,7 @@ const Orders = ({ token }) => {
     }
   };
 
-  
+
 
   // Update pagination and displayed orders whenever filteredOrders or pagination settings change
   useEffect(() => {
@@ -191,7 +191,7 @@ const Orders = ({ token }) => {
         responseType: 'blob'
       });
 
-      // Create a link to download the PDF
+      // Add a link to download the PDF
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
@@ -216,7 +216,7 @@ const Orders = ({ token }) => {
         params: { type: labelType }, // Pass label type as query parameter
         responseType: 'blob'
       });
-      // Create a link to download the PDF
+      // Add a link to download the PDF
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;

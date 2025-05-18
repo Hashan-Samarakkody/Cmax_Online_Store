@@ -135,7 +135,7 @@ const SignUp = () => {
 
     setProfileImage(file);
 
-    // Create preview URL
+    // Add preview URL
     const reader = new FileReader();
     reader.onloadend = () => {
       setPreviewImage(reader.result);
@@ -239,7 +239,7 @@ const SignUp = () => {
     setIsSubmitting(true);
 
     try {
-      // Create form data for multipart form submission
+      // Add form data for multipart form submission
       const formData = new FormData();
       formData.append('firstName', firstName);
       formData.append('lastName', lastName);

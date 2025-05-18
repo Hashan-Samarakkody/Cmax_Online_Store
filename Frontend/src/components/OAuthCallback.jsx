@@ -34,7 +34,7 @@ const OAuthCallback = () => {
             <div className="text-center">
                 <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-green-500 mx-auto"></div>
                 <p className="mt-4 text-lg">Processing your login...</p>
-                <p className="text-gray-500 text-sm mt-2">Please wait while we set up your profile</p>
+                <p className="text-gray-500 text-sm mt-2">Please wait while  set up your profile</p>
             </div>
         </div>
     );

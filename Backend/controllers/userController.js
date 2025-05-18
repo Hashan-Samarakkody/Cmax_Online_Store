@@ -103,7 +103,7 @@ const registerUser = async (req, res) => {
         // Upload profile image to Cloudinary if provided
         if (req.file) {
             try {
-                // Create a data URI from the buffer
+                // Add a data URI from the buffer
                 const fileBuffer = req.file.buffer;
                 const fileType = req.file.mimetype;
                 const fileEncoding = 'base64';
@@ -130,7 +130,7 @@ const registerUser = async (req, res) => {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        // Create new user with address details
+        // Add new user with address details
         const newUser = new userModel({
             name,
             email,
@@ -208,7 +208,7 @@ const sendResetCode = async (req, res) => {
         user.resetCodeExpires = resetCodeExpires;
         await user.save();
 
-        // Create email transporter
+        // Add email transporter
         const transporter = nodemailer.createTransport({
             service: 'gmail',
             auth: {
@@ -403,7 +403,7 @@ const updateUserProfile = async (req, res) => {
         // Handle profile image upload if file is provided
         if (req.file) {
             try {
-                // Create a data URI from the buffer
+                // Add a data URI from the buffer
                 const fileBuffer = req.file.buffer;
                 const fileType = req.file.mimetype;
                 const fileEncoding = 'base64';
@@ -580,7 +580,7 @@ const addUserAddress = async (req, res) => {
             user.addresses = [];
         }
 
-        // Create new address with MongoDB ObjectId
+        // Add new address with MongoDB ObjectId
         const newAddress = {
             _id: new mongoose.Types.ObjectId(),
             addressName,
@@ -681,13 +681,13 @@ const deleteUserAddress = async (req, res) => {
             return res.status(404).json({ success: false, message: "Address not found" });
         }
 
-        // Check if we're removing a default address
+        // Check if 're removing a default address
         const isRemovingDefault = user.addresses[addressIndex].isDefault;
 
         // Remove the address
         user.addresses.splice(addressIndex, 1);
 
-        // If we removed the default address and have remaining addresses, set a new default
+        // If  removed the default address and have remaining addresses, set a new default
         if (isRemovingDefault && user.addresses.length > 0) {
             user.addresses[0].isDefault = true;
         }
@@ -783,7 +783,7 @@ const sendChangePasswordCode = async (req, res) => {
         user.resetCodeExpires = resetCodeExpires;
         await user.save();
 
-        // Create email transporter
+        // Add email transporter
         const transporter = nodemailer.createTransport({
             service: 'gmail',
             auth: {
@@ -950,7 +950,7 @@ const getLoyalCustomers = async (req, res) => {
             }
         ]);
 
-        // Create a map of user IDs to their review data
+        // Add a map of user IDs to their review data
         const reviewMap = {};
         customerReviews.forEach(review => {
             reviewMap[review._id] = {

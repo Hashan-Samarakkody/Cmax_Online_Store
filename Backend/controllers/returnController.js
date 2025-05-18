@@ -8,7 +8,7 @@ import generateOrderId from '../utils/generateOrderId.js';
 import { v2 as cloudinary } from 'cloudinary';
 import fs from 'fs';
 
-// Create return request
+// Add return request
 const createReturnRequest = async (req, res) => {
     try {
         const { orderId, items, reason } = req.body;
@@ -117,7 +117,7 @@ const createReturnRequest = async (req, res) => {
             }
         }
 
-        // Create return record
+        // Add return record
         const returnData = {
             returnId: returnId,
             originalOrderId: orderId,
@@ -397,7 +397,7 @@ const sendReturnRequestEmail = async (userId, returnData, originalOrder) => {
                     <p>2. If approved, you will receive return instructions and a shipping label by email.</p>
                     <p>3. Pack the item(s) in their original packaging if possible.</p>
                     <p>4. Attach the provided shipping label and drop off the package at the designated carrier.</p>
-                    <p>5. Once we receive and inspect your return, your refund will be processed.</p>
+                    <p>5. Once  receive and inspect your return, your refund will be processed.</p>
                 </div>
                 
                 <div style="margin-top: 20px;">
