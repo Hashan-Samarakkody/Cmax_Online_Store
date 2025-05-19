@@ -116,26 +116,41 @@ const SignUp = () => {
     window.location.href = `${backendUrl}/api/user/auth/facebook`;
   };
 
-  // Handle image selection
+  // Handle image change
   const handleImageChange = (e) => {
     const file = e.target.files[0];
-    if (!file) return;
+    if (!file) {
+      return;
+    }
 
-    // Clear any previous image error
+    // Clear previous errors
     setErrors({ ...errors, profileImage: '' });
 
-    // Validate image
-    if (!validateImageFile(file)) {
+    // Check file type
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      console.error("Invalid file type:", file.type);
       setErrors({
         ...errors,
-        profileImage: 'Please select a valid image file (JPEG, PNG or WebP) under 5MB'
+        profileImage: 'Please select a valid image (JPEG, PNG or WebP)'
+      });
+      return;
+    }
+
+    // Check file size (3MB max)
+    const maxSize = 3 * 1024 * 1024;
+    if (file.size > maxSize) {
+      console.error("File too large:", file.size);
+      setErrors({
+        ...errors,
+        profileImage: 'Image size should be less than 3MB'
       });
       return;
     }
 
     setProfileImage(file);
 
-    // Add preview URL
+    // Create preview
     const reader = new FileReader();
     reader.onloadend = () => {
       setPreviewImage(reader.result);
@@ -247,13 +262,19 @@ const SignUp = () => {
       formData.append('password', password);
       formData.append('username', username);
       if (phoneNumber) formData.append('phoneNumber', phoneNumber);
-      if (profileImage) formData.append('profileImage', profileImage);
+
+      // Add profile image if selected
+      if (profileImage) {
+        // Verify file properties
+        formData.append('profileImage', profileImage);
+      }
 
       const response = await axios.post(`${backendUrl}/api/user/register`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         }
       });
+
 
       if (response.data.success) {
         toast.success('Account created successfully!');
@@ -265,7 +286,7 @@ const SignUp = () => {
         toast.error(response.data.message);
       }
     } catch (error) {
-      console.log(error);
+      console.error("Registration error:", error);
       const errorMessage = error.response?.data?.message || error.message || 'An error occurred';
       setFormError(errorMessage);
       toast.error(errorMessage);
