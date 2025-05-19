@@ -192,8 +192,22 @@ const ProductList = ({ token }) => {
 
     // Define the handler for new products
     const handleNewProduct = (newProduct) => {
-      setList((prevList) => [...prevList, newProduct.product]);
-      setFilteredList((prevList) => [...prevList, newProduct.product]);
+      if (!newProduct || !newProduct.product || !newProduct.product._id) return;
+
+      setList((prevList) => {
+        // Check if product with this ID already exists
+        if (prevList.some(item => item._id === newProduct.product._id)) {
+          return prevList;
+        }
+        return [...prevList, newProduct.product];
+      });
+
+      setFilteredList((prevList) => {
+        if (prevList.some(item => item._id === newProduct.product._id)) {
+          return prevList;
+        }
+        return [...prevList, newProduct.product];
+      });
     };
 
     // Define handler for deleted products
@@ -204,17 +218,20 @@ const ProductList = ({ token }) => {
 
     // Define handler for updated products
     const handleUpdateProduct = (data) => {
+      if (!data || !data.product || !data.product._id) return;
+
       setList((prevList) => prevList.map(item =>
-        item.productId === data.product.productId ? data.product : item
+        item._id === data.product._id ? data.product : item
       ));
+
       setFilteredList((prevList) => prevList.map(item =>
-        item.productId === data.product.productId ? data.product : item
+        item._id === data.product._id ? data.product : item
       ));
     };
 
     // Define handler for product visibility changes
     const handleProductVisibilityChanged = (data) => {
-      if (data && data.productId) {
+      if (!data || !data.productId) {
         setList(prevList =>
           prevList.map(product =>
             product._id === data.productId
