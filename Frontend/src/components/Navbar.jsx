@@ -93,7 +93,7 @@ const Navbar = () => {
 				<div className='group relative'>
 					<div className='flex items-center cursor-pointer'>
 						{token? (
-							<div className='flex items-center gap-2'>
+							<div className='flex items-center gap-2' onClick={()=> navigate('/profile')}>
 								<div className='w-8 h-8 rounded-full overflow-hidden border-2 border-gray-200'>
 									{user?.profileImage ? (
 										<img
@@ -127,7 +127,7 @@ const Navbar = () => {
 							<div className='shadow-lg w-70 py-3 bg-white rounded-lg border border-gray-100 overflow-hidden'>
 								{/* User info section */}
 								<div className='px-5 pb-3 mb-2 border-b border-gray-100'>
-									<div className='flex items-center gap-3 mb-1'>
+									<div className='flex items-center gap-3 mb-1 cursor-pointer' onClick={() => navigate('/profile')}>
 										<div className='w-10 h-10 rounded-full overflow-hidden'>
 											{user?.profileImage ? (
 												<img
