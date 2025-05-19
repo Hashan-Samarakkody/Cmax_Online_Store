@@ -158,7 +158,7 @@ const Edit = ({ token }) => {
             setImagesToDelete(prev => [...prev, newImages[index]]);
         }
 
-        // Remove the image from the array
+        // Remove the image from the array - setting to null preserves the index positions
         newImages[index] = null;
         setImages(newImages);
 
@@ -216,18 +216,19 @@ const Edit = ({ token }) => {
             return;
         }
 
+        // Validate Colors (if enabled)
+        if (hasColors && colors.length === 0) {
+            toast.error('Please add at least one color.');
+            return;
+        }
+        
         // Make sure at least one image remains
         const remainingImages = images.filter(img => img !== null);
         if (remainingImages.length === 0) {
             toast.error('Please include at least one product image.');
             return;
         }
-
-        // Validate Colors (if enabled)
-        if (hasColors && colors.length === 0) {
-            toast.error('Please add at least one color.');
-            return;
-        }
+    
 
         // Prepare form data
         const formData = new FormData();
@@ -251,20 +252,19 @@ const Edit = ({ token }) => {
             formData.append('colors', JSON.stringify(colors));
         }
 
-        // Add images to keep (URLs) and newly uploaded images (Files)
-        // First, ensure the existing image URLs are preserved exactly as they were
+        // Add existing images (URLs) to keep
         const existingUrlImages = images.filter(img => typeof img === 'string');
         existingUrlImages.forEach((imageUrl, idx) => {
             formData.append(`existingImages[${idx}]`, imageUrl);
         });
 
-        // Then add any new image files separately
+        // Add new image files
         const newImageFiles = images.filter(img => img instanceof File);
         newImageFiles.forEach((imageFile, idx) => {
             formData.append(`newImages[${idx}]`, imageFile);
         });
 
-        // Add list of images to delete
+        // Add list of images to delete from cloud storage
         if (imagesToDelete.length > 0) {
             formData.append('imagesToDelete', JSON.stringify(imagesToDelete));
         }

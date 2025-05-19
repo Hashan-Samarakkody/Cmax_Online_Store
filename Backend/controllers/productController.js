@@ -344,14 +344,15 @@ const updateProduct = async (req, res) => {
             });
         }
 
-        // Validate subcategory
-        const subcategoryExists = await Subcategory.findById(subcategory);
-        if (!subcategoryExists) {
-            return res.status(400).json({ success: false, message: 'Invalid subcategory ID' });
+        // Validate subcategory if provided
+        if (subcategory) {
+            const subcategoryExists = await Subcategory.findById(subcategory);
+            if (!subcategoryExists) {
+                return res.status(400).json({ success: false, message: 'Invalid subcategory ID' });
+            }
         }
 
-
-        // Process existing images - IMPROVED HANDLING
+        // Process existing images with improved handling
         let existingImages = [];
         Object.keys(req.body).forEach(key => {
             if (key.startsWith('existingImages[')) {
@@ -363,10 +364,28 @@ const updateProduct = async (req, res) => {
         // Filter out any undefined elements
         existingImages = existingImages.filter(img => img !== undefined);
 
-        // If no existing images were found in the form data but the product has images,
-        // use the existing product's images to prevent data loss
-        if (existingImages.length === 0 && existingProduct.images && existingProduct.images.length > 0) {
-            existingImages = [...existingProduct.images];
+        // Process images to delete if any
+        if (req.body.imagesToDelete) {
+            try {
+                const imagesToDelete = JSON.parse(req.body.imagesToDelete);
+
+                // Delete each image from Cloudinary
+                for (const imageUrl of imagesToDelete) {
+                    // Extract the public_id from the Cloudinary URL
+                    const publicIdMatch = imageUrl.match(/\/v\d+\/([^/]+)\.\w+$/);
+                    const publicId = publicIdMatch ? publicIdMatch[1] : null;
+
+                    if (publicId) {
+                        await cloudinary.uploader.destroy(publicId);
+                        console.log(`Deleted image: ${publicId}`);
+                    }
+                }
+
+                // Also remove these images from existingImages array if they're still there
+                existingImages = existingImages.filter(img => !imagesToDelete.includes(img));
+            } catch (e) {
+                console.error('Error deleting images from storage:', e);
+            }
         }
 
         // Process new images
@@ -400,41 +419,53 @@ const updateProduct = async (req, res) => {
         // Combine existing and new images
         const updatedImages = [...existingImages, ...newImagesUrls];
 
-        // NEW VALIDATION: Ensure there's at least one image before updating
-        if (updatedImages.length === 0) {
-            return res.status(400).json({
-                success: false,
-                message: 'At least one product image is required. Please add an image before updating.'
-            });
-        }
-
-        // Process images to delete if any
-        let imagesToDelete = [];
-        if (req.body.imagesToDelete) {
-            try {
-                imagesToDelete = JSON.parse(req.body.imagesToDelete);
-                console.log('Images marked for deletion:', imagesToDelete.length);
-            } catch (e) {
-                console.error('Error parsing imagesToDelete:', e);
+        // Only validate images if they're being modified
+        if (req.body.imagesToDelete || newImageFiles.length > 0) {
+            // Ensure there's at least one image before updating
+            if (updatedImages.length === 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'At least one product image is required. Please add an image before updating.'
+                });
             }
         }
 
-        // Prepare update data
-        const updateData = {
-            name,
-            description,
-            category,
-            price: Number(price),
-            subcategory,
-            bestseller: bestseller === 'true' ? true : false,
-            sizes: hasSizes === 'true' && sizes ? JSON.parse(sizes) : [],
-            colors: hasColors === 'true' && colors ? JSON.parse(colors) : [],
-            images: updatedImages,
-            hasSizes: hasSizes === 'true',
-            hasColors: hasColors === 'true',
-        };
+        // Prepare update data - only include fields that were provided
+        const updateData = {};
 
-        // Update the product
+        if (name !== undefined) updateData.name = name;
+        if (description !== undefined) updateData.description = description;
+        if (category !== undefined) updateData.category = category;
+        if (price !== undefined) updateData.price = Number(price);
+        if (subcategory !== undefined) updateData.subcategory = subcategory;
+        if (bestseller !== undefined) updateData.bestseller = bestseller === 'true' ? true : false;
+
+        // Only update sizes if hasSizes was provided
+        if (hasSizes !== undefined) {
+            updateData.hasSizes = hasSizes === 'true';
+            if (updateData.hasSizes && sizes) {
+                updateData.sizes = JSON.parse(sizes);
+            } else if (!updateData.hasSizes) {
+                updateData.sizes = [];
+            }
+        }
+
+        // Only update colors if hasColors was provided
+        if (hasColors !== undefined) {
+            updateData.hasColors = hasColors === 'true';
+            if (updateData.hasColors && colors) {
+                updateData.colors = JSON.parse(colors);
+            } else if (!updateData.hasColors) {
+                updateData.colors = [];
+            }
+        }
+
+        // Only update images if they were modified
+        if (updatedImages.length > 0 || req.body.imagesToDelete) {
+            updateData.images = updatedImages;
+        }
+
+        // Update the product with only the changed fields
         const updatedProductDoc = await productModel.findOneAndUpdate(
             { productId },
             updateData,
@@ -450,7 +481,7 @@ const updateProduct = async (req, res) => {
         res.json({
             success: true,
             message: 'Product updated successfully!',
-            images: updatedProductDoc.images // Send back the updated images array for confirmation
+            product: updatedProductDoc
         });
 
         // Broadcast fully populated product update (after response is sent)
