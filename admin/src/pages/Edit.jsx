@@ -17,7 +17,7 @@ const Edit = ({ token }) => {
     const [selectedCategory, setSelectedCategory] = useState('');
     const [selectedSubCategory, setSelectedSubCategory] = useState('');
     const [images, setImages] = useState([]);
-    const [imagesToDelete, setImagesToDelete] = useState([]); // Track images to delete
+    const [imagesToDelete, setImagesToDelete] = useState([]);
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
     const [price, setPrice] = useState('');
@@ -30,6 +30,7 @@ const Edit = ({ token }) => {
     const [loading, setLoading] = useState(true);
     const [initialLoad, setInitialLoad] = useState(true);
     const [processingImage, setProcessingImage] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Fetch categories
     useEffect(() => {
@@ -97,7 +98,7 @@ const Edit = ({ token }) => {
             const category = categories.find(cat => cat._id === selectedCategory);
             if (category && category.subcategories) {
                 setFilteredSubcategories(category.subcategories);
-                setInitialLoad(false); // Mark initial load as complete
+                setInitialLoad(false);
             }
         }
     }, [categories, selectedCategory, initialLoad]);
@@ -158,7 +159,7 @@ const Edit = ({ token }) => {
             setImagesToDelete(prev => [...prev, newImages[index]]);
         }
 
-        // Remove the image from the array
+        // Remove the image from the array - setting to null preserves the index positions
         newImages[index] = null;
         setImages(newImages);
 
@@ -216,6 +217,12 @@ const Edit = ({ token }) => {
             return;
         }
 
+        // Validate Colors (if enabled)
+        if (hasColors && colors.length === 0) {
+            toast.error('Please add at least one color.');
+            return;
+        }
+
         // Make sure at least one image remains
         const remainingImages = images.filter(img => img !== null);
         if (remainingImages.length === 0) {
@@ -223,11 +230,7 @@ const Edit = ({ token }) => {
             return;
         }
 
-        // Validate Colors (if enabled)
-        if (hasColors && colors.length === 0) {
-            toast.error('Please add at least one color.');
-            return;
-        }
+        setIsSubmitting(true);
 
         // Prepare form data
         const formData = new FormData();
@@ -251,20 +254,19 @@ const Edit = ({ token }) => {
             formData.append('colors', JSON.stringify(colors));
         }
 
-        // Add images to keep (URLs) and newly uploaded images (Files)
-        // First, ensure the existing image URLs are preserved exactly as they were
+        // Add existing images (URLs) to keep
         const existingUrlImages = images.filter(img => typeof img === 'string');
         existingUrlImages.forEach((imageUrl, idx) => {
             formData.append(`existingImages[${idx}]`, imageUrl);
         });
 
-        // Then add any new image files separately
+        // Add new image files
         const newImageFiles = images.filter(img => img instanceof File);
         newImageFiles.forEach((imageFile, idx) => {
             formData.append(`newImages[${idx}]`, imageFile);
         });
 
-        // Add list of images to delete
+        // Add list of images to delete from cloud storage
         if (imagesToDelete.length > 0) {
             formData.append('imagesToDelete', JSON.stringify(imagesToDelete));
         }
@@ -290,6 +292,8 @@ const Edit = ({ token }) => {
             } else {
                 toast.error("An unexpected error occurred.");
             }
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -311,7 +315,7 @@ const Edit = ({ token }) => {
                         />
                     </div>
                 </div>
-                <p className="mt-4 text-gray-600 font-medium">Loading...</p>
+                <p className="mt-4 text-gray-600 font-medium">Loading Product...</p>
             </div>
         );
     }
@@ -578,10 +582,20 @@ const Edit = ({ token }) => {
                 {/* Submit Button */}
                 <button
                     type="submit"
-                    className="w-28 py-3 mt-4 bg-black text-white rounded-sm"
-                    disabled={processingImage}
+                    className="w-35 py-3 mt-4 bg-black text-white rounded-sm flex items-center justify-center"
+                    disabled={processingImage || isSubmitting}
                 >
-                    UPDATE
+                    {isSubmitting ? (
+                        <>
+                            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            UPDATING...
+                        </>
+                    ) : (
+                        'UPDATE'
+                    )}
                 </button>
             </form>
         </div>
