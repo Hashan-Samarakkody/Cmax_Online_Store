@@ -248,7 +248,7 @@ const sendAdminNotificationEmail = async (returnData, originalOrder) => {
                         <p><b>Return ID:</b> ${returnData.returnId}</p>
                         <p><b>Original Order ID:</b> ${originalOrder.orderId}</p>
                         <p><b>Date Requested:</b> ${new Date(returnData.requestedDate).toLocaleDateString()}</p>
-                        <p><b>Customer:</b> ${user.name} (${user.email})</p>
+                        <p><b>Customer:</b> ${user.firstName} (${user.email})</p>
                         <p><b>Refund Amount:</b> Rs. ${returnData.refundAmount}</p>
                         <p><b>Refund Method:</b> ${returnData.refundMethod}</p>
                         ${mediaHtml}
@@ -365,7 +365,7 @@ const sendReturnRequestEmail = async (userId, returnData, originalOrder) => {
                 </div>
                 
                 <div style="margin-bottom: 20px;">
-                    <p>Dear ${user.name},</p>
+                    <p>Dear ${user.firstName},</p>
                     <p>We have received your return request and it is being processed.</p>
                 </div>
                 
@@ -571,7 +571,7 @@ const sendReturnStatusUpdateEmail = async (returnData) => {
                 </div>
                 
                 <div style="margin-bottom: 20px;">
-                    <p>Dear ${user.name},</p>
+                    <p>Dear ${user.firstName},</p>
                     <p>Your return request has been updated.</p>
                 </div>
                 

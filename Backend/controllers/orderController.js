@@ -102,7 +102,7 @@ const sendOrderConfirmationEmail = async (userId, order) => {
                 </div>
                 
                 <div style="margin-bottom: 20px;">
-                    <p>Dear ${user.name},</p>
+                    <p>Dear ${user.firstName},</p>
                     <p>Thank you for shopping with Cmax Online Store! We have received your order and it is being processed.</p>
                 </div>
                 
@@ -380,7 +380,7 @@ const sendOrderStatusUpdateEmail = async (userId, order, trackingId = null) => {
           </div>
           
           <div style="background-color: #ffffff; padding: 20px; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
-              <p>Dear ${user.name},</p>
+              <p>Dear ${user.fisrtName},</p>
               <p>${statusMessage}</p>
               
               <div style="background-color: #f8f9fa; padding: 15px; margin: 15px 0; border-radius: 5px;">
