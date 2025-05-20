@@ -53,7 +53,6 @@ const RevenuePrediction = ({ token }) => {
 
             // Add event listeners for order-related events
             const handleOrderChange = () => {
-                console.log('Order change detected, updating prediction data');
                 fetchPredictionData();
             };
 

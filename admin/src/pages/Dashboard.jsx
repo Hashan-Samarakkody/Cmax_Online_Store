@@ -560,49 +560,49 @@ const Dashboard = () => {
       <div className="flex flex-col sm:flex-row justify-between items-center gap-3 sm:gap-0">
         <h1 className="text-2xl font-bold">Dashboard Overview</h1>
 
-        <div className="flex flex-wrap justify-center sm:justify-end items-center gap-2 sm:gap-4">
-          {/* Only show report buttons if user is not staff */}
-          {admin && admin.role !== 'staff' && (
-            <>
-              <button
-                onClick={() => navigate('/financial-sales-report')}
-                className="flex items-center px-3 sm:px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors text-sm sm:text-base"
-              >
-                Financial Sales Report
-              </button>
+        {/* Only show report buttons if user is not staff */}
+        {admin && admin.role !== 'staff' && (
+          <div className="flex flex-wrap justify-center sm:justify-end items-center gap-2 sm:gap-4">
+            <button
+              onClick={() => navigate('/financial-sales-report')}
+              className="flex items-center px-3 sm:px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors text-sm sm:text-base"
+            >
+              Financial Sales Report
+            </button>
 
-              <button
-                onClick={() => navigate('/sales')}
-                className="flex items-center px-3 sm:px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors text-sm sm:text-base"
-              >
-                Sold Items Count Report
-              </button>
+            <button
+              onClick={() => navigate('/sales')}
+              className="flex items-center px-3 sm:px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors text-sm sm:text-base"
+            >
+              Sold Items Count Report
+            </button>
 
-              <button
-                onClick={() => navigate('/user-activity-report')}
-                className="flex items-center px-3 sm:px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors text-sm sm:text-base"
-              >
-                User Activity Report
-              </button>
-            </>
-          )}
-        </div>
+            <button
+              onClick={() => navigate('/user-activity-report')}
+              className="flex items-center px-3 sm:px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors text-sm sm:text-base"
+            >
+              User Activity Report
+            </button>
+          </div>
+        )}
       </div>
 
-      <select
-        value={selectedPeriod}
-        onChange={handlePeriodChange}
-        className="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-      >
-        <option value="daily">Daily</option>
-        <option value="weekly">Weekly</option>
-        <option value="monthly">Monthly</option>
-        <option value="yearly">Yearly</option>
-      </select>
+      {/* Only show period selector if user is not staff */}
+      {admin && admin.role !== 'staff' && (
+        <select
+          value={selectedPeriod}
+          onChange={handlePeriodChange}
+          className="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+        >
+          <option value="daily">Daily</option>
+          <option value="weekly">Weekly</option>
+          <option value="monthly">Monthly</option>
+          <option value="yearly">Yearly</option>
+        </select>
+      )}
 
       {/* Stats Cards - keep the same grid but better small screen support */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-5">
-        {/* Same card structure for all 5 cards - only showing first as example */}
         <div className="bg-white rounded-lg shadow p-4 sm:p-5">
           <div className="flex items-center">
             <div className="flex-shrink-0 h-10 sm:h-12 w-10 sm:w-12 rounded-full bg-indigo-100 flex items-center justify-center">
@@ -678,93 +678,97 @@ const Dashboard = () => {
         </div>
       </div>
 
+      {/* Charts - only show if user is not staff */}
+      {admin && admin.role !== 'staff' && (
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+          {/* Sales Chart */}
+          <div className="bg-white rounded-lg shadow p-4 sm:p-5 max-h-[635px]">
+            <h2 className="text-xl font-semibold mb-4">Sales Trends ({selectedPeriod})</h2>
+            <div className="h-60 sm:h-80">
+              <Line
+                data={salesChartData}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  scales: {
+                    y: {
+                      beginAtZero: true
+                    }
+                  }
+                }}
+              />
+            </div>
 
-      {/* Charts */}
+            {/* Sales summary section */}
+            <div className="mt-4 grid grid-cols-3 gap-2 sm:gap-4 pt-3 border-t border-gray-100">
+              <div className="text-center">
+                <p className="text-gray-500 text-xs uppercase font-medium tracking-wide">Average</p>
+                <p className="mt-1 text-sm sm:text-lg font-bold text-gray-800">
+                  Rs.{salesTrends.length > 0
+                    ? (salesTrends.reduce((sum, item) => sum + item.revenue, 0) / salesTrends.length).toFixed(2)
+                    : '0.00'}
+                </p>
+              </div>
+              <div className="text-center">
+                <p className="text-gray-500 text-xs uppercase font-medium tracking-wide">Peak {selectedPeriod}</p>
+                <p className="mt-1 text-lg font-bold text-gray-800">
+                  Rs.{salesTrends.length > 0
+                    ? Math.max(...salesTrends.map(item => item.revenue)).toFixed(2)
+                    : '0.00'}
+                </p>
+              </div>
+              <div className="text-center">
+                <p className="text-gray-500 text-xs uppercase font-medium tracking-wide">Trend</p>
+                <p className={`mt-1 text-lg font-bold flex items-center justify-center ${getTrendColor()}`}>
+                  {getTrendIcon()}
+                  <span className="ml-1">{calculateTrend()}</span>
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Sales Prediction Section */}
+          <div className="mb-6">
+            <RevenuePrediction token={token} />
+          </div>
+
+          {/* Orders Chart */}
+          <div className="bg-white rounded-lg shadow p-5">
+            <h2 className="text-xl font-semibold mb-4">Order Trends ({selectedPeriod})</h2>
+            <div className="h-80">
+              <Bar
+                data={ordersChartData}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  scales: {
+                    y: {
+                      beginAtZero: true
+                    }
+                  }
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Payment Methods Chart */}
+          <div className="bg-white rounded-lg shadow p-5">
+            <h2 className="text-xl font-semibold mb-4">Payment Methods</h2>
+            <div className="h-80">
+              <Pie
+                data={paymentMethodsData}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Category and Subcategory Charts - visible to all roles */}
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-        {/* Sales Chart */}
-        <div className="bg-white rounded-lg shadow p-4 sm:p-5 max-h-[635px]">
-          <h2 className="text-xl font-semibold mb-4">Sales Trends ({selectedPeriod})</h2>
-          <div className="h-60 sm:h-80">
-            <Line
-              data={salesChartData}
-              options={{
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                  y: {
-                    beginAtZero: true
-                  }
-                }
-              }}
-            />
-          </div>
-
-          {/* Add this sales summary section */}
-          <div className="mt-4 grid grid-cols-3 gap-2 sm:gap-4 pt-3 border-t border-gray-100">
-            <div className="text-center">
-              <p className="text-gray-500 text-xs uppercase font-medium tracking-wide">Average</p>
-              <p className="mt-1 text-sm sm:text-lg font-bold text-gray-800">
-                Rs.{salesTrends.length > 0
-                  ? (salesTrends.reduce((sum, item) => sum + item.revenue, 0) / salesTrends.length).toFixed(2)
-                  : '0.00'}
-              </p>
-            </div>
-            <div className="text-center">
-              <p className="text-gray-500 text-xs uppercase font-medium tracking-wide">Peak {selectedPeriod}</p>
-              <p className="mt-1 text-lg font-bold text-gray-800">
-                Rs.{salesTrends.length > 0
-                  ? Math.max(...salesTrends.map(item => item.revenue)).toFixed(2)
-                  : '0.00'}
-              </p>
-            </div>
-            <div className="text-center">
-              <p className="text-gray-500 text-xs uppercase font-medium tracking-wide">Trend</p>
-              <p className={`mt-1 text-lg font-bold flex items-center justify-center ${getTrendColor()}`}>
-                {getTrendIcon()}
-                <span className="ml-1">{calculateTrend()}</span>
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Sales Prediction Section */}
-        <div className="mb-6">
-          <RevenuePrediction token={token} />
-        </div>
-
-        {/* Orders Chart */}
-        <div className="bg-white rounded-lg shadow p-5">
-          <h2 className="text-xl font-semibold mb-4">Order Trends ({selectedPeriod})</h2>
-          <div className="h-80">
-            <Bar
-              data={ordersChartData}
-              options={{
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                  y: {
-                    beginAtZero: true
-                  }
-                }
-              }}
-            />
-          </div>
-        </div>
-
-        {/* Payment Methods Chart */}
-        <div className="bg-white rounded-lg shadow p-5">
-          <h2 className="text-xl font-semibold mb-4">Payment Methods</h2>
-          <div className="h-80">
-            <Pie
-              data={paymentMethodsData}
-              options={{
-                responsive: true,
-                maintainAspectRatio: false
-              }}
-            />
-          </div>
-        </div>
-
         {/* Category Distribution Chart */}
         <div className="bg-white rounded-lg shadow p-5">
           <h2 className="text-xl font-semibold mb-4">Category Distribution</h2>
@@ -824,7 +828,7 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Top Products Table */}
+      {/* Top Products Table - visible to all roles */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <div className="px-4 sm:px-5 py-4 border-b border-gray-200">
           <h2 className="text-xl font-semibold">Top Selling Products</h2>

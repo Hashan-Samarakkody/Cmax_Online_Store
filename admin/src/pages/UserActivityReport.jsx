@@ -56,7 +56,6 @@ const UserActivityReport = () => {
         const handleLoyaltyUpdate = (data) => {
             // Only refresh if the loyal customers section is visible
             if (showLoyalCustomers) {
-                console.log('Loyalty update received:', data);
 
                 // Background refresh (true parameter prevents loading state)
                 fetchLoyalCustomers(true);

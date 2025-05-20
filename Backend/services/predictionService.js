@@ -41,7 +41,6 @@ const predictionService = {
             // Try loading the lightweight model components first
             if (fs.existsSync(componentsPath)) {
                 this.modelComponents = JSON.parse(fs.readFileSync(componentsPath, 'utf8'));
-                console.log('Loaded revenue prediction model components successfully');
             } else {
                 console.warn('Model components not found at', componentsPath);
             }
@@ -61,7 +60,6 @@ const predictionService = {
                     return rowData;
                 });
 
-                console.log('Loaded pre-computed forecast successfully');
             } else {
                 console.warn('Pre-computed forecast not found at', precomputedForecastPath);
             }

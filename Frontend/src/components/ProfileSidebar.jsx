@@ -202,7 +202,7 @@ const ProfileSidebar = ({ user, setActiveSection, activeSection, onShowPasswordM
                     <span>Manage Addresses</span>
                 </button>
 
-                {/* Continue with the rest of the buttons using the same responsive sizing patterns */}
+    
                 <button
                     onClick={onShowPasswordModle}
                     className="w-full text-left p-2 sm:p-3 mb-1 rounded-md hover:bg-gray-100 flex items-center text-sm sm:text-base"
@@ -246,7 +246,6 @@ const ProfileSidebar = ({ user, setActiveSection, activeSection, onShowPasswordM
             </div>
         </div>
     );
-    // ...existing code...
 };
 
 export default ProfileSidebar;

@@ -39,7 +39,7 @@ const adminLogin = async (req, res) => {
                 role: admin.role
             },
             process.env.JWT_SECRET,
-            { expiresIn: '24h' }
+            { expiresIn: '48h' }
         );
 
         res.json({
@@ -105,7 +105,7 @@ const registerAdmin = async (req, res) => {
 
                 profileImageUrl = result.secure_url;
             } catch (uploadError) {
-                // Continue with default image if upload fails
+    
                 console.error('Error uploading image to Cloudinary:', uploadError);
             }
         }
@@ -141,7 +141,7 @@ const registerAdmin = async (req, res) => {
                 role: admin.role
             },
             process.env.JWT_SECRET,
-            { expiresIn: '24h' }
+            { expiresIn: '48h' }
         );
 
         // Broadcast the new admin

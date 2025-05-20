@@ -188,7 +188,6 @@ async function processFinancialData(orders, categoryMap, subcategoryMap) {
                 }
             } catch (error) {
                 console.error('Error processing item:', error, item);
-                // Continue with next item instead of failing the entire report
             }
         }
     }

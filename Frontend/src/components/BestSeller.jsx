@@ -24,7 +24,7 @@ const BestSeller = () => {
     }, [products]);
 
     useEffect(() => {
-        // WebSocket functionality - kept exactly the same
+        // WebSocket functionality
         if (!WebSocketService.isConnected()) {
             WebSocketService.connect(() => {
                 console.log("WebSocket connected");

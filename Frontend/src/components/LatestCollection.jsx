@@ -23,7 +23,7 @@ const LatestCollection = () => {
   }, [products]);
 
   useEffect(() => {
-    // WebSocket functionality - kept exactly the same
+    // WebSocket functionality
     if (!WebSocketService.isConnected()) {
       WebSocketService.connect();
     }

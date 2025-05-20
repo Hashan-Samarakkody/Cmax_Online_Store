@@ -482,7 +482,7 @@ const getRevenuePrediction = async (req, res) => {
     }
 };
 
-// Helper function to get month name remains the same
+// Helper function to get month name
 function getMonthName(monthNum) {
     const months = [
         "January", "February", "March", "April", "May", "June",
@@ -525,7 +525,6 @@ const getUserActivityReport = async (req, res) => {
         // For debugging, count total documents that match the filter
         const totalMatchingDocs = await userModel.countDocuments(dateFilter);
 
-        // Rest of your aggregation logic...
         let groupBy;
         if (period === 'daily') {
             groupBy = {

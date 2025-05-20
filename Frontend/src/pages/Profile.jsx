@@ -420,7 +420,6 @@ const Profile = () => {
         </div>
       </div>
 
-      {/* Modals remain the same */}
       <PasswordChangeModle
         isOpen={showPasswordModle}
         onClose={() => setShowPasswordModle(false)}

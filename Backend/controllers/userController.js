@@ -58,17 +58,12 @@ const loginUser = async (req, res) => {
 const registerUser = async (req, res) => {
     try {
         const {
-            name,
             email,
             password,
             username,
             phoneNumber,
             firstName,
-            lastName,
-            street,
-            city,
-            state,
-            postalCode
+            lastName
         } = req.body;
 
         // Check if user already exists or not
@@ -100,29 +95,35 @@ const registerUser = async (req, res) => {
         // Set default placeholder image URL
         let profileImageUrl = 'https://static.vecteezy.com/system/resources/thumbnails/036/594/092/small_2x/man-empty-avatar-photo-placeholder-for-social-networks-resumes-forums-and-dating-sites-male-and-female-no-photo-images-for-unfilled-user-profile-free-vector.jpg';
 
-        // Upload profile image to Cloudinary if provided
         if (req.file) {
             try {
-                // Add a data URI from the buffer
+                // Log the received file for debugging
+                console.log("File received:", {
+                    filename: req.file.originalname,
+                    size: req.file.size,
+                    mimetype: req.file.mimetype
+                });
+
+                // Create data URI from buffer for Cloudinary upload
                 const fileBuffer = req.file.buffer;
                 const fileType = req.file.mimetype;
-                const fileEncoding = 'base64';
+                const dataUri = `data:${fileType};base64,${fileBuffer.toString('base64')}`;
 
-                const dataUri = `data:${fileType};${fileEncoding},${fileBuffer.toString('base64')}`;
+                // Upload to Cloudinary with better error details
+                try {
+                    const uploadResult = await cloudinary.uploader.upload(dataUri, {
+                        folder: 'user_profiles',
+                        resource_type: 'auto',
+                        transformation: [{ width: 500, height: 500, crop: "fill" }]
+                    });
 
-                // Upload to Cloudinary using the data URI
-                const result = await cloudinary.uploader.upload(dataUri, {
-                    folder: 'user_profiles',
-                    use_filename: true,
-                    unique_filename: true
-                });
-
-                profileImageUrl = result.secure_url;
+                    profileImageUrl = uploadResult.secure_url;
+                } catch (cloudinaryError) {
+                    console.error("Cloudinary upload error:", cloudinaryError.message);
+                    console.error("Error details:", JSON.stringify(cloudinaryError, null, 2));
+                }
             } catch (uploadError) {
-                return res.status(500).json({
-                    success: false,
-                    message: "Error uploading profile image to Cloudinary"
-                });
+                console.error("Error processing uploaded file:", uploadError.message);
             }
         }
 
@@ -130,24 +131,15 @@ const registerUser = async (req, res) => {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        // Add new user with address details
+        // Add new user with the correct field mapping
         const newUser = new userModel({
-            name,
+            firstName,
+            lastName,
             email,
             username,
             password: hashedPassword,
             phoneNumber,
             profileImage: profileImageUrl,
-            firstName,
-            lastName,
-            addresses: (street && city && state && postalCode) ? [{
-                _id: new mongoose.Types.ObjectId(),
-                street,
-                city,
-                state,
-                postalCode,
-                isDefault: true
-            }] : [],
         });
 
         // Save user to the database
@@ -156,22 +148,13 @@ const registerUser = async (req, res) => {
         // Provide a token to the user
         const token = createToken(user._id);
 
-        // Broadcast the new user
-        broadcast({
-            type: "newUser",
-            user: {
-                id: user._id,
-                name: user.name,
-                email: user.email
-            }
-        });
-
         res.json({
             success: true,
             token,
             user: {
                 id: user._id,
-                name: user.name,
+                firstName: user.firstName,
+                lastName: user.lastName,
                 email: user.email,
                 profileImage: profileImageUrl
             }
@@ -252,7 +235,7 @@ const sendResetCode = async (req, res) => {
         // Send the email
         await transporter.sendMail(mailOptions);
 
-        // Return success message (for security, use same response whether user exists or not)
+        // Return success message
         res.json({
             success: true,
             message: "If your email exists in our system, a verification code has been sent"
