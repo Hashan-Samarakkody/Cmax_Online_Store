@@ -121,7 +121,7 @@ const Add = ({ token }) => {
   }, [productId, name, description, price, image1, selectedCategory,
     selectedSubCategory, colors, sizes]);
 
- 
+
   const handleImageUpload = async (e, setImage) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -181,15 +181,29 @@ const Add = ({ token }) => {
       return;
     }
 
+    // Validate Product ID characters
+    const alphanumericRegex = /^[a-zA-Z0-9]+$/;
+    if (!alphanumericRegex.test(sanitizedProductId)) {
+      toast.error('Product ID can only contain letters and numbers.');
+      return;
+    }
+
     // Validate Product Name
     if (!sanitizedName || sanitizedName.length < 3 || sanitizedName.length > 100) {
       toast.error('Product name must be between 3 and 100 characters.');
       return;
     }
 
+    // Validate Product Name characters
+    const validNameRegex = /^[a-zA-Z0-9\[\],#.\-\s:\/\\|"'+-]+$/;
+    if (!validNameRegex.test(sanitizedName)) {
+      toast.error('Product name contains invalid characters.');
+      return;
+    }
+
     // Validate Description
-    if (!sanitizedDescription || sanitizedDescription.length < 10 || sanitizedDescription.length > 1000) {
-      toast.error('Description must be between 10 and 1000 characters.');
+    if (!sanitizedDescription || sanitizedDescription.length < 10 || sanitizedDescription.length > 10000) {
+      toast.error('Description must be between 10 and 10000 characters.');
       return;
     }
 
@@ -220,6 +234,12 @@ const Add = ({ token }) => {
     // Validate Colors (if enabled)
     if (hasColors && colors.length === 0) {
       toast.error('Please add at least one color.');
+      return;
+    }
+
+    // Validate Sizes (if enabled)
+    if (hasSizes && sizes.length === 0) {
+      toast.error('Please select at least one size.');
       return;
     }
 
@@ -296,7 +316,7 @@ const Add = ({ token }) => {
 
     // Validate that color contains only letters
     if (!trimmedColor) {
-      return; // Empty input, do nothing
+      return;
     }
 
     // Check if color contains only alphabetical characters
@@ -325,7 +345,7 @@ const Add = ({ token }) => {
       </div>
 
       <form onSubmit={onSubmitHandler} className="flex flex-col w-full items-start gap-3">
-        
+
         {/* Product ID Input */}
         <div className="w-full">
           <p className="font-semibold mb-2">Product ID</p>
@@ -374,6 +394,11 @@ const Add = ({ token }) => {
             required
             style={{ resize: "none" }} // Prevent manual resizing
           />
+          <div className="mt-1 text-sm flex justify-end max-w-[590px]">
+            <span className={`${description.length >= 9000 ? 'text-orange-500' : ''} ${description.length >= 10000 ? 'text-red-500 font-semibold' : ''}`}>
+              {description.length}/10000 characters
+            </span>
+          </div>
         </div>
 
         {/* Category and Subcategory */}

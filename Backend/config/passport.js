@@ -7,7 +7,7 @@ import 'dotenv/config';
 
 // Helper function to generate JWT token
 const createToken = (id) => {
-    return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '24h' });
+    return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '48h' });
 };
 
 // Configure Google Strategy

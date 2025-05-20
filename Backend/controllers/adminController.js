@@ -39,7 +39,7 @@ const adminLogin = async (req, res) => {
                 role: admin.role
             },
             process.env.JWT_SECRET,
-            { expiresIn: '24h' }
+            { expiresIn: '48h' }
         );
 
         res.json({
@@ -141,7 +141,7 @@ const registerAdmin = async (req, res) => {
                 role: admin.role
             },
             process.env.JWT_SECRET,
-            { expiresIn: '24h' }
+            { expiresIn: '48h' }
         );
 
         // Broadcast the new admin

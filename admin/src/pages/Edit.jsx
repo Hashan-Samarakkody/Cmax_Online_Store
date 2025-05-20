@@ -220,9 +220,16 @@ const Edit = ({ token }) => {
             return;
         }
 
+        // Validate Product Name characters
+        const validNameRegex = /^[a-zA-Z0-9\[\],#.\-\s:\/\\|"'+-]+$/;
+        if (!validNameRegex.test(sanitizedName)) {
+            toast.error('Product name contains invalid characters.');
+            return;
+        }
+
         // Validate Description
-        if (!sanitizedDescription || sanitizedDescription.length < 10 || sanitizedDescription.length > 1000) {
-            toast.error('Description must be between 10 and 1000 characters.');
+        if (!sanitizedDescription || sanitizedDescription.length < 10 || sanitizedDescription.length > 10000) {
+            toast.error('Description must be between 10 and 10000 characters.');
             return;
         }
 
@@ -248,6 +255,12 @@ const Edit = ({ token }) => {
             toast.error('Please add at least one color.');
             return;
         }
+
+        // Validate Sizes (if enabled)
+        if (hasSizes && sizes.length === 0) {
+            toast.error('Please select at least one size.');
+            return;
+      }
 
         // Make sure at least one image remains
         const remainingImages = images.filter(img => img !== null);
@@ -377,35 +390,36 @@ const Edit = ({ token }) => {
                         required
                     />
                 </div>
+
                 {/* Product Description */}
                 <div className="w-full">
                     <p className="font-semibold mb-2">Product Description</p>
                     <textarea
                         onChange={(e) => {
                             setDescription(e.target.value);
-                            e.target.style.height = "auto";
-                            e.target.style.height = `${e.target.scrollHeight}px`;
+                            e.target.style.height = "auto"; // Reset height to auto to calculate new height
+                            e.target.style.height = `${e.target.scrollHeight}px`; // Adjust height based on scrollHeight
                             // Adjust width if there are more than 10 lines
-                            const lineCount = e.target.value.split("\n").length;
+                            const lineCount = e.target.value.split("\0").length;
                             if (lineCount > 10) {
-                                e.target.style.width = "150%";
+                                e.target.style.width = "150%"; // Increase width to 1.5 times
                             } else {
-                                e.target.style.width = "100%";
+                                e.target.style.width = "100%"; // Reset width to default
                             }
                         }}
                         value={description}
                         className="w-full max-w-[590px] px-3 py-2 overflow-hidden"
                         placeholder="Write description here"
                         required
-                        style={{ resize: "none" }}
-                        ref={(textarea) => {
-                            if (textarea) {
-                                textarea.style.height = "auto";
-                                textarea.style.height = `${textarea.scrollHeight}px`;
-                            }
-                        }}
+                        style={{ resize: "none" }} // Prevent manual resizing
                     />
+                    <div className="mt-1 text-sm flex justify-end max-w-[590px]">
+                        <span className={`${description.length >= 9000 ? 'text-orange-500' : ''} ${description.length >= 10000 ? 'text-red-500 font-semibold' : ''}`}>
+                            {description.length}/10000 characters
+                        </span>
+                    </div>
                 </div>
+
                 {/* Category and Subcategory */}
                 <div className="flex flex-col sm:flex-row gap-2 w-full sm:gap-8">
                     <div>
@@ -453,6 +467,7 @@ const Edit = ({ token }) => {
                         />
                     </div>
                 </div>
+
                 {/* Sizes Toggle */}
                 <div className="flex gap-2 mt-2">
                     <input
@@ -465,6 +480,7 @@ const Edit = ({ token }) => {
                         Enable Sizes
                     </label>
                 </div>
+
                 {/* Sizes Selection (only if hasSizes is true) */}
                 {hasSizes && (
                     <div>
@@ -490,6 +506,7 @@ const Edit = ({ token }) => {
                         </div>
                     </div>
                 )}
+
                 {/* Colors Toggle */}
                 <div className="flex gap-2 mt-2">
                     <input
@@ -502,6 +519,7 @@ const Edit = ({ token }) => {
                         Enable Colors
                     </label>
                 </div>
+
                 {/* Color Input (only if hasColors is true) */}
                 {hasColors && (
                     <div className="w-full max-w-[500px]">
@@ -522,6 +540,7 @@ const Edit = ({ token }) => {
                                 Add Color
                             </button>
                         </div>
+
                         {/* Display selected colors */}
                         <div className="flex flex-wrap gap-2">
                             {colors.map((color) => (
@@ -542,6 +561,7 @@ const Edit = ({ token }) => {
                         </div>
                     </div>
                 )}
+
                 {/* Bestseller Toggle */}
                 <div className="flex gap-2 mt-2">
                     <input
@@ -554,6 +574,7 @@ const Edit = ({ token }) => {
                         Add to bestseller
                     </label>
                 </div>
+
                 {/* Image Upload */}
                 <div>
                     <p className="font-semibold mb-2">Product Images</p>
@@ -605,6 +626,7 @@ const Edit = ({ token }) => {
                         <p className="text-blue-500 mt-2">Processing image, please wait...</p>
                     )}
                 </div>
+                
                 {/* Submit Button */}
                 <button
                     type="submit"
