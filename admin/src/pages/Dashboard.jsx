@@ -465,26 +465,28 @@ const Dashboard = () => {
     ]
   };
 
+  const generateColor = (index) => {
+    // Golden ratio approximation for good color distribution
+    const hue = index * 137.508; // use golden angle in degrees
+    const saturation = 65 + (index % 20); // vary saturation slightly
+    const lightness = 55 + (index % 15); // vary lightness slightly
+
+    // For background colors (with transparency)
+    const bgColor = `hsla(${hue % 360}, ${saturation}%, ${lightness}%, 0.5)`;
+    // For border colors (same hue, no transparency)
+    const borderColor = `hsl(${hue % 360}, ${saturation}%, ${lightness - 10}%)`;
+
+    return { bgColor, borderColor };
+  };
+
   const categoryData = {
     labels: categoryDistribution.map(item => item.category),
     datasets: [
       {
         label: 'Products',
         data: categoryDistribution.map(item => item.count),
-        backgroundColor: [
-          'rgba(255, 99, 132, 0.5)',
-          'rgba(54, 162, 235, 0.5)',
-          'rgba(255, 206, 86, 0.5)',
-          'rgba(75, 192, 192, 0.5)',
-          'rgba(153, 102, 255, 0.5)'
-        ],
-        borderColor: [
-          'rgb(255, 99, 132)',
-          'rgb(54, 162, 235)',
-          'rgb(255, 206, 86)',
-          'rgb(75, 192, 192)',
-          'rgb(153, 102, 255)'
-        ],
+        backgroundColor: categoryDistribution.map((_, index) => generateColor(index).bgColor),
+        borderColor: categoryDistribution.map((_, index) => generateColor(index).borderColor),
         borderWidth: 1
       }
     ]
@@ -495,30 +497,8 @@ const Dashboard = () => {
     datasets: [
       {
         data: subcategoryDistribution.map(item => item.count),
-        backgroundColor: [
-          'rgba(54, 162, 235, 0.5)',
-          'rgba(255, 99, 132, 0.5)',
-          'rgba(255, 206, 86, 0.5)',
-          'rgba(75, 192, 192, 0.5)',
-          'rgba(153, 102, 255, 0.5)',
-          'rgba(255, 159, 64, 0.5)',
-          'rgba(201, 203, 207, 0.5)',
-          'rgba(94, 232, 129, 0.5)',
-          'rgba(162, 94, 232, 0.5)',
-          'rgba(232, 94, 94, 0.5)'
-        ],
-        borderColor: [
-          'rgb(54, 162, 235)',
-          'rgb(255, 99, 132)',
-          'rgb(255, 206, 86)',
-          'rgb(75, 192, 192)',
-          'rgb(153, 102, 255)',
-          'rgb(255, 159, 64)',
-          'rgb(201, 203, 207)',
-          'rgb(94, 232, 129)',
-          'rgb(162, 94, 232)',
-          'rgb(232, 94, 94)'
-        ],
+        backgroundColor: subcategoryDistribution.map((_, index) => generateColor(index + 10).bgColor),
+        borderColor: subcategoryDistribution.map((_, index) => generateColor(index + 10).borderColor),
         borderWidth: 2
       }
     ]
@@ -803,22 +783,19 @@ const Dashboard = () => {
             )}
           </div>
           <div className="h-60 sm:h-80">
-            <Bar
+            <Pie
               data={subcategoryData}
               options={{
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
                   legend: {
-                    display: false
-                  }
-                },
-                scales: {
-                  x: {
-                    beginAtZero: true,
-                    title: {
-                      display: true,
-                      text: 'Product Count'
+                    position: 'right',
+                    labels: {
+                      boxWidth: 15,
+                      font: {
+                        size: 10
+                      }
                     }
                   }
                 }
