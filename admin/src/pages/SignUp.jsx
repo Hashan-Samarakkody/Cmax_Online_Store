@@ -58,8 +58,12 @@ const AdminSignup = ({ setShowSignup, setToken }) => {
         else if (!emailRegex.test(email)) newErrors.email = 'Please enter a valid email';
 
         // Password validation
-        if (!password) newErrors.password = 'Password is required';
-        else if (password.length < 8) newErrors.password = 'Password must be at least 8 characters';
+        // Password validation
+        if (!password) {
+            newErrors.password = 'Password is required';
+        } else if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{8,}$/.test(password)) {
+            newErrors.password = 'Password must have at least 8 characters with at least one uppercase letter, lowercase letter, digit, and special character';
+        }
 
         // Confirm password
         if (password !== confirmPassword) newErrors.confirmPassword = 'Passwords do not match';

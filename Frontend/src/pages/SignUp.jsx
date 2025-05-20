@@ -84,7 +84,14 @@ const SignUp = () => {
 
   // Validate password strength
   const validatePassword = (password) => {
-    return password.length >= 8;
+   
+    const hasMinLength = password.length >= 8;
+    const hasUppercase = /[A-Z]/.test(password);
+    const hasLowercase = /[a-z]/.test(password);
+    const hasDigit = /[0-9]/.test(password);
+    const hasSpecialChar = /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password);
+
+    return hasMinLength && hasUppercase && hasLowercase && hasDigit && hasSpecialChar;
   };
 
   // Validate image file
@@ -228,7 +235,7 @@ const SignUp = () => {
       newErrors.password = 'Password is required';
       isValid = false;
     } else if (!validatePassword(sanitizedPassword)) {
-      newErrors.password = 'Password must be at least 8 characters';
+      newErrors.password = 'Password must be at least 8 characters and include uppercase, lowercase, digit, and special character';
       isValid = false;
     }
 
