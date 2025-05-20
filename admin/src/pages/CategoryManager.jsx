@@ -316,7 +316,7 @@ const CategoryManager = () => {
 
         try {
             if (editMode.type === "category") {
-                await axios.put(`${backendUrl}/api/categories/${editMode.id}`, { name: sanitizedName });
+                await axios.patch(`${backendUrl}/api/categories/${editMode.id}`, { name: sanitizedName });
 
                 // Send WebSocket notification
                 WebSocketService.send({
@@ -326,28 +326,18 @@ const CategoryManager = () => {
                 });
 
             } else if (editMode.type === "subcategory") {
-                // Find parent category for this subcategory
-                let parentCategoryId;
-                for (const cat of allCategories) {
-                    if (cat.subcategories && cat.subcategories.some(sub => sub._id === editMode.id)) {
-                        parentCategoryId = cat._id;
-                        break;
-                    }
-                }
+                // Updated to match backend route structure
+                await axios.patch(
+                    `${backendUrl}/api/categories/subcategories/${editMode.id}`,
+                    { name: sanitizedName }
+                );
 
-                if (parentCategoryId) {
-                    await axios.put(
-                        `${backendUrl}/api/categories/${parentCategoryId}/subcategories/${editMode.id}`,
-                        { name: sanitizedName }
-                    );
-
-                    // Send WebSocket notification
-                    WebSocketService.send({
-                        type: 'updateSubcategory',
-                        subcategoryId: editMode.id,
-                        name: sanitizedName
-                    });
-                }
+                // Send WebSocket notification
+                WebSocketService.send({
+                    type: 'updateSubcategory',
+                    subcategoryId: editMode.id,
+                    name: sanitizedName
+                });
             }
 
             fetchCategories();
@@ -359,7 +349,6 @@ const CategoryManager = () => {
             toast.error(`Failed to update ${editMode.type}.`);
         }
     };
-
     const toggleVisibility = async (item, type) => {
         try {
             const newVisibility = !(item.isVisible === false); // false => true, undefined/true => false
