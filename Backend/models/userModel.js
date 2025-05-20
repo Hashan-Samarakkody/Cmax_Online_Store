@@ -13,6 +13,11 @@ const userSchema = new mongoose.Schema({
     lastName: { type: String },
     authProvider: { type: String, enum: ['local', 'google', 'facebook'], default: 'local' },
 
+    verificationCode: String,
+    verificationCodeExpires: Date,
+    isVerified: { type: Boolean, default: false },
+    isActive: { type: Boolean, default: false },
+
     addresses: [{
         _id: { type: mongoose.Schema.Types.ObjectId, auto: true },
         addressName: { type: String, required: true },

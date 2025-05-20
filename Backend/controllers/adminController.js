@@ -643,6 +643,336 @@ const getAllAdmins = async (req, res) => {
     }
 };
 
+// Send verification code for admin registration
+const sendVerificationCodeinRegistration = async (req, res) => {
+    try {
+        const { name, username, email, password, role } = req.body;
+        const adminRegistrationKey = req.headers.adminkey;
+
+        // Validate admin registration key
+        if (!adminRegistrationKey || adminRegistrationKey !== process.env.ADMIN_REGISTRATION_KEY) {
+            return res.json({ success: false, message: "Unauthorized registration attempt" });
+        }
+
+        // Check if admin already exists
+        const adminExists = await adminModel.findOne({
+            $or: [
+                { email },
+                { username }
+            ]
+        });
+
+        if (adminExists && adminExists.active) {
+            return res.json({
+                success: false,
+                message: adminExists.email === email ?
+                    "Admin with this email already exists" :
+                    "Username is already taken"
+            });
+        }
+
+        // Upload image to Cloudinary if provided
+        let profileImageUrl = 'default-admin.png';
+        if (req.file) {
+            try {
+                const dataUri = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+                const result = await cloudinary.uploader.upload(dataUri, {
+                    resource_type: 'image',
+                    folder: 'admin_profiles'
+                });
+                profileImageUrl = result.secure_url;
+            } catch (uploadError) {
+                console.error('Error uploading image to Cloudinary:', uploadError);
+            }
+        }
+
+        // Generate verification code
+        const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+        const verificationCodeExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+        // Check if there's an existing inactive admin with this email
+        let pendingAdmin = await adminModel.findOne({
+            email,
+            active: false
+        });
+
+        if (pendingAdmin) {
+            // Update the pending admin
+            pendingAdmin.name = name;
+            pendingAdmin.username = username;
+            pendingAdmin.verificationCode = verificationCode;
+            pendingAdmin.verificationCodeExpires = verificationCodeExpires;
+            pendingAdmin.isCodeVerified = false;
+
+            // Don't override password if it's already hashed
+            if (password) pendingAdmin.password = password;
+            pendingAdmin.role = role;
+            pendingAdmin.profileImage = profileImageUrl;
+
+            await pendingAdmin.save();
+        } else {
+            // Create new pending admin
+            const permissions = {
+                manageProducts: role === 'superadmin' || role === 'manager',
+                manageOrders: true,
+                manageInventory: true,
+                manageReturns: true,
+                manageAdmins: role === 'superadmin',
+                viewReports: role === 'superadmin' || role === 'manager'
+            };
+
+            pendingAdmin = new adminModel({
+                name,
+                username,
+                email,
+                password,
+                role: role || 'staff',
+                profileImage: profileImageUrl,
+                active: false,
+                verificationCode,
+                verificationCodeExpires,
+                isCodeVerified: false,
+                permissions
+            });
+
+            await pendingAdmin.save();
+        }
+
+        // Send email with verification code
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS
+            }
+        });
+
+        const mailOptions = {
+            from: process.env.EMAIL_USER,
+            to: email,
+            subject: 'Admin Account Verification - Cmax Online Store',
+            html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px; background-color: #f9f9f9;">
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <h1 style="color: #2e7d32;">Cmax Online Store</h1>
+                    <h2>Admin Account Verification</h2>
+                </div>
+                
+                <p style="font-size: 16px; color: #333333; line-height: 1.5;">Hello ${name},</p>
+                <p style="font-size: 16px; color: #333333; line-height: 1.5;">Thank you for registering as an admin. Please use the verification code below to complete your registration:</p>
+                
+                <div style="text-align: center; margin: 30px 0; padding: 20px; background-color: #e8f5e9; border-radius: 5px; border: 1px dashed #2e7d32;">
+                    <span style="font-size: 28px; font-weight: bold; letter-spacing: 5px; color: #2e7d32;">${verificationCode}</span>
+                    <p style="margin-top: 10px; font-size: 14px; color: #555555;">This code will expire in 15 minutes</p>
+                </div>
+                
+                <p style="font-size: 16px; color: #333333; line-height: 1.5;">If you did not request this verification code, please ignore this email.</p>
+                
+                <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e0e0e0; text-align: center; color: #757575; font-size: 14px;">
+                    <p>Cmax Online Store © ${new Date().getFullYear()}</p>
+                    <p>This is an automated email. Please do not reply.</p>
+                </div>
+            </div>
+            `
+        };
+
+        await transporter.sendMail(mailOptions);
+        res.json({ success: true, message: "Verification code sent to your email" });
+    } catch (error) {
+        console.error("Error sending verification code:", error);
+        res.json({ success: false, message: error.message });
+    }
+};
+
+// Resend verification code
+const resendVerificationCode = async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        // Find pending admin
+        const pendingAdmin = await adminModel.findOne({
+            email,
+            active: false
+        });
+
+        if (!pendingAdmin) {
+            return res.json({ success: false, message: "Admin not found or already active" });
+        }
+
+        // Generate new verification code
+        const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+        const verificationCodeExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+        // Update admin
+        pendingAdmin.verificationCode = verificationCode;
+        pendingAdmin.verificationCodeExpires = verificationCodeExpires;
+        pendingAdmin.isCodeVerified = false;
+        await pendingAdmin.save();
+
+        // Send email with verification code
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS
+            }
+        });
+
+        const mailOptions = {
+            from: process.env.EMAIL_USER,
+            to: email,
+            subject: 'Admin Account Verification Code (Resend) - Cmax Online Store',
+            html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px; background-color: #f9f9f9;">
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <h1 style="color: #2e7d32;">Cmax Online Store</h1>
+                    <h2>Admin Account Verification</h2>
+                </div>
+                
+                <p style="font-size: 16px; color: #333333; line-height: 1.5;">Hello ${pendingAdmin.name},</p>
+                <p style="font-size: 16px; color: #333333; line-height: 1.5;">You requested a new verification code. Please use the code below to complete your registration:</p>
+                
+                <div style="text-align: center; margin: 30px 0; padding: 20px; background-color: #e8f5e9; border-radius: 5px; border: 1px dashed #2e7d32;">
+                    <span style="font-size: 28px; font-weight: bold; letter-spacing: 5px; color: #2e7d32;">${verificationCode}</span>
+                    <p style="margin-top: 10px; font-size: 14px; color: #555555;">This code will expire in 15 minutes</p>
+                </div>
+                
+                <p style="font-size: 16px; color: #333333; line-height: 1.5;">If you did not request this verification code, please ignore this email.</p>
+                
+                <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e0e0e0; text-align: center; color: #757575; font-size: 14px;">
+                    <p>Cmax Online Store © ${new Date().getFullYear()}</p>
+                    <p>This is an automated email. Please do not reply.</p>
+                </div>
+            </div>
+            `
+        };
+
+        await transporter.sendMail(mailOptions);
+        res.json({ success: true, message: "Verification code resent to your email" });
+    } catch (error) {
+        console.error("Error resending verification code:", error);
+        res.json({ success: false, message: error.message });
+    }
+};
+
+// Verify code for registration
+const verifyCodeinRegistration = async (req, res) => {
+    try {
+        const { email, code } = req.body;
+
+        // Find admin with matching code and email
+        const admin = await adminModel.findOne({
+            email,
+            verificationCode: code,
+            verificationCodeExpires: { $gt: new Date() }
+        });
+
+        if (!admin) {
+            return res.json({ success: false, message: "Invalid or expired verification code" });
+        }
+
+        admin.isCodeVerified = true;
+        await admin.save();
+
+        res.json({ success: true, message: "Code verified successfully" });
+    } catch (error) {
+        console.error("Error verifying code:", error);
+        res.json({ success: false, message: error.message });
+    }
+};
+
+// Complete registration after verification
+const completeRegistration = async (req, res) => {
+    try {
+        const { email, verificationCode } = req.body;
+        const adminRegistrationKey = req.headers.adminkey;
+
+        // Validate admin key
+        if (!adminRegistrationKey || adminRegistrationKey !== process.env.ADMIN_REGISTRATION_KEY) {
+            return res.json({ success: false, message: "Unauthorized registration attempt" });
+        }
+
+        // Find admin with verified code
+        const admin = await adminModel.findOne({
+            email,
+            verificationCode,
+            isCodeVerified: true,
+            verificationCodeExpires: { $gt: new Date() }
+        });
+
+        if (!admin) {
+            return res.json({ success: false, message: "Invalid verification or expired code" });
+        }
+
+        // Update admin data if provided
+        if (req.body.name) admin.name = req.body.name;
+        if (req.body.username) admin.username = req.body.username;
+        if (req.body.password) admin.password = req.body.password;
+        if (req.body.role) admin.role = req.body.role;
+
+        // Handle profile image update
+        if (req.file) {
+            try {
+                const dataUri = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+                const result = await cloudinary.uploader.upload(dataUri, {
+                    resource_type: 'image',
+                    folder: 'admin_profiles'
+                });
+                admin.profileImage = result.secure_url;
+            } catch (uploadError) {
+                console.error('Error uploading image to Cloudinary:', uploadError);
+            }
+        }
+
+        // Activate account and clear verification fields
+        admin.active = true;
+        admin.verificationCode = undefined;
+        admin.verificationCodeExpires = undefined;
+        admin.isCodeVerified = false;
+
+        await admin.save();
+
+        // Create token
+        const token = jwt.sign(
+            {
+                id: admin._id,
+                email: admin.email,
+                role: admin.role
+            },
+            process.env.JWT_SECRET,
+            { expiresIn: '48h' }
+        );
+
+        // Broadcast new admin
+        broadcast({
+            type: "newAdmin",
+            admin: {
+                id: admin._id,
+                name: admin.name,
+                email: admin.email,
+                role: admin.role
+            }
+        });
+
+        res.json({
+            success: true,
+            message: "Registration completed successfully",
+            token,
+            admin: {
+                id: admin._id,
+                name: admin.name,
+                email: admin.email,
+                role: admin.role,
+                profileImage: admin.profileImage,
+                permissions: admin.permissions
+            }
+        });
+    } catch (error) {
+        console.error("Error completing registration:", error);
+        res.json({ success: false, message: error.message });
+    }
+};
+
 export {
     adminLogin,
     registerAdmin,
@@ -656,5 +986,9 @@ export {
     verifyResetCode,
     resetPassword,
     toggleAdminStatus,
-    getAllAdmins
+    getAllAdmins,
+    resendVerificationCode,
+    completeRegistration,
+    sendVerificationCodeinRegistration,
+    verifyCodeinRegistration
 };

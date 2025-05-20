@@ -18,7 +18,11 @@ import {
     sendChangePasswordCode,
     verifyChangePasswordCode,
     googleAuthCallback,
-    facebookAuthCallback
+    facebookAuthCallback,
+    completeRegistration,
+    sendVerificationCode,
+    resendVerificationCode,
+    verifyCode
 } from '../controllers/userController.js';
 import { userAuth } from '../middleware/userAuth.js';
 import uploadMiddleware from '../middleware/upload.js';
@@ -32,6 +36,10 @@ userRouter.post('/login', loginUser);
 userRouter.post('/send-reset-code', sendResetCode);
 userRouter.post('/verify-reset-code', verifyResetCode);
 userRouter.post('/reset-password', resetPassword);
+userRouter.post('/send-verification-code', uploadMiddleware.single('profileImage'), sendVerificationCode);
+userRouter.post('/verify-code', verifyCode);
+userRouter.post('/complete-registration', uploadMiddleware.single('profileImage'), completeRegistration);
+userRouter.post('/resend-verification-code', resendVerificationCode);
 
 // OAuth routes
 userRouter.get('/auth/google',

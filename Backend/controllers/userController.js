@@ -1017,7 +1017,356 @@ const getLoyalCustomers = async (req, res) => {
     }
 };
 
+// Send verification code for registration
+const sendVerificationCode = async (req, res) => {
+    try {
+        const {
+            email,
+            username,
+            password,
+            firstName,
+            lastName,
+            phoneNumber
+        } = req.body;
+
+        // Check if user already exists
+        const userExist = await userModel.findOne({
+            $or: [
+                { email },
+                { username }
+            ]
+        });
+
+        if (userExist) {
+            return res.json({
+                success: false,
+                message: userExist.email === email
+                    ? "Email already in use"
+                    : "Username already taken"
+            });
+        }
+
+        // Validate email format
+        if (!validator.isEmail(email)) {
+            return res.json({ success: false, message: "Please enter a valid email" });
+        }
+
+        // Generate 6-digit verification code
+        const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+        const verificationCodeExpires = Date.now() + 15 * 60 * 1000; // 15 minutes
+
+        // Store verification info in session or database
+        // For this implementation, we'll temporarily store in the database
+        // Create inactive user with verification code
+        let profileImageUrl = 'https://static.vecteezy.com/system/resources/thumbnails/036/594/092/small_2x/man-empty-avatar-photo-placeholder-for-social-networks-resumes-forums-and-dating-sites-male-and-female-no-photo-images-for-unfilled-user-profile-free-vector.jpg';
+
+        if (req.file) {
+            try {
+                const fileBuffer = req.file.buffer;
+                const fileType = req.file.mimetype;
+                const dataUri = `data:${fileType};base64,${fileBuffer.toString('base64')}`;
+
+                const uploadResult = await cloudinary.uploader.upload(dataUri, {
+                    folder: 'user_profiles',
+                    resource_type: 'auto',
+                    transformation: [{ width: 500, height: 500, crop: "fill" }]
+                });
+
+                profileImageUrl = uploadResult.secure_url;
+            } catch (uploadError) {
+                console.error("Error uploading image:", uploadError);
+            }
+        }
+
+        // Hash the password
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+
+        // Check if there's an existing inactive user with this email
+        let pendingUser = await userModel.findOne({
+            email,
+            isActive: false,
+            isVerified: false
+        });
+
+        if (pendingUser) {
+            // Update the existing pending user
+            pendingUser.verificationCode = verificationCode;
+            pendingUser.verificationCodeExpires = verificationCodeExpires;
+            pendingUser.firstName = firstName;
+            pendingUser.lastName = lastName;
+            pendingUser.username = username;
+            pendingUser.password = hashedPassword;
+            pendingUser.phoneNumber = phoneNumber;
+            pendingUser.profileImage = profileImageUrl;
+
+            await pendingUser.save();
+        } else {
+            // Create new pending user
+            pendingUser = new userModel({
+                firstName,
+                lastName,
+                email,
+                username,
+                password: hashedPassword,
+                phoneNumber,
+                profileImage: profileImageUrl,
+                verificationCode,
+                verificationCodeExpires,
+                isVerified: false,
+                isActive: false
+            });
+
+            await pendingUser.save();
+        }
+
+        // Send email with verification code
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS
+            }
+        });
+
+        const mailOptions = {
+            from: process.env.EMAIL_USER,
+            to: email,
+            subject: 'Email Verification - Cmax Online Store',
+            html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px; background: linear-gradient(to right, #f5f7fa, #eef2f7);">
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <h1 style="color: #3366cc;">Cmax Online Store</h1>
+                </div>
+                <div style="background-color: #ffffff; padding: 20px; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                    <h2 style="color: #333333; margin-bottom: 20px;">Verify Your Email Address</h2>
+                    <p style="font-size: 16px; color: #555555; line-height: 1.5;">Hello ${firstName},</p>
+                    <p style="font-size: 16px; color: #555555; line-height: 1.5;">Thank you for registering! Please use the verification code below to complete your registration:</p>
+                    
+                    <div style="text-align: center; margin: 30px 0;">
+                        <div style="font-size: 32px; font-weight: bold; letter-spacing: 5px; padding: 15px; background-color: #f0f5ff; border-radius: 5px; border: 1px dashed #3366cc;">
+                            ${verificationCode}
+                        </div>
+                        <p style="font-size: 14px; color: #777777; margin-top: 10px;">This code will expire in 15 minutes.</p>
+                    </div>
+                    
+                    <p style="font-size: 16px; color: #555555; line-height: 1.5;">If you did not request this verification, please ignore this email.</p>
+                </div>
+                <div style="text-align: center; margin-top: 20px; color: #888888; font-size: 14px;">
+                    <p>Cmax Online Store © ${new Date().getFullYear()}</p>
+                    <p>This is an automated email. Please do not reply.</p>
+                </div>
+            </div>
+            `
+        };
+
+        await transporter.sendMail(mailOptions);
+
+        res.json({
+            success: true,
+            message: "Verification code sent to your email",
+        });
+    } catch (error) {
+        console.error("Error sending verification code:", error);
+        res.json({ success: false, message: error.message });
+    }
+};
+
+// Resend verification code
+const resendVerificationCode = async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        // Find pending user
+        const pendingUser = await userModel.findOne({
+            email,
+            isActive: false,
+            isVerified: false
+        });
+
+        if (!pendingUser) {
+            return res.json({
+                success: false,
+                message: "We couldn't find a pending registration with this email"
+            });
+        }
+
+        // Generate new verification code
+        const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+        const verificationCodeExpires = Date.now() + 15 * 60 * 1000; // 15 minutes
+
+        // Update user with new code
+        pendingUser.verificationCode = verificationCode;
+        pendingUser.verificationCodeExpires = verificationCodeExpires;
+        await pendingUser.save();
+
+        // Send email with verification code
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS
+            }
+        });
+
+        const mailOptions = {
+            from: process.env.EMAIL_USER,
+            to: email,
+            subject: 'Email Verification Code - Cmax Online Store',
+            html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px; background: linear-gradient(to right, #f5f7fa, #eef2f7);">
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <h1 style="color: #3366cc;">Cmax Online Store</h1>
+                </div>
+                <div style="background-color: #ffffff; padding: 20px; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                    <h2 style="color: #333333; margin-bottom: 20px;">Your New Verification Code</h2>
+                    <p style="font-size: 16px; color: #555555; line-height: 1.5;">Hello ${pendingUser.firstName},</p>
+                    <p style="font-size: 16px; color: #555555; line-height: 1.5;">You requested a new verification code. Please use the code below to complete your registration:</p>
+                    
+                    <div style="text-align: center; margin: 30px 0;">
+                        <div style="font-size: 32px; font-weight: bold; letter-spacing: 5px; padding: 15px; background-color: #f0f5ff; border-radius: 5px; border: 1px dashed #3366cc;">
+                            ${verificationCode}
+                        </div>
+                        <p style="font-size: 14px; color: #777777; margin-top: 10px;">This code will expire in 15 minutes.</p>
+                    </div>
+                </div>
+                <div style="text-align: center; margin-top: 20px; color: #888888; font-size: 14px;">
+                    <p>Cmax Online Store © ${new Date().getFullYear()}</p>
+                </div>
+            </div>
+            `
+        };
+
+        await transporter.sendMail(mailOptions);
+
+        res.json({
+            success: true,
+            message: "New verification code sent to your email"
+        });
+    } catch (error) {
+        console.error("Error resending verification code:", error);
+        res.json({ success: false, message: error.message });
+    }
+};
+
+// Verify code
+const verifyCode = async (req, res) => {
+    try {
+        const { email, code } = req.body;
+
+        // Find pending user with this email
+        const pendingUser = await userModel.findOne({
+            email,
+            isActive: false,
+            isVerified: false
+        });
+
+        if (!pendingUser) {
+            return res.json({
+                success: false,
+                message: "We couldn't find a pending registration with this email"
+            });
+        }
+
+        // Check if code is valid and not expired
+        if (pendingUser.verificationCode !== code) {
+            return res.json({
+                success: false,
+                message: "Invalid verification code"
+            });
+        }
+
+        if (Date.now() > pendingUser.verificationCodeExpires) {
+            return res.json({
+                success: false,
+                message: "Verification code has expired"
+            });
+        }
+
+        // Mark code as verified but don't activate account yet
+        pendingUser.isVerified = true;
+        await pendingUser.save();
+
+        res.json({
+            success: true,
+            message: "Verification code is valid"
+        });
+    } catch (error) {
+        console.error("Error verifying code:", error);
+        res.json({ success: false, message: error.message });
+    }
+};
+
+// Complete registration after verification
+const completeRegistration = async (req, res) => {
+    try {
+        const { email, verificationCode } = req.body;
+
+        // Find pending user
+        const pendingUser = await userModel.findOne({
+            email,
+            isVerified: true,
+            isActive: false
+        });
+
+        if (!pendingUser) {
+            return res.json({
+                success: false,
+                message: "We couldn't find a verified registration with this email"
+            });
+        }
+
+        // Final verification check
+        if (pendingUser.verificationCode !== verificationCode) {
+            return res.json({
+                success: false,
+                message: "Invalid verification code"
+            });
+        }
+
+        if (Date.now() > pendingUser.verificationCodeExpires) {
+            return res.json({
+                success: false,
+                message: "Verification code has expired"
+            });
+        }
+
+        // Activate user account
+        pendingUser.isActive = true;
+
+        // Clear verification fields
+        pendingUser.verificationCode = undefined;
+        pendingUser.verificationCodeExpires = undefined;
+
+        await pendingUser.save();
+
+        // Create token for automatic login
+        const token = createToken(pendingUser._id);
+
+        res.json({
+            success: true,
+            message: "Account created successfully",
+            token,
+            user: {
+                id: pendingUser._id,
+                firstName: pendingUser.firstName,
+                lastName: pendingUser.lastName,
+                email: pendingUser.email,
+                profileImage: pendingUser.profileImage
+            }
+        });
+    } catch (error) {
+        console.error("Error completing registration:", error);
+        res.json({ success: false, message: error.message });
+    }
+};
+
+// Export the new functions
 export {
+    sendVerificationCode,
+    verifyCode,
+    completeRegistration,
+    resendVerificationCode,
     loginUser,
     registerUser,
     sendResetCode,
