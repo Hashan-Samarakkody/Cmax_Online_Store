@@ -603,7 +603,6 @@ const Dashboard = () => {
 
       {/* Stats Cards - keep the same grid but better small screen support */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-5">
-        {/* Same card structure for all 5 cards - only showing first as example */}
         <div className="bg-white rounded-lg shadow p-4 sm:p-5">
           <div className="flex items-center">
             <div className="flex-shrink-0 h-10 sm:h-12 w-10 sm:w-12 rounded-full bg-indigo-100 flex items-center justify-center">

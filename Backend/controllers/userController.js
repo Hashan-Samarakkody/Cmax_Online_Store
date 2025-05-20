@@ -235,7 +235,7 @@ const sendResetCode = async (req, res) => {
         // Send the email
         await transporter.sendMail(mailOptions);
 
-        // Return success message (for security, use same response whether user exists or not)
+        // Return success message
         res.json({
             success: true,
             message: "If your email exists in our system, a verification code has been sent"

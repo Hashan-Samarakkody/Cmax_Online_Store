@@ -426,8 +426,6 @@ const CategoryManager = () => {
         }
     };
 
-    // Rest of your code remains the same...
-
     // Pagination controls
     const goToPage = (pageNumber) => {
         setCurrentPage(Math.max(1, Math.min(pageNumber, totalPages)));

@@ -105,7 +105,7 @@ const registerAdmin = async (req, res) => {
 
                 profileImageUrl = result.secure_url;
             } catch (uploadError) {
-                // Continue with default image if upload fails
+    
                 console.error('Error uploading image to Cloudinary:', uploadError);
             }
         }

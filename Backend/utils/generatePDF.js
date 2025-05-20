@@ -714,7 +714,6 @@ async function processSalesData(orders) {
                         // Try to find by productId field instead
                         product = await productModel.findOne({ productId: orderItem.productId });
                     } else {
-                        // Log other errors but continue processing
                         console.error('Error finding product:', err.message);
                     }
                 }
@@ -802,7 +801,6 @@ async function processSalesData(orders) {
                     });
                 }
             } catch (err) {
-                // Log error but continue processing other items
                 console.error('Error processing order item:', err);
                 console.error('Problematic item:', orderItem);
             }

@@ -293,10 +293,23 @@ const Add = ({ token }) => {
 
   const addColor = () => {
     const trimmedColor = currentColor.trim().toLowerCase();
-    if (trimmedColor && !colors.includes(trimmedColor)) {
+
+    // Validate that color contains only letters
+    if (!trimmedColor) {
+      return; // Empty input, do nothing
+    }
+
+    // Check if color contains only alphabetical characters
+    const letterOnlyRegex = /^[a-zA-Z]+$/;
+    if (!letterOnlyRegex.test(trimmedColor)) {
+      toast.error('Color name can only contain letters.');
+      return;
+    }
+
+    if (!colors.includes(trimmedColor)) {
       setColors([...colors, trimmedColor]);
       setCurrentColor('');
-    } else if (colors.includes(trimmedColor)) {
+    } else {
       toast.warning('This color is already added.');
     }
   };
@@ -471,6 +484,7 @@ const Add = ({ token }) => {
               <input
                 type="text"
                 value={currentColor}
+                pattern='^[a-zA-Z]+$'
                 onChange={(e) => setCurrentColor(e.target.value)}
                 placeholder="Enter color name (e.g., red, blue)"
                 className="flex-grow px-3 py-2 border"
@@ -483,6 +497,7 @@ const Add = ({ token }) => {
                 Add Color
               </button>
             </div>
+
             {/* Display selected colors */}
             <div className="flex flex-wrap gap-2">
               {colors.map((color) => (

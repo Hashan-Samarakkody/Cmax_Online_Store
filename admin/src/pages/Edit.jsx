@@ -134,13 +134,26 @@ const Edit = ({ token }) => {
             const newImages = [...images];
 
             // If this is replacing an existing image URL, add it to imagesToDelete
-            if (typeof newImages[index] === 'string' && !imagesToDelete.includes(newImages[index])) {
+            if (index < newImages.length && typeof newImages[index] === 'string' && !imagesToDelete.includes(newImages[index])) {
                 setImagesToDelete(prev => [...prev, newImages[index]]);
             }
 
+            // Add the new image at the specified index
             newImages[index] = processedImage;
-            setImages(newImages);
 
+            // Filter out null values
+            const cleanImages = newImages.filter(img => img !== null);
+
+            // Ensure no more than 4 images
+            const limitedImages = cleanImages.length > 4 ? cleanImages.slice(0, 4) : cleanImages;
+
+            // Pad with nulls to maintain array structure (for UI display)
+            const finalImages = [...limitedImages];
+            while (finalImages.length < 4) {
+                finalImages.push(null);
+            }
+
+            setImages(finalImages);
             toast.success('Image processed successfully');
         } catch (error) {
             toast.error(error.message || 'Failed to process image');
@@ -168,13 +181,26 @@ const Edit = ({ token }) => {
 
     const addColor = () => {
         const trimmedColor = currentColor.trim().toLowerCase();
-        if (trimmedColor && !colors.includes(trimmedColor)) {
+
+        // Validate that color contains only letters
+        if (!trimmedColor) {
+            return; // Empty input, do nothing
+        }
+
+        // Check if color contains only alphabetical characters
+        const letterOnlyRegex = /^[a-zA-Z]+$/;
+        if (!letterOnlyRegex.test(trimmedColor)) {
+            toast.error('Color name can only contain letters.');
+            return;
+        }
+
+        if (!colors.includes(trimmedColor)) {
             setColors([...colors, trimmedColor]);
             setCurrentColor('');
-        } else if (colors.includes(trimmedColor)) {
+        } else {
             toast.warning('This color is already added.');
         }
-    };
+      };
 
     const removeColor = (colorToRemove) => {
         setColors(colors.filter(color => color !== colorToRemove));

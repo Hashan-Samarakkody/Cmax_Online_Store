@@ -354,12 +354,31 @@ const updateProduct = async (req, res) => {
 
         // Process existing images with improved handling
         let existingImages = [];
-        Object.keys(req.body).forEach(key => {
-            if (key.startsWith('existingImages[')) {
-                const index = key.match(/\[(\d+)\]/)[1];
-                existingImages[parseInt(index)] = req.body[key];
+
+        // Check if existingImages is sent as a JSON string
+        if (req.body.existingImages && typeof req.body.existingImages === 'string') {
+            try {
+                existingImages = JSON.parse(req.body.existingImages);
+            } catch (e) {
+                console.error('Error parsing existingImages JSON:', e);
             }
-        });
+        }
+        // Check if it's already an array (some form parsers may do this)
+        else if (Array.isArray(req.body.existingImages)) {
+            existingImages = req.body.existingImages;
+        }
+        // Use the original approach of looking for indexed fields
+        else {
+            Object.keys(req.body).forEach(key => {
+                if (key.startsWith('existingImages[')) {
+                    const index = key.match(/\[(\d+)\]/)[1];
+                    existingImages[parseInt(index)] = req.body[key];
+                }
+            });
+        }
+
+        // Filter out any undefined or null elements
+        existingImages = existingImages.filter(img => img !== undefined && img !== null);
 
         // Filter out any undefined elements
         existingImages = existingImages.filter(img => img !== undefined);
@@ -371,13 +390,15 @@ const updateProduct = async (req, res) => {
 
                 // Delete each image from Cloudinary
                 for (const imageUrl of imagesToDelete) {
+                    // Skip null or undefined values
+                    if (!imageUrl) continue;
+
                     // Extract the public_id from the Cloudinary URL
                     const publicIdMatch = imageUrl.match(/\/v\d+\/([^/]+)\.\w+$/);
                     const publicId = publicIdMatch ? publicIdMatch[1] : null;
 
                     if (publicId) {
                         await cloudinary.uploader.destroy(publicId);
-                        console.log(`Deleted image: ${publicId}`);
                     }
                 }
 
@@ -416,8 +437,9 @@ const updateProduct = async (req, res) => {
             );
         }
 
-        // Combine existing and new images
-        const updatedImages = [...existingImages, ...newImagesUrls];
+        // Combine existing and new images, and limit to a maximum of 4
+        const combinedImages = [...existingImages, ...newImagesUrls];
+        const updatedImages = combinedImages.slice(0, 4);
 
         // Only validate images if they're being modified
         if (req.body.imagesToDelete || newImageFiles.length > 0) {
