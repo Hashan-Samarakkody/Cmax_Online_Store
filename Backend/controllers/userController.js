@@ -212,7 +212,7 @@ const sendResetCode = async (req, res) => {
                 </div>
                 <div style="background-color: #ffffff; padding: 20px; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
                     <h2 style="color: #333333; margin-bottom: 20px;">Password Reset Request</h2>
-                    <p style="font-size: 16px; color: #555555; line-height: 1.5;">Hello ${user.name},</p>
+                    <p style="font-size: 16px; color: #555555; line-height: 1.5;">Hello ${user.firstName},</p>
                     <p style="font-size: 16px; color: #555555; line-height: 1.5;">We received a request to reset your password. Please enter the verification code below to continue the password reset process:</p>
                     
                     <div style="text-align: center; margin: 30px 0;">
