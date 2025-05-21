@@ -43,7 +43,6 @@ const Wishlist = () => {
                             <div className="absolute top-2 right-2 sm:top-3 sm:right-3 flex flex-col gap-2">
                                 <button
                                     onClick={() => {
-                                        addToCart(item._id);
                                         removeFromWishlist(item._id);
                                     }}
                                     className="bg-white p-1 sm:p-2 rounded-full shadow hover:bg-red-100 transition-colors"
