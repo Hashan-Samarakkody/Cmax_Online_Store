@@ -2,6 +2,7 @@ import { v2 as cloudinary } from 'cloudinary';
 import productModel from '../models/productModel.js';
 import Subcategory from '../models/subcategoryModel.js';
 import { broadcast } from '../server.js';
+import mongoose from 'mongoose';
 
 // Add product function
 const addProduct = async (req, res) => {
@@ -522,6 +523,61 @@ const updateProduct = async (req, res) => {
     }
 };
 
+// Get subcategory distribution by product quantity
+const getSubcategoryQuantityDistribution = async (req, res) => {
+    try {
+        const { categoryId } = req.query;
+
+        // Build the match condition based on whether categoryId is provided
+        let matchCondition = {};
+        if (categoryId && mongoose.Types.ObjectId.isValid(categoryId)) {
+            matchCondition.category = new mongoose.Types.ObjectId(categoryId);
+        }
+
+        // Aggregate to get subcategory quantities
+        const subcategoryDistribution = await productModel.aggregate([
+            {
+                $match: matchCondition
+            },
+            {
+                $lookup: {
+                    from: "subcategories",
+                    localField: "subcategory",
+                    foreignField: "_id",
+                    as: "subcategoryData"
+                }
+            },
+            {
+                $unwind: "$subcategoryData"
+            },
+            {
+                $group: {
+                    _id: "$subcategory",
+                    name: { $first: "$subcategoryData.name" },
+                    totalQuantity: { $sum: "$quantity" },
+                    productCount: { $sum: 1 }
+                }
+            },
+            {
+                $project: {
+                    _id: 1,
+                    name: 1,
+                    totalQuantity: 1,
+                    productCount: 1
+                }
+            },
+            {
+                $sort: { totalQuantity: -1 }
+            }
+        ]);
+
+        res.status(200).json(subcategoryDistribution);
+    } catch (error) {
+        console.error("Error fetching subcategory quantity distribution:", error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
 export {
     addProduct,
     listProduct,
@@ -530,5 +586,6 @@ export {
     getAllProducts,
     updateProduct,
     getSingleProductDetails,
-    toggleProductVisibility
+    toggleProductVisibility,
+    getSubcategoryQuantityDistribution
 };
