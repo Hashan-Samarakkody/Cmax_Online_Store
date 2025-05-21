@@ -219,7 +219,7 @@ const Edit = ({ token }) => {
 
         // Validate Quantity
         const numericQuantity = Number(sanitizedQuantity);
-        if (sanitizedQuantity === '' || isNaN(numericQuantity) || numericQuantity < 0) {
+        if (sanitizedQuantity === '' || isNaN(numericQuantity) || numericQuantity < 1) {
             toast.error('Please enter a valid quantity (0 or positive number).');
             return;
         }
