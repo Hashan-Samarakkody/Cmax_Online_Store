@@ -28,6 +28,8 @@ const Product = () => {
   // Fetch product data
   const fetchProductData = async () => {
     setIsLoading(true);
+    let productFound = false;
+
     try {
       const response = await axios.post(`${backendUrl}/api/product/single`, { productId });
       if (response.data.success && response.data.product) {
@@ -39,13 +41,14 @@ const Product = () => {
         };
         setProductData(product);
         setImage(product.images?.[0] || '');
+        productFound = true;
       }
     } catch (error) {
       console.error("Error fetching product directly:", error);
     }
 
-    // Fallback to context data if API request fails or returned empty data
-    if ((!productData || !productData.name) && products && productId) {
+    // Fallback to context data ONLY if API request failed or returned empty data
+    if (!productFound && products && productId) {
       const foundProduct = products.find(item => item._id === productId);
       if (foundProduct) {
         console.log("Context product data:", foundProduct);
@@ -58,6 +61,7 @@ const Product = () => {
         setImage(foundProduct.images?.[0] || '');
       }
     }
+
     setIsLoading(false);
   };
 
