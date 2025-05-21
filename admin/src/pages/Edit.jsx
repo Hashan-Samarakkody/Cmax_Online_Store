@@ -105,6 +105,31 @@ const Edit = ({ token }) => {
         }
     }, [categories, selectedCategory, initialLoad]);
 
+    useEffect(() => {
+        // Only run if description has content and we're not in loading state
+        if (description && !loading) {
+            // Get the textarea element
+            const textarea = document.querySelector('textarea');
+            if (textarea) {
+                // Use setTimeout to ensure DOM is ready
+                setTimeout(() => {
+                    // Reset height to auto to calculate new height
+                    textarea.style.height = "auto";
+                    // Adjust height based on scrollHeight
+                    textarea.style.height = `${textarea.scrollHeight}px`;
+
+                    // Adjust width if description is long
+                    const lineCount = description.split("\n").length;
+                    if (lineCount > 10) {
+                        textarea.style.width = "150%";
+                    } else {
+                        textarea.style.width = "100%";
+                    }
+                }, 10);
+            }
+        }
+    }, [description, loading]);
+
     // Handle category change by user (not initial load)
     const handleCategoryChange = (e) => {
         const newCategoryId = e.target.value;
@@ -411,7 +436,7 @@ const Edit = ({ token }) => {
                             e.target.style.height = "auto"; // Reset height to auto to calculate new height
                             e.target.style.height = `${e.target.scrollHeight}px`; // Adjust height based on scrollHeight
                             // Adjust width if there are more than 10 lines
-                            const lineCount = e.target.value.split("\0").length;
+                            const lineCount = e.target.value.split("\n").length;
                             if (lineCount > 10) {
                                 e.target.style.width = "150%"; // Increase width to 1.5 times
                             } else {
