@@ -8,6 +8,7 @@ import { assets } from '../assets/assets';
 import { useNavigate } from 'react-router-dom';
 import WebSocketService from '../services/WebSocketService';
 import RevenuePrediction from '../components/RevenuePrediction';
+import { toast } from 'react-toastify';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Title, Tooltip, Legend);
 
@@ -96,7 +97,7 @@ const Dashboard = () => {
       await fetchCategoryData();
 
       // Fetch subcategory distribution
-      await fetchSubcategoryData();
+      await fetchSubcategoryQuantityData();
 
       // Update last update timestamp
       setLastUpdate(Date.now());
@@ -180,11 +181,10 @@ const Dashboard = () => {
     }
   };
 
-  // Function to fetch subcategories data
-  const fetchSubcategoryData = async (categoryId = null) => {
+  // Function to fetch subcategories quantity data
+  const fetchSubcategoryQuantityData = async (categoryId = null) => {
     const token = localStorage.getItem('adminToken');
     try {
-
       // Add request options with token
       const options = {
         headers: { token }
@@ -193,59 +193,48 @@ const Dashboard = () => {
       // Only add params if categoryId exists
       if (categoryId) {
         options.params = { categoryId };
+      } else {
+        toast.error('Fetching all subcategories (no categoryId)');
       }
 
       const response = await axios.get(
-        `${backendUrl}/api/categories/subcategories/all`,
+        `${backendUrl}/api/product/subcategory-quantities`,
         options
       );
 
-      // Transform the response data to have the format  need for the chart
-      const subcategoryData = response.data.map(subcategory => ({
-        name: subcategory.name,
-        count: subcategory.productCount || 0
-      }));
-
-      // Sort by count and get top subcategories
-      const sortedData = subcategoryData.sort((a, b) => b.count - a.count).slice(0, 10);
-      setSubcategoryDistribution(sortedData);
+      setSubcategoryDistribution(response.data);
       setLastUpdate(Date.now());
     } catch (error) {
-      console.error('Error fetching subcategory data:', error);
+      console.error('Error fetching subcategory quantity data:', error);
     }
   };
 
-  // Function to handle category click
   const handleCategoryClick = (_, elements) => {
-    if (elements.length > 0) {
-      const categoryIndex = elements[0].index;
-      const category = categoryDistribution[categoryIndex];
+  if (elements.length > 0) {
+    const index = elements[0].index;
+    const category = categoryDistribution[index];
+    setSelectedCategory(category);
 
-      if (category) {
-        // Find the category ID from the category name using our map
-        const categoryName = category.category.toLowerCase();
-        const categoryId = categoryMap[categoryName];
+    // First approach: Try to use categoryId directly from the object
+    let categoryId = category._id || category.id || category.categoryId;
 
-        setSelectedCategory(category);
-
-        if (categoryId) {
-          // Fetch subcategories for this category
-          fetchSubcategoryData(categoryId);
-        } else {
-          console.error('Could not find category ID for:', category.category);
-        }
-      }
-    } else {
-      // Reset to show all subcategories when clicking outside a category
-      setSelectedCategory(null);
-      fetchSubcategoryData();
+    // Second approach: If no direct ID is available, use the category name with our map
+    if (!categoryId && category.category) {
+      categoryId = categoryMap[category.category.toLowerCase()];
     }
+
+    if (categoryId) {
+      fetchSubcategoryQuantityData(categoryId);
+    } else {
+      console.error('Could not find category ID in:', category);
+    }
+  }
   };
 
-  // Function to clear category selection
+  // And in clearCategorySelection:
   const clearCategorySelection = () => {
     setSelectedCategory(null);
-    fetchSubcategoryData(); // Fetch all subcategories
+    fetchSubcategoryQuantityData(); // Fetch all subcategories
   };
 
   // Improved focused data fetching functions with consistent error handling and loading states
@@ -496,7 +485,7 @@ const Dashboard = () => {
     labels: subcategoryDistribution.map(item => item.name),
     datasets: [
       {
-        data: subcategoryDistribution.map(item => item.count),
+        data: subcategoryDistribution.map(item => item.totalQuantity),
         backgroundColor: subcategoryDistribution.map((_, index) => generateColor(index + 10).bgColor),
         borderColor: subcategoryDistribution.map((_, index) => generateColor(index + 10).borderColor),
         borderWidth: 2
@@ -771,7 +760,9 @@ const Dashboard = () => {
         <div className="bg-white rounded-lg shadow p-4 sm:p-5">
           <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-4 gap-2 sm:gap-0">
             <h2 className="text-lg sm:text-xl font-semibold">
-              {selectedCategory ? `Subcategory in "${selectedCategory.category}"` : 'All Subcategory Distribution'}
+              {selectedCategory
+                ? `Subcategory Quantities in "${selectedCategory.category}"`
+                : 'All Subcategory Product Quantities'}
             </h2>
             {selectedCategory && (
               <button
@@ -789,6 +780,15 @@ const Dashboard = () => {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
+                  tooltip: {
+                    callbacks: {
+                      label: function (context) {
+                        const label = context.label || '';
+                        const value = context.raw || 0;
+                        return `${label}: ${value} units`;
+                      }
+                    }
+                  },
                   legend: {
                     position: 'right',
                     labels: {

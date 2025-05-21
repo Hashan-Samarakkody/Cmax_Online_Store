@@ -14,9 +14,13 @@ const Orders = ({ token }) => {
     orderId: true,
     customerName: false,
     price: false,
-    productDetails: false
+    productDetails: false,
+    date: false // Add date search criteria
   });
   const [statusFilter, setStatusFilter] = useState('All');
+  // Add date range states
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
@@ -44,8 +48,6 @@ const Orders = ({ token }) => {
       toast.error(error.message);
     }
   };
-
-
 
   // Update pagination and displayed orders whenever filteredOrders or pagination settings change
   useEffect(() => {
@@ -82,6 +84,41 @@ const Orders = ({ token }) => {
     let statusFiltered = orders;
     if (statusFilter !== 'All') {
       statusFiltered = orders.filter(order => order.status === statusFilter);
+    }
+
+    // Then apply date range filter if enabled and dates are provided
+    if (searchCriteria.date) {
+      const startDateObj = startDate ? new Date(startDate) : null;
+      const endDateObj = endDate ? new Date(endDate) : null;
+
+      if (startDateObj || endDateObj) {
+        statusFiltered = statusFiltered.filter(order => {
+          const orderDate = new Date(order.date);
+
+          // If only start date is provided
+          if (startDateObj && !endDateObj) {
+            // Set time to start of day for proper comparison
+            startDateObj.setHours(0, 0, 0, 0);
+            return orderDate >= startDateObj;
+          }
+
+          // If only end date is provided
+          if (!startDateObj && endDateObj) {
+            // Set time to end of day for proper comparison
+            endDateObj.setHours(23, 59, 59, 999);
+            return orderDate <= endDateObj;
+          }
+
+          // If both dates are provided
+          if (startDateObj && endDateObj) {
+            startDateObj.setHours(0, 0, 0, 0);
+            endDateObj.setHours(23, 59, 59, 999);
+            return orderDate >= startDateObj && orderDate <= endDateObj;
+          }
+
+          return true;
+        });
+      }
     }
 
     // Then apply search term filter if present
@@ -124,7 +161,7 @@ const Orders = ({ token }) => {
     });
 
     setFilteredOrders(filtered);
-  }, [searchTerm, searchCriteria, orders, statusFilter]);
+  }, [searchTerm, searchCriteria, orders, statusFilter, startDate, endDate]);
 
   // Generate pagination buttons
   const renderPaginationButtons = () => {
@@ -295,12 +332,48 @@ const Orders = ({ token }) => {
 
   // Search functionality
   useEffect(() => {
+    // First filter by status
+    let statusFiltered = orders;
+    if (statusFilter !== 'All') {
+      statusFiltered = orders.filter(order => order.status === statusFilter);
+    }
+
+    // Apply date range filter if enabled
+    if (searchCriteria.date) {
+      const startDateObj = startDate ? new Date(startDate) : null;
+      const endDateObj = endDate ? new Date(endDate) : null;
+
+      if (startDateObj || endDateObj) {
+        statusFiltered = statusFiltered.filter(order => {
+          const orderDate = new Date(order.date);
+
+          if (startDateObj && !endDateObj) {
+            startDateObj.setHours(0, 0, 0, 0);
+            return orderDate >= startDateObj;
+          }
+
+          if (!startDateObj && endDateObj) {
+            endDateObj.setHours(23, 59, 59, 999);
+            return orderDate <= endDateObj;
+          }
+
+          if (startDateObj && endDateObj) {
+            startDateObj.setHours(0, 0, 0, 0);
+            endDateObj.setHours(23, 59, 59, 999);
+            return orderDate >= startDateObj && orderDate <= endDateObj;
+          }
+
+          return true;
+        });
+      }
+    }
+
     if (!searchTerm.trim()) {
-      setFilteredOrders(orders);
+      setFilteredOrders(statusFiltered);
       return;
     }
 
-    const filtered = orders.filter(order => {
+    const filtered = statusFiltered.filter(order => {
       const term = searchTerm.toLowerCase();
 
       // Search by Order ID if selected
@@ -334,7 +407,7 @@ const Orders = ({ token }) => {
     });
 
     setFilteredOrders(filtered);
-  }, [searchTerm, searchCriteria, orders]);
+  }, [searchTerm, searchCriteria, orders, statusFilter, startDate, endDate]);
 
   // Toggle search criteria
   const handleCriteriaChange = (criterion) => {
@@ -418,6 +491,39 @@ const Orders = ({ token }) => {
           </select>
         </div>
 
+        {/* Date range inputs - show when date search is enabled */}
+        {searchCriteria.date && (
+          <div className="flex flex-wrap gap-2 mt-3">
+            <div className="flex items-center">
+              <label className="mr-2 whitespace-nowrap">From:</label>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="p-2 border border-gray-300 rounded"
+              />
+            </div>
+            <div className="flex items-center">
+              <label className="mr-2 whitespace-nowrap">To:</label>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="p-2 border border-gray-300 rounded"
+              />
+            </div>
+            <button
+              onClick={() => {
+                setStartDate('');
+                setEndDate('');
+              }}
+              className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-2 py-1 rounded text-sm"
+            >
+              Clear Dates
+            </button>
+          </div>
+        )}
+
         <div className="flex flex-wrap gap-4 mt-2">
           <label className="flex items-center cursor-pointer">
             <input
@@ -458,6 +564,16 @@ const Orders = ({ token }) => {
             />
             <span>Size/Color</span>
           </label>
+
+          <label className="flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              checked={searchCriteria.date}
+              onChange={() => handleCriteriaChange('date')}
+              className="mr-2 h-4 w-4"
+            />
+            <span>Date Range</span>
+          </label>
         </div>
       </div>
 
@@ -468,6 +584,25 @@ const Orders = ({ token }) => {
             Filtered by status: {statusFilter}
             <button
               onClick={() => setStatusFilter('All')}
+              className="ml-2 text-blue-600 hover:text-blue-800"
+            >
+              ×
+            </button>
+          </span>
+        </div>
+      )}
+
+      {/* Date filter indicators */}
+      {searchCriteria.date && (startDate || endDate) && (
+        <div className="mb-4">
+          <span className="inline-block bg-blue-100 text-blue-800 text-sm font-semibold mr-2 px-3 py-1 rounded-full">
+            Date filter: {startDate ? `From ${new Date(startDate).toLocaleDateString()}` : ''}
+            {endDate ? `${startDate ? ' to ' : 'Until '}${new Date(endDate).toLocaleDateString()}` : ''}
+            <button
+              onClick={() => {
+                setStartDate('');
+                setEndDate('');
+              }}
               className="ml-2 text-blue-600 hover:text-blue-800"
             >
               ×
