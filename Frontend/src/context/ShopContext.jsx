@@ -198,11 +198,31 @@ const ShopContextProvider = (props) => {
 
     // Keep all existing code below
     const addToCart = async (itemId, size, color) => {
+        // Find the product to check quantity
+        const product = products.find(p => p._id === itemId);
+
+        if (!product || product.quantity <= 0) {
+            toast.error('This product is out of stock');
+            return;
+        }
+
         // If product doesn't have sizes or colors, use 'undefined'
         const cartKey = `${size || 'undefined'}_${color || 'undefined'}`;
 
         let cartData = structuredClone(cartItems);
 
+        // Check if adding more would exceed available quantity
+        let currentQuantity = 0;
+        if (cartData[itemId] && cartData[itemId][cartKey]) {
+            currentQuantity = cartData[itemId][cartKey];
+        }
+
+        if (currentQuantity + 1 > product.quantity) {
+            toast.warning(`Sorry, only ${product.quantity} item(s) available.`);
+            return;
+        }
+
+        // Proceed with adding to cart
         if (cartData[itemId]) {
             if (cartData[itemId][cartKey]) {
                 cartData[itemId][cartKey] += 1;
@@ -231,7 +251,7 @@ const ShopContextProvider = (props) => {
                 toast.error(error.message)
             }
         }
-    }
+      };
 
     const getCartCount = () => {
         let totalCount = 0;
@@ -252,6 +272,14 @@ const ShopContextProvider = (props) => {
     }
 
     const updateQuantity = async (itemId, cartKey, quantity) => {
+
+        const product = products.find(p => p._id === itemId);
+
+        if (product && quantity > product.quantity) {
+            toast.warning(`Sorry, only ${product.quantity} item(s) available.`);
+            return;
+        }
+        
         // Add a deep copy of current cart items
         let cartData = structuredClone(cartItems);
 

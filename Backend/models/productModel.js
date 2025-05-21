@@ -13,7 +13,8 @@ const productSchema = new mongoose.Schema({
     images: { type: [String], default: [] },
     hasSizes: { type: Boolean, default: false },
     hasColors: { type: Boolean, default: false },
-    isVisible: { type: Boolean, default: true }
+    isVisible: { type: Boolean, default: true },
+    quantity: { type: Number, default: 0, min: 0 }
 });
 
 const productModel = mongoose.models.product || mongoose.model("product", productSchema);

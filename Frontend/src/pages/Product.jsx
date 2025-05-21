@@ -31,17 +31,30 @@ const Product = () => {
     try {
       const response = await axios.post(`${backendUrl}/api/product/single`, { productId });
       if (response.data.success && response.data.product) {
-        setProductData(response.data.product);
-        setImage(response.data.product.images?.[0] || '');
+        console.log("API fetched product data:", response.data.product);
+        // Ensure quantity is a number
+        const product = {
+          ...response.data.product,
+          quantity: Number(response.data.product.quantity || 0)
+        };
+        setProductData(product);
+        setImage(product.images?.[0] || '');
       }
     } catch (error) {
       console.error("Error fetching product directly:", error);
     }
-    // Fallback to context data if API request fails
-    if (products && productId) {
+
+    // Fallback to context data if API request fails or returned empty data
+    if ((!productData || !productData.name) && products && productId) {
       const foundProduct = products.find(item => item._id === productId);
       if (foundProduct) {
-        setProductData(foundProduct);
+        console.log("Context product data:", foundProduct);
+        // Ensure quantity is a number
+        const product = {
+          ...foundProduct,
+          quantity: Number(foundProduct.quantity || 0)
+        };
+        setProductData(product);
         setImage(foundProduct.images?.[0] || '');
       }
     }
@@ -236,7 +249,14 @@ const Product = () => {
         <div className='flex-1'>
           <h1 className='text-2xl sm:text-3xl font-medium'>{productData.name}</h1>
 
-          <p className='text-xl mt-3 sm:mt-5 font-medium'>{currency}{productData.price}</p>
+          <p className="text-xl mt-3 sm:mt-5 font-medium">{currency}{productData.price}</p>
+          {productData.quantity > 0 ? (
+            <p className="mt-1 text-green-600">
+              In stock: {productData.quantity} {productData.quantity === 1 ? 'item' : 'items'}
+            </p>
+          ) : (
+            <p className="mt-1 text-red-600 font-medium">Out of stock</p>
+          )}
           <p className='mt-3 sm:mt-5 text-gray-600 text-sm sm:text-base text-justify'>{productData.description}</p>
 
           {/* Size selection */}
@@ -289,15 +309,14 @@ const Product = () => {
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-4">
             <button
-              onClick={() => {
-                handleAddToCart();
-                if(response.data.success) {
-                  toast.success('Product added to cart!')
-                }
-              }}
-              className='bg-black text-white px-6 sm:px-8 py-3 text-sm active:bg-gray-700 rounded-lg cursor-pointer hover:bg-gray-800 transition-colors duration-200 ease-in-out w-full sm:w-auto'
+              onClick={handleAddToCart}
+              disabled={productData.quantity <= 0}
+              className={`${productData.quantity <= 0
+                ? 'bg-gray-300 cursor-not-allowed'
+                : 'bg-black hover:bg-gray-800 active:bg-gray-700'} 
+    text-white px-6 sm:px-8 py-3 text-sm rounded-lg cursor-pointer transition-colors duration-200 ease-in-out w-full sm:w-auto`}
             >
-              Add to Cart
+              {productData.quantity <= 0 ? 'Out of Stock' : 'Add to Cart'}
             </button>
             <button
               onClick={() => {

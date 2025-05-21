@@ -31,6 +31,7 @@ const Edit = ({ token }) => {
     const [initialLoad, setInitialLoad] = useState(true);
     const [processingImage, setProcessingImage] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [quantity, setQuantity] = useState('');
 
     // Fetch categories
     useEffect(() => {
@@ -71,6 +72,7 @@ const Edit = ({ token }) => {
                     setHasColors(product.hasColors || false);
                     setSizes(product.sizes || []);
                     setColors(product.colors || []);
+                    setQuantity(product.quantity || '');
 
                     // Fetch images
                     const imageUrls = product.images || [];
@@ -213,6 +215,14 @@ const Edit = ({ token }) => {
         const sanitizedName = DOMPurify.sanitize(name.trim());
         const sanitizedDescription = DOMPurify.sanitize(description.trim());
         const sanitizedPrice = DOMPurify.sanitize(price.trim());
+        const sanitizedQuantity = DOMPurify.sanitize(quantity);
+
+        // Validate Quantity
+        const numericQuantity = Number(sanitizedQuantity);
+        if (sanitizedQuantity === '' || isNaN(numericQuantity) || numericQuantity < 0) {
+            toast.error('Please enter a valid quantity (0 or positive number).');
+            return;
+        }
 
         // Validate Product Name
         if (!sanitizedName || sanitizedName.length < 3 || sanitizedName.length > 100) {
@@ -280,6 +290,7 @@ const Edit = ({ token }) => {
         formData.append('subcategory', selectedSubCategory);
         formData.append('price', numericPrice);
         formData.append('bestseller', bestseller);
+        formData.append('quantity', numericQuantity);
 
         // Optional sizes and colors
         formData.append('hasSizes', hasSizes);
@@ -466,6 +477,19 @@ const Edit = ({ token }) => {
                             required
                         />
                     </div>
+                </div>
+
+                <div>
+                    <p className="font-semibold mb-2">Product Quantity</p>
+                    <input
+                        onChange={(e) => setQuantity(e.target.value)}
+                        value={quantity}
+                        type='number'
+                        min={0}
+                        placeholder='0'
+                        className="w-full px-3 py-2 sm:w-[120px]"
+                        required
+                    />
                 </div>
 
                 {/* Sizes Toggle */}

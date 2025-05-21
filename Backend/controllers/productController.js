@@ -17,7 +17,8 @@ const addProduct = async (req, res) => {
             colors,
             bestseller,
             hasSizes,
-            hasColors
+            hasColors,
+            quantity
         } = req.body;
 
         // Check if Product ID already exists
@@ -54,6 +55,7 @@ const addProduct = async (req, res) => {
             description,
             category,
             price: Number(price),
+            quantity: Number(quantity),
             subcategory,
             bestseller: bestseller === 'true'
                 ? true : false,
@@ -332,7 +334,8 @@ const updateProduct = async (req, res) => {
             colors,
             bestseller,
             hasSizes,
-            hasColors
+            hasColors,
+            quantity
         } = req.body;
 
         // Find the existing product
@@ -459,6 +462,7 @@ const updateProduct = async (req, res) => {
         if (description !== undefined) updateData.description = description;
         if (category !== undefined) updateData.category = category;
         if (price !== undefined) updateData.price = Number(price);
+        if (quantity !== undefined) updateData.quantity = Number(quantity);
         if (subcategory !== undefined) updateData.subcategory = subcategory;
         if (bestseller !== undefined) updateData.bestseller = bestseller === 'true' ? true : false;
 
