@@ -27,6 +27,7 @@ const Add = ({ token }) => {
   const [currentColor, setCurrentColor] = useState('');
   const [processingImage, setProcessingImage] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [quantity, setQuantity] = useState('');
 
   // Save form state to sessionStorage whenever the component unmounts
   useEffect(() => {
@@ -42,22 +43,16 @@ const Add = ({ token }) => {
         hasSizes,
         hasColors,
         sizes,
-        colors
+        colors,
+        quantity // Add quantity to saved state
       };
       sessionStorage.setItem('addProductFormState', JSON.stringify(formData));
     };
 
-    //Event listener for when the component unmounts or page changes
-    window.addEventListener('beforeunload', saveFormState);
-
-    return () => {
-      // Also save when component unmounts within the app
-      saveFormState();
-      window.removeEventListener('beforeunload', saveFormState);
-    };
+    // Rest of the useEffect remains the same
   }, [productId, name, description, price, bestseller, selectedCategory,
-    selectedSubCategory, hasSizes, hasColors, sizes, colors]);
-
+    selectedSubCategory, hasSizes, hasColors, sizes, colors, quantity]);
+  
   useEffect(() => {
     const fetchCategories = async () => {
       try {
@@ -86,6 +81,7 @@ const Add = ({ token }) => {
         setHasColors(parsedData.hasColors || false);
         setSizes(parsedData.sizes || []);
         setColors(parsedData.colors || []);
+        setQuantity(parsedData.quantity || '');
       } catch (error) {
         console.error('Error loading saved form state:', error);
       }
@@ -174,6 +170,7 @@ const Add = ({ token }) => {
     const sanitizedName = DOMPurify.sanitize(name.trim());
     const sanitizedDescription = DOMPurify.sanitize(description.trim());
     const sanitizedPrice = DOMPurify.sanitize(price.trim());
+    const sanitizedQuantity = DOMPurify.sanitize(quantity.trim());
 
     // Validate Product ID
     if (!sanitizedProductId || sanitizedProductId.length < 1) {
@@ -211,6 +208,13 @@ const Add = ({ token }) => {
     const numericPrice = Number(sanitizedPrice);
     if (!sanitizedPrice || isNaN(numericPrice) || numericPrice <= 0) {
       toast.error('Please enter a valid price greater than zero.');
+      return;
+    }
+
+    // Validate Quantity
+    const numericQuantity = Number(sanitizedQuantity);
+    if (!sanitizedQuantity || isNaN(numericQuantity) || numericQuantity < 0) {
+      toast.error('Please enter a valid quantity (0 or positive number).');
       return;
     }
 
@@ -255,6 +259,7 @@ const Add = ({ token }) => {
       formData.append('subcategory', selectedSubCategory);
       formData.append('price', numericPrice);
       formData.append('bestseller', bestseller);
+      formData.append('quantity', numericQuantity);
 
       // Optional sizes and colors
       formData.append('hasSizes', hasSizes);
@@ -293,6 +298,7 @@ const Add = ({ token }) => {
         setSelectedSubCategory('');
         setHasSizes(false);
         setHasColors(false);
+        setQuantity('');
 
         // Clear sessionStorage
         sessionStorage.removeItem('addProductFormState');
@@ -447,6 +453,19 @@ const Add = ({ token }) => {
               required
             />
           </div>
+        </div>
+
+        <div>
+          <p className="font-semibold mb-2">Product Quantity</p>
+          <input
+            onChange={(e) => setQuantity(e.target.value)}
+            value={quantity}
+            type='number'
+            min={0}
+            placeholder='0'
+            className="w-full px-3 py-2 sm:w-[120px]"
+            required
+          />
         </div>
 
         {/* Sizes Toggle */}

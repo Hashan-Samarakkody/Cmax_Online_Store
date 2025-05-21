@@ -4,6 +4,7 @@ import Stripe from 'stripe'
 import { broadcast } from '../server.js'
 import generateOrderId from '../utils/generateOrderId.js'
 import nodemailer from 'nodemailer'
+import productModel from '../models/productModel.js'
 
 // Global variables
 const currency = "LKR"
@@ -11,6 +12,50 @@ const deliveryCharge = 30
 
 // Initialize the payment gateway
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
+
+// Helper function to update product inventory
+const updateProductInventory = async (items) => {
+    try {
+        for (const item of items) {
+            // Find the product
+            const product = await productModel.findById(item._id);
+            if (product) {
+                // Calculate new quantity, ensuring it doesn't go below 0
+                const newQuantity = Math.max(0, product.quantity - item.quantity);
+
+                // Update product quantity
+                await productModel.findByIdAndUpdate(
+                    item._id,
+                    { quantity: newQuantity }
+                );
+
+                // Get updated product with populated fields
+                const updatedProduct = await productModel.findById(item._id)
+                    .populate('category', 'name')
+                    .populate('subcategory', 'name')
+                    .lean(); // Add this to ensure we get a plain object
+
+                // Make sure quantity is explicitly included and a number
+                updatedProduct.quantity = Number(newQuantity);
+
+                // Broadcast product update with new inventory levels
+                broadcast({
+                    type: 'updateProduct',
+                    product: updatedProduct
+                });
+
+                // If product is now out of stock, log it (optional)
+                if (newQuantity === 0) {
+                    console.log(`Product ${product.name} (ID: ${product._id}) is now out of stock`);
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Error updating product inventory:', error);
+        // Continue with the order process even if inventory update fails
+    }
+};
+  
 
 // Helper function to send order confirmation email
 const sendOrderConfirmationEmail = async (userId, order) => {
@@ -172,9 +217,9 @@ const sendOrderConfirmationEmail = async (userId, order) => {
 // Place orders using cash on delivery method
 const placeOrder = async (req, res) => {
     try {
-        const { userId, items, amount, address } = req.body
+        const { userId, items, amount, address } = req.body;
 
-        // Ensure  have complete address information
+        // Ensure we have complete address information
         if (!address || !address.firstName || !address.street || !address.city || !address.state) {
             return res.json({ success: false, message: 'Complete address information is required' });
         }
@@ -191,26 +236,30 @@ const placeOrder = async (req, res) => {
             paymentMethod: 'Cash On Delivery',
             payment: false,
             date: Date.now()
-        }
+        };
 
-        const newOrder = new orderModel(orderData)
-        await newOrder.save()
+        const newOrder = new orderModel(orderData);
+        await newOrder.save();
 
-        await userModel.findByIdAndUpdate(userId, { cartData: {} })
+        // Update product inventory
+        await updateProductInventory(items);
+
+        await userModel.findByIdAndUpdate(userId, { cartData: {} });
 
         // Send order confirmation email
         await sendOrderConfirmationEmail(userId, orderData);
 
-        res.json({ success: true, message: 'Order Placed Successfully' })
+        res.json({ success: true, message: 'Order Placed Successfully' });
 
         // Broadcast new order
-        broadcast({ type: 'newOrder', order: newOrder });  // Send the new order via WebSocket
+        broadcast({ type: 'newOrder', order: newOrder });
 
     } catch (error) {
         console.log(error);
-        res.json({ success: false, message: error.message })
+        res.json({ success: false, message: error.message });
     }
-}
+};
+  
 
 
 // Place orders using Stripe method
@@ -276,27 +325,31 @@ const placeOrderStripe = async (req, res) => {
 
 // Verify Stripe
 const verifyStripe = async (req, res) => {
-    const { orderId, success, userId } = req.body
+    const { orderId, success, userId } = req.body;
 
     try {
         if (success === "true") {
             const updatedOrder = await orderModel.findByIdAndUpdate(orderId, { payment: true }, { new: true });
+
+            // Update product inventory for successful Stripe payments
+            await updateProductInventory(updatedOrder.items);
+
             await userModel.findByIdAndUpdate(userId, { cartData: {} });
 
             // Send order confirmation email after successful payment
             await sendOrderConfirmationEmail(userId, updatedOrder);
 
-            res.json({ success: true })
+            res.json({ success: true });
         } else {
-            await orderModel.findByIdAndDelete(orderId)
-            res.json({ success: false })
+            await orderModel.findByIdAndDelete(orderId);
+            res.json({ success: false });
         }
-
     } catch (error) {
         console.log(error);
-        res.json({ success: false, message: error.message })
+        res.json({ success: false, message: error.message });
     }
-}
+};
+
 
 //  All orders data for admin panel
 const allOrders = async (req, res) => {

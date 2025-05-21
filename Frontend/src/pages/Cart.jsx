@@ -97,41 +97,52 @@ const Cart = () => {
                   <img className='w-14 sm:w-20 rounded-lg' src={productData.images[0]} alt='' />
                   <div>
                     <p className='text-sm sm:text-lg font-medium line-clamp-2'>{productData.name}</p>
-                    <div className='flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-5 mt-2'>
-                      <p className='text-sm sm:text-base'>
+                    <div className='mt-2'>
+                      <p className='text-sm sm:text-base mb-1'>
                         {currency}
                         {productData.price}
                       </p>
-                      {(sizeInfo || colorInfo) && (
-                        <p className='text-xs sm:text-sm px-1 sm:px-2 py-0.5 sm:py-1 border bg-slate-50 rounded-lg'>
-                          {sizeInfo}
-                          {colorInfo}
-                        </p>
-                      )}
+                      <div className='flex flex-wrap gap-2 mt-1'>
+                        {item.size && item.size !== 'null' && (
+                          <span className='inline-flex items-center px-2 py-1 rounded-md text-xs bg-blue-50 border border-blue-100 text-blue-800'>
+                            Size: {item.size}
+                          </span>
+                        )}
+                        {item.color && item.color !== 'null' && (
+                          <span className='inline-flex items-center px-2 py-1 rounded-md text-xs bg-purple-50 border border-purple-100 text-purple-800'>
+                            Color: {item.color}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                <input
-                  onChange={(e) =>
-                    e.target.value === '' || e.target.value === '0'
-                      ? null
-                      : updateQuantity(
-                        item._id,
-                        `${item.size || 'undefined'}_${item.color || 'undefined'}`,
-                        Number(e.target.value)
-                      )
-                  }
-                  className='border w-12 sm:w-20 px-1 sm:px-2 py-1 text-center'
-                  type='number'
-                  min={1}
-                  defaultValue={item.quantity}
-                />
+                <div className='flex flex-col items-center gap-1'>
+                  <label htmlFor={`quantity-${index}`} className='text-xs text-gray-500'>Quantity</label>
+                  <input
+                    id={`quantity-${index}`}
+                    onChange={(e) =>
+                      e.target.value === '' || e.target.value === '0'
+                        ? null
+                        : updateQuantity(
+                          item._id,
+                          `${item.size || 'undefined'}_${item.color || 'undefined'}`,
+                          Number(e.target.value)
+                        )
+                    }
+                    className='border w-12 sm:w-20 px-1 sm:px-2 py-1 text-center rounded'
+                    type='number'
+                    min={1}
+                    defaultValue={item.quantity}
+                  />
+                </div>
                 <img
                   onClick={() => handleRemoveProduct(item._id, item.size, item.color)}
                   className='w-4 sm:w-5 cursor-pointer justify-self-center'
                   src={assets.bin_icon}
-                  alt=''
+                  alt='Remove'
+                  title='Remove from cart'
                 />
               </div>
             );

@@ -9,10 +9,77 @@ import DOMPurify from 'dompurify';
 
 const PlaceOrder = () => {
   const [method, setMethod] = useState('cod');
-  const { navigate, backendUrl, token, cartItems, setCartItems, getCartAmount, deliveryCharge, products, recordPurchaseInteractions } = useContext(ShopContext);
+  const {
+    navigate,
+    backendUrl,
+    token,
+    cartItems,
+    setCartItems,
+    getCartAmount,
+    deliveryCharge,
+    products,
+    recordPurchaseInteractions,
+    currency
+  } = useContext(ShopContext);
+
   const [addressOption, setAddressOption] = useState('new'); // 'new', 'default', or 'saved'
   const [userAddresses, setUserAddresses] = useState([]);
   const [selectedAddress, setSelectedAddress] = useState(null);
+  const [stockError, setStockError] = useState(false);
+  const [outOfStockItems, setOutOfStockItems] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Check stock availability before placing the order
+  const verifyStockAvailability = () => {
+    const stockErrors = [];
+
+    for (const itemId in cartItems) {
+      const product = products.find((product) => product._id === itemId);
+      if (!product) continue;
+
+      // Calculate total quantity for this product across all size/color combinations
+      let totalRequestedQuantity = 0;
+      for (const variant in cartItems[itemId]) {
+        totalRequestedQuantity += cartItems[itemId][variant];
+      }
+
+      // Check if requested quantity exceeds available stock
+      if (totalRequestedQuantity > product.quantity) {
+        stockErrors.push({
+          id: itemId,
+          name: product.name,
+          requested: totalRequestedQuantity,
+          available: product.quantity
+        });
+      }
+    }
+
+    // If there are stock errors, show them and return false
+    if (stockErrors.length > 0) {
+      setStockError(true);
+      setOutOfStockItems(stockErrors);
+
+      toast.error(
+        <div>
+          <p>Not enough stock for some items:</p>
+          <ul className="mt-2 list-disc pl-4">
+            {stockErrors.map((item, i) => (
+              <li key={i} className="text-sm">
+                {item.name}: Available {item.available}, Requested {item.requested}
+              </li>
+            ))}
+          </ul>
+        </div>,
+        { autoClose: 5000 }
+      );
+
+      return false;
+    }
+
+    setStockError(false);
+    setOutOfStockItems([]);
+    return true;
+  };
 
   const [formData, setFormData] = useState({
     firstName: '',
@@ -161,27 +228,18 @@ const PlaceOrder = () => {
         setSelectedAddress(null);
         setFormData(prev => ({
           ...prev,
-          firstName: '',
-          lastName: '',
-          email: '',
           street: '',
           city: '',
           state: '',
           postalCode: '',
-          phoneNumber: ''
         }));
         setDistrictInput('');
         setShowSuggestions(false);
-        // Clear all fields
-        const inputs = document.querySelectorAll('input[type="text"], input[type="email"], input[type="number"], input[type="tel"]');
-        inputs.forEach(input => {
-          input.value = '';
-        });
         break;
 
       case 'default':
         // First fetch user profile data
-        await fetchUserProfile(); 
+        await fetchUserProfile();
 
         const defaultAddress = addressList.find(addr => addr.isDefault);
         if (defaultAddress) {
@@ -329,10 +387,19 @@ const PlaceOrder = () => {
   const onSubmitHandler = async (event) => {
     event.preventDefault();
 
+    // Prevent multiple submissions
+    if (isSubmitting) return;
+
     const sanitizedData = validateInputs();
     if (!sanitizedData) return;
 
+    if (!verifyStockAvailability()) {
+      return;
+    }
+
     try {
+      setIsSubmitting(true);
+
       let orderItems = [];
       for (const items in cartItems) {
         for (const item in cartItems[items]) {
@@ -347,7 +414,31 @@ const PlaceOrder = () => {
         }
       }
 
+      // Add a stock warning banner if any items are low in stock
+      const lowStockItems = orderItems.filter(item => {
+        const product = products.find(p => p._id === item._id);
+        return product && product.quantity <= 5 && product.quantity > 0;
+      });
+
+      if (lowStockItems.length > 0) {
+        toast.info(
+          <div>
+            <p>Some items are low in stock:</p>
+            <ul className="mt-2 list-disc pl-4">
+              {lowStockItems.map((item, i) => (
+                <li key={i} className="text-sm">
+                  {item.name}: Only {products.find(p => p._id === item._id).quantity} left
+                </li>
+              ))}
+            </ul>
+          </div>,
+          { autoClose: 5000 }
+        );
+      }
+
+      // Order placement logic
       const orderData = {
+        userId: '', // Will be filled from token on server
         address: sanitizedData,
         items: orderItems,
         amount: getCartAmount() + deliveryCharge
@@ -355,23 +446,28 @@ const PlaceOrder = () => {
 
       switch (method) {
         case 'cod':
-          const response = await axios.post(backendUrl + '/api/order/place', orderData, { headers: { token } });
+          const response = await axios.post(`${backendUrl}/api/order/place`, orderData, {
+            headers: { token }
+          });
           if (response.data.success) {
             recordPurchaseInteractions(cartItems);
             setCartItems({});
+            toast.success('Order placed successfully!');
             navigate('/orders');
           } else {
-            toast.error(response.data.message);
+            toast.error(response.data.message || 'Failed to place order');
           }
           break;
 
         case 'stripe':
-          const responseStripe = await axios.post(backendUrl + '/api/order/stripe', orderData, { headers: { token } });
+          const responseStripe = await axios.post(`${backendUrl}/api/order/stripe`, orderData, {
+            headers: { token }
+          });
           if (responseStripe.data.success) {
             const { session_url } = responseStripe.data;
             window.location.replace(session_url);
           } else {
-            toast.error(responseStripe.data.message);
+            toast.error(responseStripe.data.message || 'Failed to create payment session');
           }
           break;
 
@@ -379,10 +475,88 @@ const PlaceOrder = () => {
           break;
       }
     } catch (error) {
-      console.error(error);
-      toast.error('An error occurred while placing the order.');
+      console.error('Order placement error:', error);
+      toast.error(error.response?.data?.message || 'An error occurred while placing the order.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
+
+  // Render cart items with quantity
+  const renderCartItemsWithQuantity = () => {
+    return (
+      <div className="mt-4 border-t pt-4">
+        <h3 className="font-medium text-gray-700 mb-2">Order Summary:</h3>
+        <div className="max-h-60 overflow-y-auto pr-1">
+          {Object.keys(cartItems).map(itemId => {
+            const product = products.find(p => p._id === itemId);
+            if (!product) return null;
+
+            return Object.keys(cartItems[itemId]).map(variant => {
+              const quantity = cartItems[itemId][variant];
+              if (quantity <= 0) return null;
+
+              // Parse variant to extract size and color
+              let displayVariant = '';
+              const [size, color] = variant.split('_');
+              if (size !== 'undefined') displayVariant += `Size: ${size} `;
+              if (color !== 'undefined') displayVariant += `Color: ${color}`;
+
+              // Check if item is out of stock or over-requested
+              const isStockIssue = product.quantity < quantity;
+
+              return (
+                <div key={`${itemId}-${variant}`} className={`flex items-center justify-between py-2 border-b 
+                  ${isStockIssue ? 'bg-red-50 border-red-300' : ''}`}>
+                  <div className="flex items-center">
+                    <img
+                      src={product.images[0]}
+                      alt={product.name}
+                      className="w-12 h-12 object-cover rounded"
+                    />
+                    <div className="ml-3">
+                      <p className="text-sm font-medium">{product.name}</p>
+                      {displayVariant && <p className="text-xs text-gray-500">{displayVariant}</p>}
+                      <div className="flex items-center">
+                        <p className="text-xs font-medium">Qty: {quantity}</p>
+                        {isStockIssue && (
+                          <span className="ml-2 text-xs text-red-600">
+                            (Only {product.quantity} available)
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-sm font-medium">
+                    {currency}{(product.price * quantity).toFixed(2)}
+                  </p>
+                </div>
+              );
+            }).filter(Boolean);
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  // Check if cart is empty
+  const isCartEmpty = !Object.keys(cartItems).length;
+
+  if (isCartEmpty) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center px-4">
+        <img src={assets.empty_cart} alt="Empty Cart" className="w-32 h-32 mb-4 opacity-60" />
+        <h2 className="text-xl font-medium text-gray-700 mb-2">Your cart is empty</h2>
+        <p className="text-gray-500 mb-6 text-center">Add some items to your cart before checking out.</p>
+        <button
+          onClick={() => navigate('/shop')}
+          className="bg-black text-white px-6 py-2 rounded-sm hover:bg-gray-800 transition-colors"
+        >
+          Continue Shopping
+        </button>
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={onSubmitHandler} className="flex flex-col px-4 md:px-6 md:flex-row justify-between gap-4 pt-5 md:pt-14 min-h-[80vh] border-t">
@@ -391,7 +565,7 @@ const PlaceOrder = () => {
           <Title text1={'DELIVERY'} text2={'INFORMATION'} />
         </div>
 
-        {/* Address selection options - mobile optimized */}
+        {/* Address selection options */}
         <div className="mb-4 p-3 md:p-4 bg-gray-50 rounded-md border border-gray-200">
           <p className="font-medium mb-3 text-sm md:text-base text-gray-700">Choose delivery address:</p>
 
@@ -456,7 +630,7 @@ const PlaceOrder = () => {
           )}
         </div>
 
-        {/* Form fields with mobile optimization */}
+        {/* Form fields */}
         <div className="flex flex-col md:flex-row gap-3">
           <input
             required
@@ -569,6 +743,23 @@ const PlaceOrder = () => {
       <div className="mt-8 md:mt-0 md:min-w-[320px] lg:min-w-[380px] w-full md:w-auto">
         <div className="mt-2 md:mt-8">
           <CartTotal />
+
+          {/* Display cart items with quantity */}
+          {renderCartItemsWithQuantity()}
+
+          {/* Stock error warning */}
+          {stockError && (
+            <div className="mt-4 p-3 bg-red-50 border border-red-300 rounded text-sm text-red-800">
+              <p className="font-medium">Some items in your cart have stock issues:</p>
+              <ul className="mt-2 list-disc pl-4">
+                {outOfStockItems.map((item, i) => (
+                  <li key={i}>
+                    {item.name}: Available {item.available}, Requested {item.requested}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
 
         <div className="mt-8 md:mt-12">
@@ -598,9 +789,10 @@ const PlaceOrder = () => {
           <div className="w-full flex justify-center md:justify-end mt-8 mb-8 md:mb-0">
             <button
               type="submit"
-              className="bg-black text-white px-8 md:px-16 py-3 w-full md:w-auto text-sm font-medium rounded-sm hover:bg-gray-800 transition-colors"
+              disabled={isSubmitting}
+              className={`${isSubmitting ? 'bg-gray-400' : 'bg-black hover:bg-gray-800'} text-white px-8 md:px-16 py-3 w-full md:w-auto text-sm font-medium rounded-sm transition-colors`}
             >
-              PLACE ORDER
+              {isSubmitting ? 'PROCESSING...' : 'PLACE ORDER'}
             </button>
           </div>
         </div>
