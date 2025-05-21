@@ -124,6 +124,3 @@ Open three terminals:
 2. Create a feature branch  
 3. Submit a pull request  
 
-## License
-
-MIT © Your Company  
