@@ -487,53 +487,62 @@ const PlaceOrder = () => {
     return (
       <div className="mt-4 border-t pt-4">
         <h3 className="font-medium text-gray-700 mb-2">Order Summary:</h3>
-        <div className="max-h-60 overflow-y-auto pr-1">
-          {Object.keys(cartItems).map(itemId => {
-            const product = products.find(p => p._id === itemId);
-            if (!product) return null;
+        {/* Scroll indicator */}
+        {Object.keys(cartItems).length > 3 && (
+          <div className="text-center py-1 text-xs text-gray-500 bg-gray-100 border-t">
+            Scroll to see more items
+          </div>
+        )}
+        <div className="max-h-60 overflow-y-auto pr-1 border border-gray-200 rounded-md bg-gray-50">
+          <div className="p-2">
+            {Object.keys(cartItems).map(itemId => {
+              const product = products.find(p => p._id === itemId);
+              if (!product) return null;
 
-            return Object.keys(cartItems[itemId]).map(variant => {
-              const quantity = cartItems[itemId][variant];
-              if (quantity <= 0) return null;
+              return Object.keys(cartItems[itemId]).map(variant => {
+                const quantity = cartItems[itemId][variant];
+                if (quantity <= 0) return null;
 
-              // Parse variant to extract size and color
-              let displayVariant = '';
-              const [size, color] = variant.split('_');
-              if (size !== 'undefined') displayVariant += `Size: ${size} `;
-              if (color !== 'undefined') displayVariant += `Color: ${color}`;
+                // Parse variant to extract size and color
+                let displayVariant = '';
+                const [size, color] = variant.split('_');
+                if (size !== 'undefined') displayVariant += `Size: ${size} `;
+                if (color !== 'undefined') displayVariant += `Color: ${color}`;
 
-              // Check if item is out of stock or over-requested
-              const isStockIssue = product.quantity < quantity;
+                // Check if item is out of stock or over-requested
+                const isStockIssue = product.quantity < quantity;
 
-              return (
-                <div key={`${itemId}-${variant}`} className={`flex items-center justify-between py-2 border-b 
-                  ${isStockIssue ? 'bg-red-50 border-red-300' : ''}`}>
-                  <div className="flex items-center">
-                    <img
-                      src={product.images[0]}
-                      alt={product.name}
-                      className="w-12 h-12 object-cover rounded"
-                    />
-                    <div className="ml-3">
-                      <p className="text-sm font-medium">{product.name}</p>
-                      {displayVariant && <p className="text-xs text-gray-500">{displayVariant}</p>}
-                      <div className="flex items-center">
-                        <p className="text-xs font-medium">Qty: {quantity}</p>
-                        {isStockIssue && (
-                          <span className="ml-2 text-xs text-red-600">
-                            (Only {product.quantity} available)
-                          </span>
-                        )}
+                return (
+                  <div key={`${itemId}-${variant}`} className={`flex items-center justify-between py-2 border-b border-gray-200 last:border-b-0
+                    ${isStockIssue ? 'bg-red-50 border-red-300' : 'bg-white'} rounded-sm mb-1 px-2`}>
+                    <div className="flex items-center">
+                      <img
+                        src={product.images[0]}
+                        alt={product.name}
+                        className="w-12 h-12 object-cover rounded"
+                      />
+                      <div className="ml-3">
+                        <p className="text-sm font-medium">{product.name}</p>
+                        {displayVariant && <p className="text-xs text-gray-500">{displayVariant}</p>}
+                        <div className="flex items-center">
+                          <p className="text-xs font-medium">Qty: {quantity}</p>
+                          {isStockIssue && (
+                            <span className="ml-2 text-xs text-red-600">
+                              (Only {product.quantity} available)
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
+                    <p className="text-sm font-medium">
+                      {currency}{(product.price * quantity).toFixed(2)}
+                    </p>
                   </div>
-                  <p className="text-sm font-medium">
-                    {currency}{(product.price * quantity).toFixed(2)}
-                  </p>
-                </div>
-              );
-            }).filter(Boolean);
-          })}
+                );
+              }).filter(Boolean);
+            })}
+          </div>
+          
         </div>
       </div>
     );
