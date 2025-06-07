@@ -459,7 +459,7 @@ function createTableLabel(doc, order, centerX, titleY, taglineY, storeName, tagl
 
     // Order information
     doc.font('Helvetica-Bold').fontSize(12).text('Order Id:', leftMargin, currentY);
-    doc.font('Helvetica').fontSize(12).text(order._id, leftMargin + 110, currentY);
+    doc.font('Helvetica').fontSize(12).text(order.orderId, leftMargin + 110, currentY);
     currentY += lineHeight;
 
     doc.font('Helvetica-Bold').fontSize(12).text('Ordered by:', leftMargin, currentY);
