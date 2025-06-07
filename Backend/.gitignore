@@ -23,6 +23,6 @@ dist-ssr
 *.sln
 *.sw?
 # Prevent adding environment files to git(everytype of env file)
-.env
+*.env
 .env.*.local
 .env.local
