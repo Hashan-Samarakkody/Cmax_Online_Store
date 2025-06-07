@@ -160,31 +160,22 @@ const CategoryManager = () => {
 
     const deleteCategoryHandler = async (id) => {
         try {
-            const endpoint = deleteWithProducts ?
-                `/api/categories/${id}/with-products` :
-                `/api/categories/${id}`;
+            // Always use the with-products endpoint since we're deleting everything
+            const endpoint = `/api/categories/${id}/with-products`;
 
             await axios.delete(backendUrl + endpoint);
             fetchCategories();
-            toast.success(deleteWithProducts ?
-                "Category and all its products deleted successfully!" :
-                "Category deleted successfully!",
-                { autoClose: 1000 });
+            toast.success("Category and all its products deleted successfully!", { autoClose: 1000 });
 
             WebSocketService.send({
                 type: 'deleteCategory',
                 categoryId: id,
-                withProducts: deleteWithProducts
+                withProducts: true
             });
         } catch (err) {
             console.error("Error deleting category:", err);
             if (err.response && err.response.data && err.response.data.message) {
-                const errorMessage = err.response.data.message;
-                if (errorMessage.includes("contains products")) {
-                    toast.error("This category contains products. Use the 'Delete with products' option to remove it.");
-                } else {
-                    toast.error(errorMessage);
-                }
+                toast.error(err.response.data.message);
             } else {
                 toast.error("Failed to delete category.");
             }
@@ -193,36 +184,28 @@ const CategoryManager = () => {
 
     const deleteSubcategoryHandler = async (id) => {
         try {
-            const endpoint = deleteWithProducts ?
-                `/api/categories/subcategories/${id}/with-products` :
-                `/api/categories/subcategories/${id}`;
+            // Always use the with-products endpoint since we're deleting everything
+            const endpoint = `/api/categories/subcategories/${id}/with-products`;
 
             await axios.delete(backendUrl + endpoint);
             fetchCategories();
-            toast.success(deleteWithProducts ?
-                "Subcategory and all its products deleted successfully!" :
-                "Subcategory deleted successfully!",
-                { autoClose: 1000 });
+            toast.success("Subcategory and all its products deleted successfully!", { autoClose: 1000 });
 
             WebSocketService.send({
                 type: 'deleteSubcategory',
                 subcategoryId: id,
-                withProducts: deleteWithProducts
+                withProducts: true
             });
         } catch (err) {
             console.error("Error deleting subcategory:", err);
             if (err.response && err.response.data && err.response.data.message) {
-                const errorMessage = err.response.data.message;
-                if (errorMessage.includes("contains products")) {
-                    toast.error("This subcategory contains products. Use the 'Delete with products' option to remove it.");
-                } else {
-                    toast.error(errorMessage);
-                }
+                toast.error(err.response.data.message);
             } else {
                 toast.error("Failed to delete subcategory.");
             }
         }
     };
+
     const fetchCategories = async () => {
         try {
             const { data } = await axios.get(backendUrl + "/api/categories");
@@ -769,55 +752,63 @@ const CategoryManager = () => {
                 </div>
             )}
 
-            {/* Delete Confirmation Modal - same as before */}
+            {/* Delete Confirmation Modal*/}
             {showDeleteModal && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
                     <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6 animate-fade-in-down">
-                        <h3 className="text-xl font-bold text-gray-900 mb-4">
-                            Delete {deleteType === "category" ? "Category" : "Subcategory"}
-                        </h3>
-                        <p className="text-gray-600 mb-6">
-                            Are you sure you want to delete <span className="font-semibold">{itemToDelete?.name}</span>?
-                            {itemToDelete?.productCount > 0 && (
-                                <span className="block mt-2 text-red-600">
-                                    This {deleteType} contains {itemToDelete.productCount} product{itemToDelete.productCount !== 1 ? 's' : ''}.
-                                </span>
-                            )}
-                        </p>
-
-                        {itemToDelete?.productCount > 0 && (
-                            <div className="mb-4">
-                                <label className="flex items-center space-x-2 cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        checked={deleteWithProducts}
-                                        onChange={() => setDeleteWithProducts(!deleteWithProducts)}
-                                        className="form-checkbox h-4 w-4 text-red-600"
-                                    />
-                                    <span className="text-red-600">Delete all products in this {deleteType}</span>
-                                </label>
-                                <p className="text-xs text-gray-500 mt-1 ml-6">
-                                    Warning: This action cannot be undone!
-                                </p>
+                        <div className="flex items-center mb-4">
+                            <div className="flex-shrink-0 w-10 h-10 rounded-full bg-red-100 flex items-center justify-center mr-3">
+                                <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16c-.77.833.192 2.5 1.732 2.5z" />
+                                </svg>
                             </div>
-                        )}
+                            <h3 className="text-xl font-bold text-gray-900">
+                                Delete {deleteType === "category" ? "Category" : "Subcategory"}
+                            </h3>
+                        </div>
+
+                        <div className="mb-6">
+                            <p className="text-gray-600 mb-3">
+                                Are you sure you want to permanently delete <span className="font-semibold text-red-600">{itemToDelete?.name}</span>?
+                            </p>
+
+                            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                                <div className="flex items-start">
+                                    <svg className="w-5 h-5 text-red-500 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                    </svg>
+                                    <div>
+                                        <h4 className="text-sm font-medium text-red-800 mb-1">
+                                            This will permanently delete:
+                                        </h4>
+                                        <ul className="text-sm text-red-700 space-y-1">
+                                            <li>• The {deleteType} "{itemToDelete?.name}"</li>
+                                            {deleteType === "category" && (
+                                                <li>• All subcategories within this category</li>
+                                            )}
+                                            <li>• All products in this {deleteType}</li>
+                                            <li>• All product images and data</li>
+                                        </ul>
+                                        <p className="text-xs text-red-600 font-medium mt-2">
+                                            ⚠️ This action cannot be undone!
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
 
                         <div className="flex justify-end gap-3">
                             <button
                                 onClick={() => setShowDeleteModal(false)}
-                                className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors"
+                                className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors font-medium"
                             >
                                 Cancel
                             </button>
                             <button
                                 onClick={handleDeleteConfirm}
-                                disabled={itemToDelete?.productCount > 0 && !deleteWithProducts}
-                                className={`px-4 py-2 rounded-lg transition-colors ${itemToDelete?.productCount > 0 && !deleteWithProducts
-                                    ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-                                    : "bg-red-600 hover:bg-red-700 text-white"
-                                    }`}
+                                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors font-medium"
                             >
-                                Delete
+                                Delete Everything
                             </button>
                         </div>
                     </div>
