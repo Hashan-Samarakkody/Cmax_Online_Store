@@ -5,6 +5,7 @@ import { toast } from 'react-toastify';
 import { assets } from '../assets/assets';
 import DOMPurify from 'dompurify';
 import { processImage } from '../utils/imageProcessor';
+import ProductPreview from '../components/ProductPreview';
 
 const Add = ({ token }) => {
   const [categories, setCategories] = useState([]);
@@ -44,12 +45,19 @@ const Add = ({ token }) => {
         hasColors,
         sizes,
         colors,
-        quantity // Add quantity to saved state
+        quantity
       };
       sessionStorage.setItem('addProductFormState', JSON.stringify(formData));
     };
 
-    // Rest of the useEffect remains the same
+    //Event listener for when the component unmounts or page changes
+    window.addEventListener('beforeunload', saveFormState);
+
+    return () => {
+      // Also save when component unmounts within the app
+      saveFormState();
+      window.removeEventListener('beforeunload', saveFormState);
+    };
   }, [productId, name, description, price, bestseller, selectedCategory,
     selectedSubCategory, hasSizes, hasColors, sizes, colors, quantity]);
   
@@ -345,307 +353,328 @@ const Add = ({ token }) => {
   };
 
   return (
-    <div>
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Add Items</h1>
-      </div>
-
-      <form onSubmit={onSubmitHandler} className="flex flex-col w-full items-start gap-3">
-
-        {/* Product ID Input */}
-        <div className="w-full">
-          <p className="font-semibold mb-2">Product ID</p>
-          <input
-            onChange={(e) => setProductId(e.target.value)}
-            value={productId}
-            className="w-full max-w-[590px] px-3 py-2"
-            type="text"
-            placeholder="Enter unique Product ID"
-            required
-          />
+    <div className="flex gap-8">
+      {/* Left side - Form */}
+      <div className="flex-1">
+        <div className="mb-6 flex items-center justify-between">
+          <h1 className="text-2xl font-bold">Add Items</h1>
         </div>
 
-        {/* Product Name */}
-        <div className="w-full">
-          <p className="font-semibold mb-2">Product Name</p>
-          <input
-            onChange={(e) => setName(e.target.value)}
-            value={name}
-            className="w-full max-w-[590px] px-3 py-2"
-            type="text"
-            placeholder="Type here"
-            required
-          />
-        </div>
-
-        {/* Product Description */}
-        <div className="w-full">
-          <p className="font-semibold mb-2">Product Description</p>
-          <textarea
-            onChange={(e) => {
-              setDescription(e.target.value);
-              e.target.style.height = "auto"; // Reset height to auto to calculate new height
-              e.target.style.height = `${e.target.scrollHeight}px`; // Adjust height based on scrollHeight
-              // Adjust width if there are more than 10 lines
-              const lineCount = e.target.value.split("\0").length;
-              if (lineCount > 10) {
-                e.target.style.width = "150%"; // Increase width to 1.5 times
-              } else {
-                e.target.style.width = "100%"; // Reset width to default
-              }
-            }}
-            value={description}
-            className="w-full max-w-[590px] px-3 py-2 overflow-hidden"
-            placeholder="Write description here"
-            required
-            style={{ resize: "none" }} // Prevent manual resizing
-          />
-          <div className="mt-1 text-sm flex justify-end max-w-[590px]">
-            <span className={`${description.length >= 9000 ? 'text-orange-500' : ''} ${description.length >= 10000 ? 'text-red-500 font-semibold' : ''}`}>
-              {description.length}/10000 characters
-            </span>
-          </div>
-        </div>
-
-        {/* Category and Subcategory */}
-        <div className="flex flex-col sm:flex-row gap-2 w-full sm:gap-8">
-          <div>
-            <p className="font-semibold mb-2">Product Category</p>
-            <select
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              value={selectedCategory}
-              className="w-full px-3 py-2"
-              required
-            >
-              <option value="">Select a category</option>
-              {categories.map((cat) => (
-                <option key={cat._id} value={cat._id}>
-                  {cat.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <p className="font-semibold mb-2">Product Subcategory</p>
-            <select
-              onChange={(e) => setSelectedSubCategory(e.target.value)}
-              value={selectedSubCategory}
-              className="w-full px-3 py-2"
-              required
-            >
-              <option value="">Select a subcategory</option>
-              {subcategories.map((sub) => (
-                <option key={sub._id} value={sub._id}>
-                  {sub.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <p className="font-semibold mb-2">Product Price</p>
+        <form onSubmit={onSubmitHandler} className="flex flex-col w-full items-start gap-3">
+          {/* Product ID Input */}
+          <div className="w-full">
+            <p className="font-semibold mb-2">Product ID</p>
             <input
-              onChange={(e) => setPrice(e.target.value)}
-              value={price}
+              onChange={(e) => setProductId(e.target.value)}
+              value={productId}
+              className="w-full max-w-[590px] px-3 py-2"
+              type="text"
+              placeholder="Enter unique Product ID"
+              required
+            />
+          </div>
+
+          {/* Product Name */}
+          <div className="w-full">
+            <p className="font-semibold mb-2">Product Name</p>
+            <input
+              onChange={(e) => setName(e.target.value)}
+              value={name}
+              className="w-full max-w-[590px] px-3 py-2"
+              type="text"
+              placeholder="Type here"
+              required
+            />
+          </div>
+
+          {/* Product Description */}
+          <div className="w-full">
+            <p className="font-semibold mb-2">Product Description</p>
+            <textarea
+              onChange={(e) => {
+                setDescription(e.target.value);
+                e.target.style.height = "auto";
+                e.target.style.height = `${e.target.scrollHeight}px`;
+                const lineCount = e.target.value.split("\n").length;
+                if (lineCount > 10) {
+                  e.target.style.width = "150%";
+                } else {
+                  e.target.style.width = "100%";
+                }
+              }}
+              value={description}
+              className="w-full max-w-[590px] px-3 py-2 overflow-hidden"
+              placeholder="Write description here"
+              required
+              style={{ resize: "none" }}
+            />
+            <div className="mt-1 text-sm flex justify-end max-w-[590px]">
+              <span className={`${description.length >= 9000 ? 'text-orange-500' : ''} ${description.length >= 10000 ? 'text-red-500 font-semibold' : ''}`}>
+                {description.length}/10000 characters
+              </span>
+            </div>
+          </div>
+
+          {/* Category and Subcategory */}
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:gap-8">
+            <div>
+              <p className="font-semibold mb-2">Product Category</p>
+              <select
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                value={selectedCategory}
+                className="w-full px-3 py-2"
+                required
+              >
+                <option value="">Select a category</option>
+                {categories.map((cat) => (
+                  <option key={cat._id} value={cat._id}>
+                    {cat.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <p className="font-semibold mb-2">Product Subcategory</p>
+              <select
+                onChange={(e) => setSelectedSubCategory(e.target.value)}
+                value={selectedSubCategory}
+                className="w-full px-3 py-2"
+                required
+              >
+                <option value="">Select a subcategory</option>
+                {subcategories.map((sub) => (
+                  <option key={sub._id} value={sub._id}>
+                    {sub.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <p className="font-semibold mb-2">Product Price</p>
+              <input
+                onChange={(e) => setPrice(e.target.value)}
+                value={price}
+                type='number'
+                min={0}
+                placeholder='10'
+                className="w-full px-3 py-2 sm:w-[120px]"
+                required
+              />
+            </div>
+          </div>
+
+          <div>
+            <p className="font-semibold mb-2">Product Quantity</p>
+            <input
+              onChange={(e) => setQuantity(e.target.value)}
+              value={quantity}
               type='number'
               min={0}
-              placeholder='10'
+              placeholder='0'
               className="w-full px-3 py-2 sm:w-[120px]"
               required
             />
           </div>
-        </div>
 
-        <div>
-          <p className="font-semibold mb-2">Product Quantity</p>
-          <input
-            onChange={(e) => setQuantity(e.target.value)}
-            value={quantity}
-            type='number'
-            min={0}
-            placeholder='0'
-            className="w-full px-3 py-2 sm:w-[120px]"
-            required
-          />
-        </div>
-
-        {/* Sizes Toggle */}
-        <div className="flex gap-2 mt-2">
-          <input
-            onChange={() => setHasSizes(prev => !prev)}
-            checked={hasSizes}
-            type="checkbox"
-            id="hasSizes"
-          />
-          <label className="font-semibold cursor-pointer" htmlFor="hasSizes">
-            Enable Sizes
-          </label>
-        </div>
-
-        {/* Sizes Selection (only if hasSizes is true) */}
-        {hasSizes && (
-          <div>
-            <p className="mb-2">Product Sizes</p>
-            <div className="flex gap-3">
-              {['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL'].map((size) => (
-                <div
-                  key={size}
-                  onClick={() =>
-                    setSizes((prev) =>
-                      prev.includes(size) ? prev.filter((item) => item !== size) : [...prev, size]
-                    )
-                  }
-                >
-                  <p
-                    className={`${sizes.includes(size) ? 'bg-green-300' : 'bg-slate-200'
-                      } px-3 py-1 cursor-pointer rounded-sm text-black`}
-                  >
-                    {size}
-                  </p>
-                </div>
-              ))}
-            </div>
+          {/* Sizes Toggle */}
+          <div className="flex gap-2 mt-2">
+            <input
+              onChange={() => setHasSizes(prev => !prev)}
+              checked={hasSizes}
+              type="checkbox"
+              id="hasSizes"
+            />
+            <label className="font-semibold cursor-pointer" htmlFor="hasSizes">
+              Enable Sizes
+            </label>
           </div>
-        )}
 
-        {/* Colors Toggle */}
-        <div className="flex gap-2 mt-2">
-          <input
-            onChange={() => setHasColors(prev => !prev)}
-            checked={hasColors}
-            type="checkbox"
-            id="hasColors"
-          />
-          <label className="font-semibold cursor-pointer" htmlFor="hasColors">
-            Enable Colors
-          </label>
-        </div>
-
-        {/* Color Input (only if hasColors is true) */}
-        {hasColors && (
-          <div className="w-full max-w-[590px]">
-            <p className="mb-2">Product Colors</p>
-            <div className="flex gap-2 mb-4">
-              <input
-                type="text"
-                value={currentColor}
-                pattern='^[a-zA-Z]+$'
-                onChange={(e) => setCurrentColor(e.target.value)}
-                placeholder="Enter color name (e.g., red, blue)"
-                className="flex-grow px-3 py-2 border"
-              />
-              <button
-                type="button"
-                onClick={addColor}
-                className="bg-green-500 text-white px-4 py-2 rounded"
-              >
-                Add Color
-              </button>
-            </div>
-
-            {/* Display selected colors */}
-            <div className="flex flex-wrap gap-2">
-              {colors.map((color) => (
-                <div
-                  key={color}
-                  className="flex items-center gap-2 bg-gray-100 px-2 py-1 rounded"
-                >
-                  <span>{color}</span>
-                  <button
-                    type="button"
-                    onClick={() => removeColor(color)}
-                    className="text-red-500 ml-2"
+          {/* Sizes Selection */}
+          {hasSizes && (
+            <div>
+              <p className="mb-2">Product Sizes</p>
+              <div className="flex gap-3">
+                {['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL'].map((size) => (
+                  <div
+                    key={size}
+                    onClick={() =>
+                      setSizes((prev) =>
+                        prev.includes(size) ? prev.filter((item) => item !== size) : [...prev, size]
+                      )
+                    }
                   >
-                    ✕
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Bestseller Toggle */}
-        <div className="flex gap-2 mt-2">
-          <input
-            onChange={() => setBestseller((prev) => !prev)}
-            checked={bestseller}
-            type="checkbox"
-            id="bestseller"
-          />
-          <label className="font-semibold cursor-pointer" htmlFor="bestseller">
-            Add to bestseller
-          </label>
-        </div>
-
-        {/* Image Upload */}
-        <div>
-          <p className="font-semibold mb-2">Upload Images</p>
-          <p className='text-sm text-red-500 mb-2'>
-            <i>✸ First image will always be the main image (display image)</i>
-          </p>
-          <p className='text-sm text-red-500 mb-2'>
-            <i>✸ Only PNG, JPEG, and JPG files are allowed</i>
-          </p>
-          <p className='text-sm text-red-500 mb-2'>
-            <i>✸ Images will be automatically resized to 700 × 700 pixels</i>
-          </p>
-          <div className="flex gap-2">
-            {[image1, image2, image3, image4].map((image, index) => (
-              <div key={index} className="relative">
-                <label
-                  htmlFor={`image${index + 1}`}
-                  className={`cursor-pointer block ${processingImage ? 'opacity-50 pointer-events-none' : ''}`}
-                >
-                  <img
-                    className="w-40 h-40 object-cover rounded-sm border border-gray-300"
-                    src={!image ? assets.upload_area : URL.createObjectURL(image)}
-                    alt={`Preview ${index + 1}`}
-                  />
-                  <input
-                    onChange={(e) => handleImageUpload(e, [setImage1, setImage2, setImage3, setImage4][index])}
-                    type="file"
-                    id={`image${index + 1}`}
-                    accept="image/png, image/jpeg, image/jpg"
-                    hidden
-                    disabled={processingImage}
-                  />
-                </label>
-                {image && (
-                  <button
-                    type="button"
-                    onClick={() => removeImage(index)}
-                    className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center shadow-md"
-                    title="Remove image"
-                  >
-                    ✕
-                  </button>
-                )}
+                    <p
+                      className={`${sizes.includes(size) ? 'bg-green-300' : 'bg-slate-200'
+                        } px-3 py-1 cursor-pointer rounded-sm text-black`}
+                    >
+                      {size}
+                    </p>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-          {processingImage && (
-            <p className="text-blue-500 mt-2">Processing image, please wait...</p>
+            </div>
           )}
-        </div>
 
-        {/* Submit Button */}
-        <button
-          type="submit"
-          className="w-35 py-3 mt-4 bg-black text-white rounded-sm flex items-center justify-center"
-          disabled={processingImage || isSubmitting}
-        >
-          {isSubmitting ? (
-            <>
-              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              ADDING...
-            </>
-          ) : (
-            'ADD'
+          {/* Colors Toggle */}
+          <div className="flex gap-2 mt-2">
+            <input
+              onChange={() => setHasColors(prev => !prev)}
+              checked={hasColors}
+              type="checkbox"
+              id="hasColors"
+            />
+            <label className="font-semibold cursor-pointer" htmlFor="hasColors">
+              Enable Colors
+            </label>
+          </div>
+
+          {/* Color Input */}
+          {hasColors && (
+            <div className="w-full max-w-[590px]">
+              <p className="mb-2">Product Colors</p>
+              <div className="flex gap-2 mb-4">
+                <input
+                  type="text"
+                  value={currentColor}
+                  pattern='^[a-zA-Z]+$'
+                  onChange={(e) => setCurrentColor(e.target.value)}
+                  placeholder="Enter color name (e.g., red, blue)"
+                  className="flex-grow px-3 py-2 border"
+                />
+                <button
+                  type="button"
+                  onClick={addColor}
+                  className="bg-green-500 text-white px-4 py-2 rounded"
+                >
+                  Add Color
+                </button>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                {colors.map((color) => (
+                  <div
+                    key={color}
+                    className="flex items-center gap-2 bg-gray-100 px-2 py-1 rounded"
+                  >
+                    <span>{color}</span>
+                    <button
+                      type="button"
+                      onClick={() => removeColor(color)}
+                      className="text-red-500 ml-2"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
-        </button>
-      </form>
+
+          {/* Bestseller Toggle */}
+          <div className="flex gap-2 mt-2">
+            <input
+              onChange={() => setBestseller((prev) => !prev)}
+              checked={bestseller}
+              type="checkbox"
+              id="bestseller"
+            />
+            <label className="font-semibold cursor-pointer" htmlFor="bestseller">
+              Add to bestseller
+            </label>
+          </div>
+
+          {/* Image Upload */}
+          <div>
+            <p className="font-semibold mb-2">Upload Images</p>
+            <p className='text-sm text-red-500 mb-2'>
+              <i>✸ First image will always be the main image (display image)</i>
+            </p>
+            <p className='text-sm text-red-500 mb-2'>
+              <i>✸ Only PNG, JPEG, and JPG files are allowed</i>
+            </p>
+            <p className='text-sm text-red-500 mb-2'>
+              <i>✸ Images will be automatically resized to 700 × 700 pixels</i>
+            </p>
+            <div className="flex gap-2">
+              {[image1, image2, image3, image4].map((image, index) => (
+                <div key={index} className="relative">
+                  <label
+                    htmlFor={`image${index + 1}`}
+                    className={`cursor-pointer block ${processingImage ? 'opacity-50 pointer-events-none' : ''}`}
+                  >
+                    <img
+                      className="w-40 h-40 object-cover rounded-sm border border-gray-300"
+                      src={!image ? assets.upload_area : URL.createObjectURL(image)}
+                      alt={`Preview ${index + 1}`}
+                    />
+                    <input
+                      onChange={(e) => handleImageUpload(e, [setImage1, setImage2, setImage3, setImage4][index])}
+                      type="file"
+                      id={`image${index + 1}`}
+                      accept="image/png, image/jpeg, image/jpg"
+                      hidden
+                      disabled={processingImage}
+                    />
+                  </label>
+                  {image && (
+                    <button
+                      type="button"
+                      onClick={() => removeImage(index)}
+                      className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center shadow-md"
+                      title="Remove image"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+            {processingImage && (
+              <p className="text-blue-500 mt-2">Processing image, please wait...</p>
+            )}
+          </div>
+
+          {/* Submit Button */}
+          <button
+            type="submit"
+            className="w-35 py-3 mt-4 bg-black text-white rounded-sm flex items-center justify-center"
+            disabled={processingImage || isSubmitting}
+          >
+            {isSubmitting ? (
+              <>
+                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                ADDING...
+              </>
+            ) : (
+              'ADD'
+            )}
+          </button>
+        </form>
+      </div>
+
+      {/* Right side - Preview */}
+      <div className="w-80 sticky top-4 h-fit">
+        <div className="bg-gray-50 p-6 rounded-lg">
+          <h2 className="text-lg font-semibold mb-4 text-center">Product Preview</h2>
+          <ProductPreview
+            name={name}
+            price={price}
+            images={[image1, image2, image3, image4].filter(Boolean)}
+            description={description}
+            hasSizes={hasSizes}
+            hasColors={hasColors}
+            sizes={sizes}
+            colors={colors}
+            bestseller={bestseller}
+            quantity={quantity}
+            category={selectedCategory}
+            subcategory={selectedSubCategory}
+          />
+        </div>
+      </div>
     </div>
   );
 };

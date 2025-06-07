@@ -9,6 +9,8 @@ import category_icon from './category.svg'
 import dashboard_icon from './dashboard.png'
 import profile_icon from './profile.png'
 import return_icon from './return.png'
+import star_icon from './star_icon.png'
+import star_dull_icon from './star_dull_icon.png'
 
 export const assets = {
     logo,
@@ -22,5 +24,7 @@ export const assets = {
     dashboard_icon,
     profile_icon,
     return_icon,
+    star_icon,
+    star_dull_icon
 }
 

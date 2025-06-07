@@ -194,7 +194,7 @@ const Dashboard = () => {
       if (categoryId) {
         options.params = { categoryId };
       } else {
-        toast.error('Fetching all subcategories (no categoryId)');
+        toast.info('Fetching all subcategories');
       }
 
       const response = await axios.get(
