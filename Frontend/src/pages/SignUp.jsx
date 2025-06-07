@@ -752,10 +752,10 @@ const SignUp = () => {
                   {isSubmitting ? (
                     <div className="flex items-center justify-center">
                       <FiLoader className="animate-spin mr-2" />
-                      <span>Sending Code...</span>
+                        <span>Sending Verification Code...</span>
                     </div>
                   ) : (
-                    <span>Send Verification Code</span>
+                    <span>Create Account</span>
                   )}
                 </motion.button>
 

@@ -579,10 +579,10 @@ const AdminSignup = ({ setShowSignup, setToken }) => {
                                     {isSubmitting ? (
                                         <div className="flex items-center justify-center">
                                             <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                                            Sending Code...
+                                            Sending Verification Code...
                                         </div>
                                     ) : (
-                                        'Send Verification Code'
+                                        'Create Account'
                                     )}
                                 </motion.button>
 
