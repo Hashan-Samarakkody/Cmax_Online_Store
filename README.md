@@ -7,7 +7,7 @@ A comprehensive full-stack e-commerce platform built with modern web technologie
 ```
 Cmax_Online_Store/
 │
-├── admin/                   # Admin Panel (React + Vite + TypeScript)
+├── admin/                   # Admin Panel (React + Vite + JavaScript)
 │   ├── src/
 │   │   ├── components/      # Reusable UI components
 │   │   ├── pages/          # Admin dashboard pages
@@ -18,7 +18,7 @@ Cmax_Online_Store/
 │   ├── package.json
 │   └── vite.config.js
 │
-├── Frontend/               # Customer Store (React + Vite + TypeScript)
+├── Frontend/               # Customer Store (React + Vite + JavaScript)
 │   ├── src/
 │   │   ├── components/     # UI components
 │   │   ├── pages/         # Store pages
@@ -974,7 +974,7 @@ Cmax_Online_Store/
 #### Frontend Technologies
 - **React 18**: Modern React with hooks and functional components
 - **Vite**: Fast build tool and development server
-- **TypeScript**: Type-safe JavaScript (optional but recommended)
+- **JavaScript**: JavaScript for development
 - **Tailwind CSS**: Utility-first CSS framework
 - **React Router**: Client-side routing
 - **Axios**: HTTP client for API requests
@@ -997,9 +997,6 @@ Cmax_Online_Store/
 - **Git**: Version control
 - **ESLint**: Code linting
 - **Prettier**: Code formatting
-- **Husky**: Git hooks
-- **Jest**: Testing framework
-- **Docker**: Containerization (optional)
 - **GitHub Actions**: CI/CD pipelines
 
 ## 📋 Available Scripts & Commands
@@ -1015,7 +1012,7 @@ npm run build        # Create production build
 npm run preview      # Preview production build locally
 npm run lint         # Run ESLint for code quality
 npm run lint:fix     # Auto-fix ESLint issues
-npm run type-check   # TypeScript type checking (if using TS)
+npm run type-check   # JavaScript type checking (if using TS)
 
 # Testing
 npm run test         # Run unit tests
