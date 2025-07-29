@@ -8,40 +8,12 @@ A comprehensive full-stack e-commerce platform built with modern web technologie
 Cmax_Online_Store/
 │
 ├── admin/                   # Admin Panel (React + Vite + JavaScript)
-│   ├── src/
-│   │   ├── components/      # Reusable UI components
-│   │   ├── pages/          # Admin dashboard pages
-│   │   ├── hooks/          # Custom React hooks
-│   │   ├── utils/          # Utility functions
-│   │   └── assets/         # Static assets
-│   ├── public/             # Public assets
-│   ├── package.json
-│   └── vite.config.js
 │
 ├── Frontend/               # Customer Store (React + Vite + JavaScript)
-│   ├── src/
-│   │   ├── components/     # UI components
-│   │   ├── pages/         # Store pages
-│   │   ├── context/       # React context providers
-│   │   ├── hooks/         # Custom hooks
-│   │   └── utils/         # Utility functions
-│   ├── public/            # Public assets
-│   ├── package.json
-│   └── vite.config.js
 │
 ├── Backend/               # API Server (Node.js + Express + MongoDB)
-│   ├── controllers/       # Route controllers
-│   ├── models/           # MongoDB models
-│   ├── routes/           # API route definitions
-│   ├── middleware/       # Custom middleware
-│   ├── utils/            # Utility functions
-│   ├── config/           # Configuration files
-│   ├── uploads/          # File upload directory
-│   ├── .env              # Environment variables
-│   ├── package.json
-│   └── server.js         # Main server file
 │
-├── screenshots/          # Project screenshots
+├── Design/          # Project design
 ├── docs/                # Additional documentation
 ├── .gitignore
 └── README.md            # ← You are here
