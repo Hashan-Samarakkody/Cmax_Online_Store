@@ -14,7 +14,7 @@ Cmax_Online_Store/
 ├── Backend/               # API Server (Node.js + Express + MongoDB)
 │
 ├── Design/          # Project design
-├── docs/                # Additional documentation
+│
 ├── .gitignore
 └── README.md            # ← You are here
 ```
