@@ -23,4 +23,5 @@ const uploadMiddleware = multer({
     }
 });
 
+
 export default uploadMiddleware;
